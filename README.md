@@ -1,47 +1,217 @@
-# Discogs Intelligence Platform v3
+# Discogs Intelligence Platform (DIP)
 
-This is the first database-backed desktop version.
+> **Transforming collections into intelligence.**
 
-## What changes in v3
+---
 
-- `discogs_intelligence.db` is the permanent source of truth.
-- Collection records, historical market snapshots, scores, decisions and notes
-  survive between runs.
-- Excel is now an export, not the database.
-- You can search your collection, filter it and double-click a release to save:
-  - Keep / List for sale / Maybe / Ignore
-  - Would I miss it?
-  - Protected from sale shortlist
-  - Personal notes
+## Overview
 
-## First run
+The **Discogs Intelligence Platform (DIP)** is a desktop decision-support platform for serious vinyl collectors, DJs and music enthusiasts.
 
-1. Unzip the folder.
-2. Right-click `Run Discogs Intelligence Platform.command` and choose **Open**.
-3. Click **Import Collection CSV** and select your Discogs export.
-4. Click **Refresh Discogs Data**.
-5. Paste a valid personal access token when asked.
-6. Leave the app open during the approximately 25–35 minute first refresh.
+Its purpose is to transform a static Discogs collection into an intelligent, continuously analysed asset by combining collection data, market activity, pricing, scarcity, demand and historical trends.
 
-Your token is used only for that refresh and is not stored.
+DIP is **not** a replacement for Discogs.
 
-## Later runs
+Instead, it enhances Discogs by providing insights, historical context and transparent recommendations that help collectors make better-informed decisions.
 
-Double-click the launcher. The database and your decisions are loaded automatically.
+The collector always remains in control.
 
-Run a fresh market-data refresh monthly to make Momentum and Hot Now detection useful.
+---
 
-## Backup
+# Mission
 
-Back up this file:
+To build the world's best intelligence platform for vinyl collectors by **automating research rather than automating decisions.**
 
-`discogs_intelligence.db`
+---
 
-It contains your collection intelligence history and personal decisions.
+# Current Status
 
-## Current limitations
+🚧 **Active Development**
 
-- Current value still uses Discogs' lowest available listing, not completed-sale history.
-- Discogs API rate limits mean a full refresh takes about 30 minutes.
-- The app does not yet automate scheduled refreshes.
-- Personal decisions from the earlier v2 workbook are not imported automatically.
+Current Milestone:
+
+**Version 0.1 – Core Platform**
+
+---
+
+# Current Features
+
+Current functionality includes:
+
+- Import Discogs Collection CSV
+- Discogs Marketplace Integration
+- SQLite Database
+- Historical Market Snapshots
+- Opportunity Scoring
+- Personal Decisions & Notes
+- Search & Filtering
+- Excel Export
+
+These features will continue to evolve as the platform develops.
+
+---
+
+# Planned Roadmap
+
+## Version 0.1 – Core Platform
+
+- SQLite Database
+- Import Engine
+- Historical Snapshots
+- Reporting Engine
+- Configuration System
+- Modular Architecture
+
+---
+
+## Version 0.2 – Collection Intelligence
+
+- Weekend Listings
+- Hidden Gems
+- Dashboard
+- Opportunity Engine
+- Protected Records
+- Collection Health
+
+---
+
+## Version 0.3 – Market Intelligence
+
+- Price History
+- Demand Momentum
+- Scarcity Trends
+- Weekly Intelligence Reports
+- Why Now? Engine
+- Market Trend Detection
+
+---
+
+## Version 0.4 – Personal Intelligence
+
+- Collector DNA
+- Decision Tracking
+- Recommendation Memory
+- Personal Recommendation Engine
+
+---
+
+# Product Philosophy
+
+DIP follows one guiding principle:
+
+> **Automate the research, not the decision.**
+
+The platform never tells the user what they should buy or sell.
+
+Instead, it identifies opportunities, explains the evidence and allows the collector to make the final decision.
+
+Every recommendation should be:
+
+- Transparent
+- Explainable
+- Evidence-based
+- Reviewable over time
+
+---
+
+# Documentation
+
+Detailed documentation is available in the **docs** folder.
+
+Current documentation includes:
+
+- Vision.md
+- Architecture.md
+- DevelopmentPrinciples.md *(in progress)*
+- Roadmap.md *(planned)*
+- ProductPositioning.md *(planned)*
+- Database.md *(planned)*
+- Scoring.md *(planned)*
+
+---
+
+# Technology Stack
+
+Current technologies include:
+
+- Python
+- SQLite
+- Tkinter
+- Discogs API
+- XlsxWriter
+- Git
+- GitHub
+- Visual Studio Code
+
+---
+
+# Project Structure
+
+Current repository structure:
+
+```
+Discogs-Intelligence-Platform/
+
+docs/
+
+app.py
+database.py
+discogs_client.py
+report.py
+scoring.py
+
+README.md
+requirements.txt
+.gitignore
+```
+
+This structure will gradually evolve into a more modular architecture as the Core Platform milestone progresses.
+
+---
+
+# Long-Term Vision
+
+The long-term goal is for DIP to become the first application a serious collector opens before visiting Discogs.
+
+Rather than simply displaying a collection, DIP should answer questions such as:
+
+- What changed this week?
+- Which records deserve my attention?
+- Which records are becoming scarce?
+- Which records have reached all-time highs?
+- Which records are becoming more desirable?
+- Which opportunities am I missing?
+
+---
+
+# Development
+
+DIP is being developed as a long-term software platform following modern software engineering practices including:
+
+- Git version control
+- GitHub Issues
+- Milestones
+- Product documentation
+- Modular architecture
+- Transparent scoring
+- Historical data preservation
+
+---
+
+# Licence
+
+Private repository.
+
+Copyright © Russell Friend.
+
+---
+
+## Document Information
+
+Version: 1.0
+
+Status: Active
+
+Last Updated: July 2026
+
+Owner: Russell Friend
