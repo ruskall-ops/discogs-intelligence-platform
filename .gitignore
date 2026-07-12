@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+
+discogs_intelligence.db
+
+*.xlsx
+*.csv
+
+.DS_Store
+
+.vscode/
+.idea/
