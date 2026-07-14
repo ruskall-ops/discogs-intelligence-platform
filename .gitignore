@@ -19,6 +19,7 @@ __pycache__/
 
 *.xlsx
 *.csv
+discogs_intelligence_report.md
 
 # --------------------------------------------------
 # macOS

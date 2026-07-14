@@ -1,16 +1,26 @@
 from __future__ import annotations
 
+import unittest
+
 from config import SETTINGS
 
 
-def test_configuration() -> None:
-    """Verify the default application configuration."""
+class ConfigurationTestCase(unittest.TestCase):
+    def test_configuration(self) -> None:
+        """Verify the default application configuration."""
 
-    assert SETTINGS.application_name
-    assert SETTINGS.application_version
-    assert SETTINGS.database_path
+        self.assertTrue(SETTINGS.application_name)
+        self.assertTrue(SETTINGS.application_version)
+        self.assertTrue(SETTINGS.database_path)
 
-    assert SETTINGS.discogs_request_delay_seconds >= 0
+        self.assertGreaterEqual(
+            SETTINGS.discogs_request_delay_seconds,
+            0,
+        )
 
-    assert SETTINGS.window_width >= 800
-    assert SETTINGS.window_height >= 500
+        self.assertGreaterEqual(SETTINGS.window_width, 800)
+        self.assertGreaterEqual(SETTINGS.window_height, 500)
+
+
+if __name__ == "__main__":
+    unittest.main()
