@@ -1,6 +1,5 @@
 
 from __future__ import annotations
-import csv
 import getpass
 import threading
 import time
@@ -13,6 +12,7 @@ from database import Database
 from discogs_client import DiscogsClient
 from scoring import calculate
 from report import export_excel
+from importers import CollectionImportError, DiscogsCSVImporter
 
 APP_DIR = Path(__file__).resolve().parent
 DB_PATH = APP_DIR / "discogs_intelligence.db"
@@ -118,25 +118,50 @@ class App(tk.Tk):
     def import_csv(self):
         path = filedialog.askopenfilename(
             title="Select Discogs collection export",
-            filetypes=[("CSV files","*.csv"),("All files","*.*")]
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
         )
+
         if not path:
             return
+
         try:
-            with open(path, "r", encoding="utf-8-sig", newline="") as handle:
-                reader = csv.DictReader(handle)
-                rows = list(reader)
-                fields = reader.fieldnames or []
-            release_col = next((x for x in ["release_id","Release ID","release id"] if x in fields), None)
-            if not release_col:
-                raise ValueError("No release_id column was found.")
-            count = self.db.import_releases(rows, release_col)
-            self.status_var.set(f"Imported {count:,} collection rows")
+            importer = DiscogsCSVImporter()
+            result = importer.read(Path(path))
+
+            count = self.db.import_releases(
+                result.rows,
+                result.release_id_column,
+            )
+
+            self.status_var.set(
+                f"Imported {count:,} collection rows "
+                f"({result.invalid_release_ids:,} invalid rows skipped)"
+            )
+
             self.refresh_dashboard()
             self.load_table()
-            messagebox.showinfo("Import complete", f"Imported or updated {count:,} records.")
+
+            messagebox.showinfo(
+                "Import complete",
+                (
+                    f"Imported or updated {count:,} records.\n\n"
+                    f"CSV rows: {result.total_rows:,}\n"
+                    f"Valid release IDs: {result.valid_release_ids:,}\n"
+                    f"Invalid release IDs: {result.invalid_release_ids:,}"
+                ),
+            )
+
+        except CollectionImportError as exc:
+            messagebox.showerror(
+                "Import failed",
+                str(exc),
+            )
+
         except Exception as exc:
-            messagebox.showerror("Import failed", str(exc))
+            messagebox.showerror(
+                "Import failed",
+                f"An unexpected error occurred:\n\n{exc}",
+            )
 
     def start_refresh(self):
         if not self.db.release_ids():
