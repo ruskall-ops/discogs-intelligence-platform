@@ -14,6 +14,8 @@ from services import ImportService
 from scoring import calculate
 from report import export_excel
 from importers import CollectionImportError
+from reports import render_markdown
+from services import ReportingService
 
 from config import SETTINGS
 
@@ -47,6 +49,7 @@ class App(tk.Tk):
         ttk.Button(toolbar, text="Import Collection CSV", command=self.import_csv).pack(side="left", padx=3)
         ttk.Button(toolbar, text="Refresh Discogs Data", command=self.start_refresh).pack(side="left", padx=3)
         ttk.Button(toolbar, text="Export Excel", command=self.export_report).pack(side="left", padx=3)
+        ttk.Button(toolbar, text="Export Intelligence Report", command=self.export_intelligence_report).pack(side="left", padx=3)
         ttk.Button(toolbar, text="Refresh View", command=self.load_table).pack(side="left", padx=3)
 
         self.progress = ttk.Progressbar(toolbar, length=260, mode="determinate")
@@ -397,6 +400,40 @@ class App(tk.Tk):
             self.load_table()
 
         ttk.Button(window, text="Save", command=save).pack(pady=12)
+    def export_intelligence_report(self):
+        path = filedialog.asksaveasfilename(
+            title="Save intelligence report",
+            defaultextension=".md",
+            filetypes=[
+                ("Markdown files", "*.md"),
+                ("All files", "*.*"),
+            ],
+            initialfile="discogs_intelligence_report.md",
+        )
+
+        if not path:
+            return
+
+        try:
+            reporting_service = ReportingService(self.db)
+            report = reporting_service.build_latest_report()
+            markdown = render_markdown(report)
+
+            Path(path).write_text(
+                markdown,
+                encoding="utf-8",
+            )
+
+            messagebox.showinfo(
+                "Report exported",
+                f"Intelligence report saved to:\n\n{path}",
+            )
+
+        except Exception as exc:
+            messagebox.showerror(
+                "Report export failed",
+                f"An unexpected error occurred:\n\n{exc}",
+            )    
 
     def export_report(self):
         path = filedialog.asksaveasfilename(

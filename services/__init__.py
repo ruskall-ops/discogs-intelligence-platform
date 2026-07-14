@@ -5,11 +5,14 @@ from .historical_intelligence import (
     HistoricalComparisonResult,
     HistoricalIntelligenceService,
 )
+from .import_service import ImportService, ImportSummary
 
+from .reporting_service import ReportingService
 __all__ = [
     "ImportService",
     "ImportSummary",
     "HistoricalComparison",
     "HistoricalComparisonResult",
     "HistoricalIntelligenceService",
+    "ReportingService",
 ]
