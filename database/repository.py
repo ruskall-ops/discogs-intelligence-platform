@@ -167,6 +167,126 @@ class Database:
             ).fetchall()
 
         return [int(row["release_id"]) for row in rows]
+    
+    def start_analysis_run(
+        self,
+        run_type: str = "market_refresh",
+        source: str = "discogs",
+        application_version: str | None = None,
+    ) -> int:
+        """Create a new analysis run and return its database ID."""
+
+        with self._lock, self.conn:
+            cursor = self.conn.execute(
+                """
+                INSERT INTO analysis_runs (
+                    run_type,
+                    source,
+                    status,
+                    application_version
+                )
+                VALUES (?, ?, 'running', ?)
+                """,
+                (
+                    run_type,
+                    source,
+                    application_version,
+                ),
+            )
+
+        return int(cursor.lastrowid)
+
+    def complete_analysis_run(
+        self,
+        run_id: int,
+        releases_attempted: int,
+        releases_succeeded: int,
+        releases_failed: int,
+    ) -> None:
+        """Mark an analysis run as completed."""
+
+        with self._lock, self.conn:
+            self.conn.execute(
+                """
+                UPDATE analysis_runs
+                SET
+                    status = 'completed',
+                    completed_at = CURRENT_TIMESTAMP,
+                    releases_attempted = ?,
+                    releases_succeeded = ?,
+                    releases_failed = ?,
+                    error_message = NULL
+                WHERE id = ?
+                """,
+                (
+                    releases_attempted,
+                    releases_succeeded,
+                    releases_failed,
+                    run_id,
+                ),
+            )
+
+    def fail_analysis_run(
+        self,
+        run_id: int,
+        error_message: str,
+        releases_attempted: int = 0,
+        releases_succeeded: int = 0,
+        releases_failed: int = 0,
+    ) -> None:
+        """Mark an analysis run as failed."""
+
+        with self._lock, self.conn:
+            self.conn.execute(
+                """
+                UPDATE analysis_runs
+                SET
+                    status = 'failed',
+                    completed_at = CURRENT_TIMESTAMP,
+                    releases_attempted = ?,
+                    releases_succeeded = ?,
+                    releases_failed = ?,
+                    error_message = ?
+                WHERE id = ?
+                """,
+                (
+                    releases_attempted,
+                    releases_succeeded,
+                    releases_failed,
+                    error_message,
+                    run_id,
+                ),
+            )
+
+    def cancel_analysis_run(
+        self,
+        run_id: int,
+        releases_attempted: int = 0,
+        releases_succeeded: int = 0,
+        releases_failed: int = 0,
+    ) -> None:
+        """Mark an analysis run as cancelled."""
+
+        with self._lock, self.conn:
+            self.conn.execute(
+                """
+                UPDATE analysis_runs
+                SET
+                    status = 'cancelled',
+                    completed_at = CURRENT_TIMESTAMP,
+                    releases_attempted = ?,
+                    releases_succeeded = ?,
+                    releases_failed = ?
+                WHERE id = ?
+                """,
+                (
+                    releases_attempted,
+                    releases_succeeded,
+                    releases_failed,
+                    run_id,
+                ),
+            )
+        
 
     def add_snapshot(
         self,

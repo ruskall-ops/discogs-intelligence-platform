@@ -33,6 +33,26 @@ CREATE TABLE IF NOT EXISTS collection_ownership (
         REFERENCES releases(release_id)
         ON DELETE CASCADE
 );
+CREATE TABLE IF NOT EXISTS analysis_runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_type TEXT NOT NULL DEFAULT 'market_refresh',
+    source TEXT NOT NULL DEFAULT 'discogs',
+    status TEXT NOT NULL DEFAULT 'running'
+        CHECK (status IN ('running', 'completed', 'failed', 'cancelled')),
+    started_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at TEXT,
+    releases_attempted INTEGER NOT NULL DEFAULT 0,
+    releases_succeeded INTEGER NOT NULL DEFAULT 0,
+    releases_failed INTEGER NOT NULL DEFAULT 0,
+    error_message TEXT,
+    application_version TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_analysis_runs_started_at
+ON analysis_runs(started_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_analysis_runs_status
+ON analysis_runs(status);
 
 CREATE INDEX IF NOT EXISTS idx_collection_ownership_quantity
 ON collection_ownership(quantity);
