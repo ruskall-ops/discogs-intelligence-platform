@@ -32,13 +32,15 @@ Build the Core Platform foundations.
 
 Primary focus:
 
-- SQLite database architecture
-- Configuration management
-- Modular project structure
-- Reporting engine
-- Historical snapshot framework
-- Code quality improvements
-- Platform stability
+- Database Foundation
+- Import Engine
+- Collection Ownership Model
+- Analysis Run Engine
+- Historical Intelligence Engine
+- Database Migrations
+- Database Testing
+- Configuration System
+- Reporting Engine
 
 Current GitHub Milestone:
 
@@ -62,12 +64,17 @@ Create the engineering foundation for the entire platform.
 
 Key deliverables include:
 
-- SQLite database
-- Import engine
-- Historical snapshots
-- Opportunity scoring
-- Reporting framework
-- Configuration management
+- Database Foundation
+- Import Engine
+- Collection Ownership Model
+- Analysis Run Engine
+- Historical Intelligence Engine
+- Database Migrations
+- Database Testing
+- Configuration System
+- Reporting Framework
+- Scoring Framework
+
 
 This version prioritises stability over features.
 
@@ -86,6 +93,7 @@ Transform imported collection data into meaningful intelligence.
 Expected capabilities:
 
 - Collection analytics
+- Ownership intelligence
 - Collection health
 - Hidden Gems
 - Price history
@@ -242,7 +250,7 @@ The roadmap exists to ensure the platform evolves deliberately, sustainably and 
 
 ## Document Information
 
-Version: 1.0
+Version: 1.1
 
 Status: Active
 
