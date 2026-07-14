@@ -15,16 +15,19 @@ from scoring import calculate
 from report import export_excel
 from importers import CollectionImportError
 
-APP_DIR = Path(__file__).resolve().parent
-DB_PATH = APP_DIR / "discogs_intelligence.db"
+from config import SETTINGS
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Discogs Intelligence Platform")
-        self.geometry("1380x820")
+        self.title(SETTINGS.application_name)
+        self.geometry(
+
+    f"{SETTINGS.window_width}x{SETTINGS.window_height}"
+
+)
         self.minsize(1050, 650)
-        self.db = Database(DB_PATH)
+        self.db = Database(SETTINGS.database_path)
         self.import_service = ImportService(self.db)
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
@@ -200,7 +203,7 @@ class App(tk.Tk):
         run_id = self.db.start_analysis_run(
             run_type="market_refresh",
             source="discogs",
-            application_version="0.1-dev",
+            application_version=SETTINGS.application_version,
         )
 
         try:
@@ -255,7 +258,9 @@ class App(tk.Tk):
                     failed,
                 )
 
-                time.sleep(1.08)
+                time.sleep(
+    SETTINGS.discogs_request_delay_seconds
+)
 
             self.db.complete_analysis_run(
                 run_id=run_id,
