@@ -192,31 +192,130 @@ class App(tk.Tk):
         threading.Thread(target=self.refresh_market_data, args=(token,), daemon=True).start()
 
     def refresh_market_data(self, token):
-        ids = self.db.release_ids()
-        client = DiscogsClient(token)
-        captured_at = datetime.now().isoformat(timespec="seconds")
-        self.progress["maximum"] = len(ids)
-        errors = 0
+        ids = self.db.release_ids()  # Temporary test limit
+        attempted = 0
+        succeeded = 0
+        failed = 0
 
-        for pos, rid in enumerate(ids, start=1):
-            try:
-                data = client.get_release(rid)
-                if data:
-                    previous = self.db.previous_snapshot(rid, captured_at)
-                    self.db.add_snapshot(rid, captured_at, data)
-                    score = calculate(data, previous)
-                    self.db.upsert_score(rid, captured_at, score)
-            except Exception:
-                errors += 1
-            self.progress["value"] = pos
-            self.status_var.set(f"Refreshing {pos:,}/{len(ids):,} — errors {errors}")
-            self.update_idletasks()
-            time.sleep(1.08)
+        run_id = self.db.start_analysis_run(
+            run_type="market_refresh",
+            source="discogs",
+            application_version="0.1-dev",
+        )
 
-        self.status_var.set(f"Refresh complete — {len(ids)-errors:,} successful, {errors} errors")
+        try:
+            client = DiscogsClient(token)
+            captured_at = datetime.now().isoformat(timespec="seconds")
+
+            self.after(
+                0,
+                lambda: self.progress.configure(maximum=len(ids)),
+            )
+
+            for pos, release_id in enumerate(ids, start=1):
+                attempted += 1
+
+                try:
+                    data = client.get_release(release_id)
+
+                    if not data:
+                        failed += 1
+                    else:
+                        previous = self.db.previous_snapshot(
+                            release_id,
+                            captured_at,
+                        )
+
+                        self.db.add_snapshot(
+                            run_id,
+                            release_id,
+                            captured_at,
+                            data,
+                        )
+
+                        score = calculate(data, previous)
+
+                        self.db.upsert_score(
+                            release_id,
+                            captured_at,
+                            score,
+                        )
+
+                        succeeded += 1
+
+                except Exception:
+                    failed += 1
+
+                self.after(
+                    0,
+                    self.update_refresh_progress,
+                    pos,
+                    len(ids),
+                    succeeded,
+                    failed,
+                )
+
+                time.sleep(1.08)
+
+            self.db.complete_analysis_run(
+                run_id=run_id,
+                releases_attempted=attempted,
+                releases_succeeded=succeeded,
+                releases_failed=failed,
+            )
+
+            self.after(
+                0,
+                self.finish_refresh,
+                succeeded,
+                failed,
+            )
+
+        except Exception as exc:
+            self.db.fail_analysis_run(
+                run_id=run_id,
+                error_message=repr(exc),
+                releases_attempted=attempted,
+                releases_succeeded=succeeded,
+                releases_failed=failed,
+            )
+
+            self.after(
+                0,
+                self.show_refresh_error,
+                repr(exc),
+            )
+    def update_refresh_progress(
+        self,
+        position,
+        total,
+        succeeded,
+        failed,
+    ):
+        self.progress["value"] = position
+        self.status_var.set(
+            f"Refreshing {position:,}/{total:,} "
+            f"— successful {succeeded:,}, errors {failed:,}"
+        )
+
+    def finish_refresh(self, succeeded, failed):
+        self.status_var.set(
+            f"Refresh complete — {succeeded:,} successful, "
+            f"{failed:,} errors"
+        )
         self.refresh_dashboard()
         self.load_table()
-        messagebox.showinfo("Refresh complete", self.status_var.get())
+        messagebox.showinfo(
+            "Refresh complete",
+            self.status_var.get(),
+        )
+
+    def show_refresh_error(self, error_message):
+        self.status_var.set("Refresh failed")
+        messagebox.showerror(
+            "Refresh failed",
+            f"An unexpected error occurred:\n\n{error_message}",
+        )            
 
     def refresh_dashboard(self):
         row = self.db.dashboard()

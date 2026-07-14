@@ -167,7 +167,7 @@ class Database:
             ).fetchall()
 
         return [int(row["release_id"]) for row in rows]
-    
+        
     def start_analysis_run(
         self,
         run_type: str = "market_refresh",
@@ -290,6 +290,7 @@ class Database:
 
     def add_snapshot(
         self,
+        analysis_run_id: int,
         release_id: int,
         captured_at: str,
         data: dict[str, Any],
@@ -308,6 +309,7 @@ class Database:
                 """
                 INSERT OR IGNORE INTO market_snapshots (
                     release_id,
+                    analysis_run_id,
                     captured_at,
                     wants,
                     haves,
@@ -318,10 +320,11 @@ class Database:
                     genres,
                     discogs_uri
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     release_id,
+                    analysis_run_id,
                     captured_at,
                     int(data.get("wants", 0) or 0),
                     int(data.get("haves", 0) or 0),

@@ -60,6 +60,7 @@ ON collection_ownership(quantity);
 CREATE TABLE IF NOT EXISTS market_snapshots (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     release_id INTEGER NOT NULL,
+    analysis_run_id INTEGER,
     captured_at TEXT NOT NULL,
     wants INTEGER NOT NULL DEFAULT 0,
     haves INTEGER NOT NULL DEFAULT 0,
@@ -72,6 +73,9 @@ CREATE TABLE IF NOT EXISTS market_snapshots (
     FOREIGN KEY (release_id)
         REFERENCES releases(release_id)
         ON DELETE CASCADE,
+    FOREIGN KEY (analysis_run_id)
+    REFERENCES analysis_runs(id)
+    ON DELETE SET NULL,
     UNIQUE(release_id, captured_at)
 );
 
