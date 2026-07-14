@@ -286,7 +286,65 @@ class Database:
                     run_id,
                 ),
             )
-        
+    def latest_completed_analysis_run(
+        self,
+        run_type: str = "market_refresh",
+    ) -> sqlite3.Row | None:
+        """Return the most recent completed analysis run."""
+
+        with self._lock:
+            return self.conn.execute(
+                """
+                SELECT *
+                FROM analysis_runs
+                WHERE status = 'completed'
+                  AND run_type = ?
+                ORDER BY completed_at DESC, id DESC
+                LIMIT 1
+                """,
+                (run_type,),
+            ).fetchone()
+
+    def previous_completed_analysis_run(
+        self,
+        before_run_id: int,
+        run_type: str = "market_refresh",
+    ) -> sqlite3.Row | None:
+        """Return the completed run immediately before another run."""
+
+        with self._lock:
+            return self.conn.execute(
+                """
+                SELECT *
+                FROM analysis_runs
+                WHERE status = 'completed'
+                  AND run_type = ?
+                  AND id < ?
+                ORDER BY completed_at DESC, id DESC
+                LIMIT 1
+                """,
+                (
+                    run_type,
+                    before_run_id,
+                ),
+            ).fetchone()
+
+    def snapshots_for_analysis_run(
+        self,
+        run_id: int,
+    ) -> list[sqlite3.Row]:
+        """Return all marketplace snapshots captured during a run."""
+
+        with self._lock:
+            return self.conn.execute(
+                """
+                SELECT *
+                FROM market_snapshots
+                WHERE analysis_run_id = ?
+                ORDER BY release_id
+                """,
+                (run_id,),
+            ).fetchall()        
 
     def add_snapshot(
         self,
