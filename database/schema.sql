@@ -18,6 +18,24 @@ CREATE TABLE IF NOT EXISTS releases (
     rating TEXT,
     imported_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS collection_ownership (
+    release_id INTEGER PRIMARY KEY,
+    quantity INTEGER NOT NULL DEFAULT 1
+        CHECK (quantity >= 0),
+    collection_folder TEXT,
+    rating TEXT,
+    date_added TEXT,
+    media_condition TEXT,
+    sleeve_condition TEXT,
+    notes TEXT,
+    last_imported_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (release_id)
+        REFERENCES releases(release_id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_collection_ownership_quantity
+ON collection_ownership(quantity);
 
 CREATE TABLE IF NOT EXISTS market_snapshots (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
