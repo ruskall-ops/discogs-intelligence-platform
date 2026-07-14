@@ -290,6 +290,35 @@ A successful database should:
 - Provide reliable performance.
 - Support explainable intelligence.
 
+## Design Principle
+
+The database distinguishes between two categories of information.
+
+### Imported Facts
+
+Information obtained directly from Discogs or other external systems.
+
+These records always reflect the capabilities and limitations of their source.
+
+### User Knowledge
+
+Information created and maintained by the user.
+
+Examples include:
+
+- Purchase history
+- Manual valuations
+- Personal notes
+- Cleaning records
+- Storage locations
+- Insurance information
+- Custom tags
+
+User Knowledge should never be overwritten by future imports.
+
+This separation allows DIP to safely refresh imported data while preserving all user-generated information.
+
+
 The database is considered the foundation upon which every other platform capability is built.
 
 ---

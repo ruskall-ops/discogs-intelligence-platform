@@ -29,3 +29,9 @@ All notable changes to the Discogs Intelligence Platform will be documented here
 - Externalised SQL schema.
 - Improved project structure.
 - Updated `.gitignore` for local databases and generated files.
+
+### Documentation
+
+- Documented the Collection Ownership Model.
+- Clarified that Discogs CSV exports do not provide unique identifiers for individual owned copies.
+- Introduced the architectural distinction between Imported Facts and User Knowledge.
