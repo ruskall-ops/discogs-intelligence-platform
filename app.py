@@ -10,9 +10,10 @@ from tkinter import ttk, filedialog, messagebox, simpledialog
 
 from database import Database
 from discogs_client import DiscogsClient
+from services import ImportService
 from scoring import calculate
 from report import export_excel
-from importers import CollectionImportError, DiscogsCSVImporter
+from importers import CollectionImportError
 
 APP_DIR = Path(__file__).resolve().parent
 DB_PATH = APP_DIR / "discogs_intelligence.db"
@@ -24,6 +25,7 @@ class App(tk.Tk):
         self.geometry("1380x820")
         self.minsize(1050, 650)
         self.db = Database(DB_PATH)
+        self.import_service = ImportService(self.db)
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
         self.status_var = tk.StringVar(value="Ready")
@@ -125,16 +127,10 @@ class App(tk.Tk):
             return
 
         try:
-            importer = DiscogsCSVImporter()
-            result = importer.read(Path(path))
-
-            count = self.db.import_releases(
-                result.rows,
-                result.release_id_column,
-            )
+            result = self.import_service.import_collection(Path(path))
 
             self.status_var.set(
-                f"Imported {count:,} collection rows "
+                f"Imported {result.imported_records:,} collection rows "
                 f"({result.invalid_release_ids:,} invalid rows skipped)"
             )
 
@@ -144,7 +140,7 @@ class App(tk.Tk):
             messagebox.showinfo(
                 "Import complete",
                 (
-                    f"Imported or updated {count:,} records.\n\n"
+                    f"Imported or updated {result.imported_records:,} records.\n\n"
                     f"CSV rows: {result.total_rows:,}\n"
                     f"Valid release IDs: {result.valid_release_ids:,}\n"
                     f"Invalid release IDs: {result.invalid_release_ids:,}"
