@@ -13,8 +13,6 @@ ComparisonStatus = Literal[
     "new",
     "missing",
 ]
-
-
 @dataclass(frozen=True)
 class HistoricalComparison:
     """Objective change for one release between two analysis runs."""
@@ -39,7 +37,6 @@ class HistoricalComparison:
     lowest_price_change: Decimal | None
     lowest_price_percent_change: Decimal | None
 
-
 @dataclass(frozen=True)
 class HistoricalComparisonResult:
     """Comparison of two completed marketplace analysis runs."""
@@ -47,6 +44,65 @@ class HistoricalComparisonResult:
     latest_run_id: int
     previous_run_id: int
     comparisons: list[HistoricalComparison]
+
+    @property
+    def changed(self) -> list[HistoricalComparison]:
+        return [
+            comparison
+            for comparison in self.comparisons
+            if comparison.status == "changed"
+        ]
+
+    @property
+    def unchanged(self) -> list[HistoricalComparison]:
+        return [
+            comparison
+            for comparison in self.comparisons
+            if comparison.status == "unchanged"
+        ]
+
+    @property
+    def new(self) -> list[HistoricalComparison]:
+        return [
+            comparison
+            for comparison in self.comparisons
+            if comparison.status == "new"
+        ]
+
+    @property
+    def missing(self) -> list[HistoricalComparison]:
+        return [
+            comparison
+            for comparison in self.comparisons
+            if comparison.status == "missing"
+        ]
+
+    @property
+    def total(self) -> int:
+        return len(self.comparisons)
+
+    @property
+    def total_changed(self) -> int:
+        return len(self.changed)
+
+    @property
+    def total_unchanged(self) -> int:
+        return len(self.unchanged)
+
+    @property
+    def total_new(self) -> int:
+        return len(self.new)
+
+    @property
+    def total_missing(self) -> int:
+        return len(self.missing)
+
+    @property
+    def percent_changed(self) -> float:
+        if self.total == 0:
+            return 0.0
+
+        return (self.total_changed / self.total) * 100
 
 
 class HistoricalIntelligenceService:
