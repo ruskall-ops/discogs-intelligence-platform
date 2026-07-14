@@ -286,7 +286,8 @@ class Database:
             return self.conn.execute(
                 """
                 SELECT
-                    COUNT(*) AS total,
+                    COUNT(*) AS unique_releases,
+                    COALESCE(SUM(co.quantity), 0) AS owned_copies,
                     SUM(
                         CASE
                             WHEN s.priority = 'High-priority review'
@@ -317,6 +318,8 @@ class Database:
                         END
                     ) AS protected
                 FROM releases r
+                LEFT JOIN collection_ownership co
+                    ON co.release_id = r.release_id
                 LEFT JOIN scores s
                     ON s.release_id = r.release_id
                 LEFT JOIN decisions d

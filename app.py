@@ -59,23 +59,42 @@ class App(tk.Tk):
         self.tabs.add(self.review_tab, text="Collection Review")
 
         self.kpis = {}
+
         labels = [
-            ("total", "Collection"),
+            ("unique_releases", "Unique releases"),
+            ("owned_copies", "Owned copies"),
             ("high_priority", "High-priority reviews"),
             ("worth_reviewing", "Worth reviewing"),
             ("hot_now", "Hot now"),
             ("protected", "Protected / Keep"),
         ]
+
         for index, (key, label) in enumerate(labels):
-            box = ttk.LabelFrame(self.dashboard_tab, text=label, padding=15)
-            box.grid(row=0, column=index, padx=8, pady=8, sticky="nsew")
-            value = ttk.Label(box, text="0", font=("Helvetica", 24, "bold"))
+            box = ttk.LabelFrame(
+                self.dashboard_tab,
+                text=label,
+                padding=15,
+            )
+            box.grid(
+                row=0,
+                column=index,
+                padx=8,
+                pady=8,
+                sticky="nsew",
+            )
+
+            value = ttk.Label(
+                box,
+                text="0",
+                font=("Helvetica", 24, "bold"),
+            )
             value.pack()
+
             self.kpis[key] = value
             self.dashboard_tab.columnconfigure(index, weight=1)
 
         info = ttk.LabelFrame(self.dashboard_tab, text="Platform status", padding=16)
-        info.grid(row=1, column=0, columnspan=5, padx=8, pady=20, sticky="ew")
+        info.grid(row=1, column=0, columnspan=6, padx=8, pady=20, sticky="ew")
         ttk.Label(info, text=(
             "SQLite is now the source of truth. Collection details, market snapshots, "
             "scores, decisions and notes persist between runs. Excel is generated only "
