@@ -29,7 +29,16 @@ class Database:
         rows: Iterable[dict[str, Any]],
         release_col: str,
     ) -> int:
-        sql = """
+        """
+        Import Discogs collection rows.
+
+        Releases are stored once per Discogs release ID. Duplicate CSV rows
+        are represented through the quantity field in collection_ownership.
+
+        Returns the number of valid CSV rows processed.
+        """
+
+        release_sql = """
         INSERT INTO releases (
             release_id,
             artist,
@@ -55,33 +64,85 @@ class Database:
             rating = excluded.rating
         """
 
-        count = 0
+        ownership_sql = """
+        INSERT INTO collection_ownership (
+            release_id,
+            quantity,
+            collection_folder,
+            rating,
+            date_added,
+            media_condition,
+            sleeve_condition,
+            notes,
+            last_imported_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(release_id) DO UPDATE SET
+            quantity = excluded.quantity,
+            collection_folder = excluded.collection_folder,
+            rating = excluded.rating,
+            date_added = excluded.date_added,
+            media_condition = excluded.media_condition,
+            sleeve_condition = excluded.sleeve_condition,
+            notes = excluded.notes,
+            last_imported_at = CURRENT_TIMESTAMP
+        """
+
+        grouped_rows: dict[int, list[dict[str, Any]]] = {}
+        processed_rows = 0
+
+        for row in rows:
+            raw_release_id = str(row.get(release_col, "")).strip()
+
+            if not raw_release_id:
+                continue
+
+            try:
+                release_id = int(raw_release_id)
+            except ValueError:
+                continue
+
+            grouped_rows.setdefault(release_id, []).append(row)
+            processed_rows += 1
 
         with self._lock, self.conn:
-            for row in rows:
-                raw_release_id = str(row.get(release_col, "")).strip()
-
-                if not raw_release_id:
-                    continue
-
-                try:
-                    release_id = int(raw_release_id)
-                except ValueError:
-                    continue
+            for release_id, copies in grouped_rows.items():
+                representative_row = copies[0]
+                quantity = len(copies)
 
                 self.conn.execute(
-                    sql,
+                    release_sql,
                     (
                         release_id,
-                        row.get("Artist", ""),
-                        row.get("Title", ""),
-                        row.get("Label", ""),
-                        row.get("Catalog#", ""),
-                        row.get("Format", ""),
-                        row.get("Released", ""),
-                        row.get("CollectionFolder", ""),
-                        row.get("Date Added", ""),
-                        row.get("Rating", ""),
+                        representative_row.get("Artist", ""),
+                        representative_row.get("Title", ""),
+                        representative_row.get("Label", ""),
+                        representative_row.get("Catalog#", ""),
+                        representative_row.get("Format", ""),
+                        representative_row.get("Released", ""),
+                        representative_row.get("CollectionFolder", ""),
+                        representative_row.get("Date Added", ""),
+                        representative_row.get("Rating", ""),
+                    ),
+                )
+
+                self.conn.execute(
+                    ownership_sql,
+                    (
+                        release_id,
+                        quantity,
+                        representative_row.get("CollectionFolder", ""),
+                        representative_row.get("Rating", ""),
+                        representative_row.get("Date Added", ""),
+                        representative_row.get(
+                            "Collection Media Condition",
+                            "",
+                        ),
+                        representative_row.get(
+                            "Collection Sleeve Condition",
+                            "",
+                        ),
+                        representative_row.get("Collection Notes", ""),
                     ),
                 )
 
@@ -93,9 +154,7 @@ class Database:
                     (release_id,),
                 )
 
-                count += 1
-
-        return count
+        return processed_rows
 
     def release_ids(self) -> list[int]:
         with self._lock:
