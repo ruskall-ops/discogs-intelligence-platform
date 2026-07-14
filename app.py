@@ -192,7 +192,7 @@ class App(tk.Tk):
         threading.Thread(target=self.refresh_market_data, args=(token,), daemon=True).start()
 
     def refresh_market_data(self, token):
-        ids = self.db.release_ids()  # Temporary test limit
+        ids = self.db.release_ids()
         attempted = 0
         succeeded = 0
         failed = 0
