@@ -22,29 +22,60 @@ New ideas are encouraged, but they should be documented and evaluated before bec
 
 ---
 
+# Platform Evolution
+
+The platform evolves through three complementary intelligence layers.
+
+## Personal Intelligence
+
+Insights focused on the individual collector.
+
+## Marketplace Intelligence
+
+Insights focused on historical market behaviour.
+
+## Platform Intelligence
+
+Future anonymous, aggregated intelligence derived from community behaviour.
+
+Platform Intelligence is intentionally not scheduled and will be introduced only once sufficient historical data and user adoption make it meaningful.
+
+---
+
+# Business Model
+
+DIP follows a freemium intelligence model.
+
+The free platform provides genuine value through collection intelligence and historical tracking.
+
+Premium subscriptions unlock deeper intelligence, automation and analysis.
+
+As adoption grows, anonymous aggregate data improves the quality of platform-wide intelligence, creating a positive feedback loop between community growth and insight quality.
+
+---
+
 # Current Sprint
 
-## Sprint 1
+## Sprint 2
 
 ### Objective
 
-Build the Core Platform foundations.
+Build Collection Intelligence.
 
 Primary focus:
 
-- Database Foundation
-- Import Engine
-- Collection Ownership Model
-- Analysis Run Engine
-- Historical Intelligence Engine
-- Database Migrations
-- Database Testing
-- Configuration System
-- Reporting Engine
+- Dashboard improvements
+- Collection Health
+- Hidden Gems
+- Historical Trends
+- Collection Analytics
+- Dashboard drill-down
+- Explainable intelligence
 
 Current GitHub Milestone:
 
-**Version 0.1 – Core Platform**
+**Version 0.2 – Collection Intelligence**
+
 
 ---
 
@@ -56,24 +87,21 @@ Current GitHub Milestone:
 
 **Status**
 
-🚧 In Development
+✅ Released
 
 ### Goal
 
 Create the engineering foundation for the entire platform.
 
-Key deliverables include:
+Completed deliverables:
 
 - Database Foundation
 - Import Engine
-- Collection Ownership Model
-- Analysis Run Engine
 - Historical Intelligence Engine
-- Database Migrations
-- Database Testing
-- Configuration System
 - Reporting Framework
-- Scoring Framework
+- Configuration System
+- Database Migrations
+- Automated Test Suite
 
 
 This version prioritises stability over features.
@@ -90,15 +118,18 @@ This version prioritises stability over features.
 
 Transform imported collection data into meaningful intelligence.
 
-Expected capabilities:
+Expected capabilities
 
-- Collection analytics
-- Ownership intelligence
-- Collection health
+- Collection Health
 - Hidden Gems
+- Dashboard drill-down
+- Historical trend visualisation
+- Explainable recommendations
+- Collection opportunity analysis
+- Ownership intelligence
 - Price history
 - Value trends
-- Collection dashboards
+- Saved dashboard views
 
 ---
 
@@ -123,7 +154,7 @@ Expected capabilities:
 
 ---
 
-## Version 0.4 – Personal Intelligence
+## Version 0.4 – Decision Support
 
 **Status**
 
@@ -157,6 +188,12 @@ They will be evaluated as the platform evolves.
 | Mobile Companion | 🌱 Idea |
 | Dealer Toolkit | 🌱 Idea |
 | AI Collection Assistant | 🌱 Idea |
+| Community Intelligence | 💭 Vision|
+| Platform Intelligence| 💭 Vision|
+| Trend Detection | 🌱 Idea |
+| Alert Engine| 🌱 Idea |
+| Portfolio Analytics | 📝 Defined|
+
 
 ---
 
@@ -208,6 +245,10 @@ This process ensures ideas are captured without interrupting the current sprint.
 # Long-Term Vision
 
 The long-term ambition is to build the leading intelligence platform for vinyl collectors.
+
+Over time, the platform should become more valuable not simply because more features are added, but because its historical knowledge and anonymous community intelligence continually improve.
+
+The long-term competitive advantage of DIP lies in transforming historical data into explainable intelligence.
 
 Rather than acting solely as a collection manager, DIP aims to become an evidence-based decision support platform that helps collectors:
 

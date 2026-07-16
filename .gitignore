@@ -4,6 +4,7 @@
 
 __pycache__/
 *.py[cod]
+tests/__pycache__/
 
 # --------------------------------------------------
 # Local databases

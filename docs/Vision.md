@@ -6,21 +6,23 @@
 
 # Vision
 
-The Discogs Intelligence Platform (DIP) is a decision-support platform designed for serious vinyl collectors, DJs and music enthusiasts.
+The Discogs Intelligence Platform (DIP) aims to become the intelligence layer for record collectors.
 
-Its purpose is to transform a static Discogs collection into a living intelligence platform by analysing market activity, pricing, scarcity, demand and historical trends.
+Rather than replacing Discogs, DIP enhances it by collecting historical marketplace data, analysing trends, and transforming raw information into actionable intelligence.
 
-DIP is not intended to replace Discogs.
+The platform follows one core philosophy:
 
-Instead, it enhances Discogs by providing insights, historical context and transparent recommendations that help collectors make better-informed decisions.
+> Automate the research, not the decision.
 
-The collector always remains in control.
+Collectors remain in control of every buying, selling and collection decision while DIP continuously monitors the market, identifies meaningful changes and presents explainable insights.
+
+Over time the platform will evolve from personal collection intelligence into broader marketplace and platform intelligence, powered by anonymised community data and years of historical observations.
 
 ---
 
 # Mission
 
-To build the world's best intelligence platform for vinyl collectors by automating research rather than automating decisions.
+To build the world's most trusted intelligence platform for record collectors by automating research rather than automating decisions.
 
 ---
 
@@ -171,6 +173,54 @@ Instead of simply displaying a collection, it should answer questions such as:
 
 ---
 
+# Platform Evolution
+
+DIP will evolve through three complementary intelligence layers.
+
+## Personal Intelligence
+
+Helping individual collectors better understand their own collections, watchlists and investment decisions.
+
+Examples include:
+
+- Collection health
+- Opportunity scoring
+- Portfolio analytics
+- Historical reports
+- Alerts
+
+---
+
+## Marketplace Intelligence
+
+Understanding how the vinyl marketplace changes over time through historical analysis.
+
+Examples include:
+
+- Price trends
+- Supply trends
+- Demand trends
+- Scarcity
+- Label performance
+- Artist performance
+
+---
+
+## Platform Intelligence
+
+Anonymous, aggregated intelligence derived from community behaviour.
+
+Examples include:
+
+- Trending releases
+- Trending artists
+- Genre momentum
+- Watchlist velocity
+- Community demand
+- Market sentiment
+
+Community intelligence will always preserve user privacy and never expose individual collections.
+
 # Decision Philosophy
 
 Every recommendation should answer three questions.
@@ -188,6 +238,32 @@ What has changed since the previous analysis.
 Relevant information that assists the user's decision.
 
 The platform should never instruct the user to buy or sell.
+
+---
+
+# Data Philosophy
+
+The goal is not to collect the most data.
+
+The goal is to create the most valuable intelligence from the data that matters.
+
+Every piece of data should ideally provide value twice.
+
+First by improving the individual collector's experience.
+
+Secondly, where appropriate and always anonymously, by improving platform-wide intelligence.
+
+---
+
+# Business Philosophy
+
+DIP follows a freemium intelligence model.
+
+The free platform should always provide meaningful value.
+
+Premium subscriptions unlock progressively deeper intelligence, automation and analysis rather than restricting basic usability.
+
+As the user community grows, anonymised aggregate information strengthens the intelligence available across the platform, creating a positive feedback loop between platform growth and platform quality.
 
 ---
 

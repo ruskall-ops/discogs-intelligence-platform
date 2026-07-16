@@ -12,6 +12,27 @@ If a feature conflicts with the principles, it should be redesigned or rejected.
 
 ---
 
+## Product Principles
+
+The platform is guided by the following principles.
+
+• Automate the research, not the decision.
+
+• Every piece of data should provide value twice.
+  - First by improving an individual user's experience.
+  - Secondly, where appropriate and always anonymously, by improving platform-wide intelligence.
+
+• Historical context is more valuable than isolated snapshots.
+
+• Intelligence should always be explainable.
+
+• The free tier should provide meaningful value while encouraging platform growth.
+
+• Premium subscriptions unlock deeper intelligence rather than basic usability.
+
+---
+
+
 # Principle 1
 
 ## Automate Research, Not Decisions
