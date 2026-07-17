@@ -147,25 +147,31 @@ Current technologies include:
 
 # Project Structure
 
-Current repository structure:
+DIP uses a `src`-layout Python package with capability-first boundaries:
 
 ```
-Discogs-Intelligence-Platform/
-
-docs/
-
-app.py
-database.py
-discogs_client.py
-report.py
-scoring.py
-
-README.md
-requirements.txt
-.gitignore
+discogs-intelligence-platform/
+├── pyproject.toml
+├── src/dip/
+│   ├── app/                  # bootstrap and orchestration entry points
+│   ├── config/               # typed configuration
+│   ├── core/                 # provider-independent primitives
+│   ├── data_sources/discogs/ # Discogs adapters
+│   ├── collection/           # collection ownership and import
+│   ├── marketplace/          # marketplace capability boundary
+│   ├── snapshots/            # historical comparisons
+│   ├── intelligence/         # engine, context, results and modules
+│   ├── decisions/            # user decisions and notes
+│   ├── experience/           # desktop, dashboard, explorer, reporting
+│   ├── exports/              # file export adapters
+│   ├── persistence/sqlite/   # SQLite repository and migrations
+│   ├── observability/        # logging and diagnostics boundary
+│   └── shared/               # small cross-cutting utilities
+├── tests/
+└── docs/
 ```
 
-This structure will gradually evolve into a more modular architecture as the Core Platform milestone progresses.
+The package boundaries mirror the platform architecture: external providers and presentation remain replaceable, while intelligence stays deterministic, explainable and reusable.
 
 ---
 

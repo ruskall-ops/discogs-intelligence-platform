@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from database import Database
+from dip.persistence.sqlite import Database
 
 
 class DatabaseTestCase(unittest.TestCase):
@@ -76,4 +76,4 @@ class DatabaseTestCase(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()   
+    unittest.main()
