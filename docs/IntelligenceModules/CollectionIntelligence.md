@@ -297,13 +297,19 @@ Demand strength is calculated per release as:
 
 ```text
 Demand Ratio = Wants / max(Copies For Sale, 1)
-Demand Score = min(100, Demand Ratio / Full-Score Ratio × 100)
+Observed Demand Score = average(
+    min(100, Demand Ratio / Full-Score Ratio × 100)
+)
+Usable Demand Coverage = Releases With Usable Demand Evidence / Collection Releases
+Demand Strength = Observed Demand Score × Usable Demand Coverage
 ```
 
 The default full-score ratio is 20 Wants per available copy. The ratio,
 component weights, metadata fields and strength/improvement thresholds are
 explicit in `CollectionHealthConfig` and can be changed without modifying the
-module algorithm. Configured weights must total 1.0.
+module algorithm. Configured weights must total 1.0. Applying usable evidence
+coverage means that a small number of high-demand marketplace rows cannot
+produce a perfect demand score for the collection as a whole.
 
 ## Explainable Output
 
@@ -325,8 +331,10 @@ metrics are not reliably available in the current prepared context.
 
 Missing marketplace records reduce marketplace and valuation coverage. Demand
 strength uses only marketplace records containing both valid Wants and supply
-values, and the excluded count is disclosed in diagnostics. Invalid, negative
-or non-finite numeric values are ignored rather than converted into evidence.
+values, then confidence-adjusts the observed score by usable demand coverage
+across the full collection. The excluded count remains disclosed in
+diagnostics. Invalid, negative or non-finite numeric values are ignored rather
+than converted into evidence.
 
 An empty collection returns a standard skipped result with a score of 0,
 zero-valued components and a clear improvement opportunity. It does not raise
@@ -336,6 +344,18 @@ The module is exported from `dip.intelligence.modules` and can be registered
 with `IntelligenceRegistry`. It is deliberately not registered in the current
 desktop application, preserving existing Version 0.1 behaviour until a future
 dashboard integration slice is implemented.
+
+## Dashboard Consumption
+
+The first Interactive Dashboard slice consumes the module's standard result
+through `CollectionHealthCardPresenter` in `src/dip/experience/dashboard/`.
+The presenter copies the overall score, component scores, summary, strengths,
+improvement opportunities, evidence and diagnostics into immutable view
+models. It does not import or reproduce Collection Health scoring rules.
+
+The card safely distinguishes ready, skipped, failed and incomplete results.
+The current Tkinter dashboard is not yet connected to this view model, so the
+existing desktop application behaviour remains unchanged.
 
 ---
 

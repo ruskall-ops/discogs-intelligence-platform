@@ -35,6 +35,21 @@ All notable changes to the Discogs Intelligence Platform will be documented here
 - Confidence-adjusted demand strength by usable demand evidence coverage so
   sparse marketplace evidence cannot imply collection-wide demand strength.
 
+## Interactive Dashboard – First Vertical Slice
+
+- Added immutable, presentation-neutral intelligence dashboard view models.
+- Added a read-only Collection Health dashboard card presenter.
+- Exposed the overall health score, summary, named component scores,
+  strengths, improvement opportunities, evidence and diagnostics.
+- Added safe ready, skipped, failed and incomplete card states.
+- Ensured dashboard presentation copies module scores without recalculating
+  Collection Health.
+- Preserved the existing Tkinter desktop behaviour pending a later rendering
+  integration.
+- Added completed, skipped, failed, incomplete, engine-integration and
+  immutability tests.
+- Kept Hidden Gems, Market Movers and other modules outside this slice.
+
 ---
 
 # Sprint 0 – Foundation

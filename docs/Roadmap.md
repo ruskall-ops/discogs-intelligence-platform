@@ -66,7 +66,9 @@ Primary focus:
 
 - Collection Intelligence Engine foundation ✅
 - Collection Health vertical slice (Issue #18) ✅
-- Dashboard improvements
+- Interactive Dashboard view-model foundation ✅
+- Collection Health dashboard card ✅
+- Desktop dashboard integration
 - Collection Health
 - Hidden Gems
 - Historical Trends
@@ -126,7 +128,9 @@ Expected capabilities
 - Module registry and standard result contracts ✅
 - Isolated module execution and diagnostics ✅
 - Collection Health module foundation ✅
-- Collection Health dashboard integration
+- Presentation-neutral dashboard view models ✅
+- Read-only Collection Health dashboard card ✅
+- Collection Health desktop rendering
 - Hidden Gems
 - Dashboard drill-down
 - Historical trend visualisation
