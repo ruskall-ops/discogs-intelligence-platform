@@ -141,6 +141,63 @@ The engine is responsible for:
 
 ---
 
+# Version 0.2 Engine Foundation
+
+The initial Collection Intelligence Engine foundation is implemented in
+`src/dip/intelligence/`.
+
+The foundation provides:
+
+- a runtime-checkable `IntelligenceModule` protocol;
+- an ordered `IntelligenceRegistry` with unique module identifiers;
+- a prepared `IntelligenceContext` shared by all modules;
+- standard `IntelligenceResult` and `IntelligenceExecution` models;
+- deterministic registry-order execution;
+- validation of module outputs;
+- failure isolation so one module cannot terminate the full analysis;
+- aggregate completion, failure and skipped counts;
+- compatibility with the original tuple-returning engine API.
+
+The engine does not yet connect to the desktop interface or replace the
+existing opportunity-scoring workflow. This deliberately preserves Version
+0.1 application behaviour while Version 0.2 modules are developed and tested.
+
+## Module Contract
+
+Each module declares a stable identifier and version, then analyses only the
+prepared context supplied by the engine:
+
+```python
+class CollectionHealthModule:
+    module_id = "collection_health"
+    module_version = "1.0"
+
+    def analyse(self, context: IntelligenceContext) -> IntelligenceResult:
+        return IntelligenceResult(
+            module_id=self.module_id,
+            status="completed",
+            summary="Collection health analysis completed.",
+        )
+```
+
+Module identifiers must be unique. Registration fails immediately when an
+identifier is empty, duplicated, missing a version or missing `analyse()`.
+
+## Failure Isolation
+
+The engine executes modules independently in registry order. If a module
+raises an exception or returns an invalid result:
+
+1. the engine creates a failed `IntelligenceResult` for that module;
+2. a concise diagnostic records the failure type and message;
+3. the next registered module still executes;
+4. the overall execution reports the completed and failed counts.
+
+The engine catches ordinary module exceptions, but it does not intercept
+process-level signals such as keyboard interruption or system exit.
+
+---
+
 # Analysis Context
 
 Every intelligence module should receive a consistent analysis context.
@@ -155,6 +212,10 @@ Typical context includes:
 - user preferences
 - active filters
 - analysis run information
+
+The implemented context currently exposes collection records, marketplace
+data, historical snapshots, user context, active filters, analysis run ID and
+capture time. Modules should treat this prepared evidence as read-only.
 
 This keeps modules deterministic, testable and independent.
 
@@ -210,8 +271,13 @@ A standard result should contain:
 - metrics
 - supporting evidence
 - diagnostics
+- module version
 
 This allows every presentation layer to consume intelligence without requiring module-specific logic.
+
+The execution wrapper also exposes module totals and result lookup by stable
+module identifier, allowing future dashboards and reports to consume the same
+engine output without recalculating intelligence.
 
 ---
 

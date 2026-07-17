@@ -66,6 +66,10 @@ These features will continue to evolve as the platform develops.
 
 ## Version 0.2 – Collection Intelligence
 
+- Collection Intelligence Engine foundation
+- Versioned module registry
+- Standard analysis context and results
+- Failure-isolated module execution
 - Weekend Listings
 - Hidden Gems
 - Dashboard

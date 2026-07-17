@@ -4,6 +4,21 @@ All notable changes to the Discogs Intelligence Platform will be documented here
 
 ---
 
+# Sprint 2 – Collection Intelligence
+
+## Intelligence Engine Foundation
+
+- Added the versioned Collection Intelligence module protocol.
+- Added ordered module registration with duplicate protection.
+- Expanded the shared analysis context and standard result models.
+- Added aggregate engine execution results and module lookup.
+- Isolated module failures so later modules continue to execute.
+- Added output validation and concise failure diagnostics.
+- Preserved the existing application and scoring behaviour.
+- Added focused registry, execution and failure-isolation tests.
+
+---
+
 # Sprint 0 – Foundation
 
 ## Documentation
