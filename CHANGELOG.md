@@ -17,6 +17,22 @@ All notable changes to the Discogs Intelligence Platform will be documented here
 - Preserved the existing application and scoring behaviour.
 - Added focused registry, execution and failure-isolation tests.
 
+## Collection Health – Issue #18
+
+- Added the first complete Version 0.2 Collection Health vertical slice.
+- Added an explainable overall health score bounded from 0 to 100.
+- Added weighted metadata completeness, marketplace coverage, demand strength
+  and valuation coverage components.
+- Made weights, metadata fields and thresholds explicit and configurable.
+- Added structured strengths, improvement opportunities, evidence and
+  diagnostics to the standard intelligence result.
+- Added safe handling for empty collections, missing marketplace records and
+  invalid numeric evidence.
+- Exposed the module for engine registration without changing desktop
+  behaviour.
+- Added unit coverage for strong, weak, empty and partially populated
+  collections, configuration validation and engine integration.
+
 ---
 
 # Sprint 0 – Foundation

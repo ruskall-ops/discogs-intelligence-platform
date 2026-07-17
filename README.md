@@ -70,6 +70,10 @@ These features will continue to evolve as the platform develops.
 - Versioned module registry
 - Standard analysis context and results
 - Failure-isolated module execution
+- Collection Health module (Issue #18)
+  - 0–100 explainable health score
+  - weighted component scores
+  - strengths, improvement opportunities, evidence and diagnostics
 - Weekend Listings
 - Hidden Gems
 - Dashboard

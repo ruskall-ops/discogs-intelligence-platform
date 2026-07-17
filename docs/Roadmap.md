@@ -65,6 +65,7 @@ Build Collection Intelligence.
 Primary focus:
 
 - Collection Intelligence Engine foundation ✅
+- Collection Health vertical slice (Issue #18) ✅
 - Dashboard improvements
 - Collection Health
 - Hidden Gems
@@ -124,7 +125,8 @@ Expected capabilities
 - Collection Intelligence Engine foundation ✅
 - Module registry and standard result contracts ✅
 - Isolated module execution and diagnostics ✅
-- Collection Health
+- Collection Health module foundation ✅
+- Collection Health dashboard integration
 - Hidden Gems
 - Dashboard drill-down
 - Historical trend visualisation

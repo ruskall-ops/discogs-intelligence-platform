@@ -258,6 +258,87 @@ Future versions may introduce:
 
 ---
 
+# Collection Health Module – Issue #18
+
+The first complete Version 0.2 vertical slice is implemented as
+`CollectionHealthModule` in
+`src/dip/intelligence/modules/collection_health.py`.
+
+The module implements `IntelligenceModule`, consumes only
+`IntelligenceContext` and returns the standard `IntelligenceResult`. It makes
+no SQLite, Discogs or user-interface calls.
+
+## Current Health Components
+
+The initial health score uses only fields reliably available from the current
+collection and marketplace context:
+
+| Component | Default weight | Evidence used |
+|---|---:|---|
+| Metadata completeness | 25% | Populated artist, title and label fields |
+| Marketplace coverage | 25% | Collection releases with a prepared marketplace record |
+| Demand strength | 30% | Wants relative to current copies for sale |
+| Valuation coverage | 20% | Collection releases with a positive current lowest price |
+
+The overall score is the weighted sum of the four component scores:
+
+```text
+Overall Health =
+    Metadata Completeness × 0.25
+  + Marketplace Coverage × 0.25
+  + Demand Strength × 0.30
+  + Valuation Coverage × 0.20
+```
+
+Every component and the overall result are bounded from 0 to 100 and rounded
+to one decimal place.
+
+Demand strength is calculated per release as:
+
+```text
+Demand Ratio = Wants / max(Copies For Sale, 1)
+Demand Score = min(100, Demand Ratio / Full-Score Ratio × 100)
+```
+
+The default full-score ratio is 20 Wants per available copy. The ratio,
+component weights, metadata fields and strength/improvement thresholds are
+explicit in `CollectionHealthConfig` and can be changed without modifying the
+module algorithm. Configured weights must total 1.0.
+
+## Explainable Output
+
+The result includes:
+
+- `overall_health_score`;
+- named `component_scores` and `component_weights`;
+- collection and evidence counts;
+- identifiable strengths;
+- specific improvement opportunities;
+- concise evidence statements showing the relevant numerator and denominator;
+- diagnostics describing missing or invalid context data.
+
+No score uses inferred sale frequency, condition, profitability,
+diversification, historical growth or completed-sales evidence because those
+metrics are not reliably available in the current prepared context.
+
+## Incomplete and Empty Data
+
+Missing marketplace records reduce marketplace and valuation coverage. Demand
+strength uses only marketplace records containing both valid Wants and supply
+values, and the excluded count is disclosed in diagnostics. Invalid, negative
+or non-finite numeric values are ignored rather than converted into evidence.
+
+An empty collection returns a standard skipped result with a score of 0,
+zero-valued components and a clear improvement opportunity. It does not raise
+an exception or fail the wider engine execution.
+
+The module is exported from `dip.intelligence.modules` and can be registered
+with `IntelligenceRegistry`. It is deliberately not registered in the current
+desktop application, preserving existing Version 0.1 behaviour until a future
+dashboard integration slice is implemented.
+
+---
+
 # Intelligence Results
 
 Every module should return a consistent result structure.
