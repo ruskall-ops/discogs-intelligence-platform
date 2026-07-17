@@ -87,6 +87,12 @@ All notable changes to the Discogs Intelligence Platform will be documented here
 - Established GitHub project structure.
 - Established development workflow.
 
+## Development
+
+- Added `docs/Development/DevelopmentStandard.md`.
+- Documented the project's engineering standards, architecture principles,
+  testing expectations, Git workflow and implementation process.
+
 ---
 
 # Sprint 1 – Core Platform

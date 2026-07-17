@@ -145,6 +145,7 @@ Current documentation includes:
 - ProductPositioning.md *(planned)*
 - Database.md *(planned)*
 - Scoring.md *(planned)*
+- Development/DevelopmentStandard.md – engineering and implementation standards
 
 ---
 
