@@ -50,6 +50,13 @@ rsync -avn \
     --exclude='.pytest_cache/' \
     --exclude='*.egg-info/' \
     --exclude='.DS_Store' \
+    --exclude='.git/'
+    --exclude='.gitignore'
+    --exclude='.venv/'
+    --exclude='__pycache__/'
+    --exclude='.pytest_cache/'
+    --exclude='*.egg-info/'
+    --exclude='.DS_Store'
     "$WORK" \
     "$REPO"
 

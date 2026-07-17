@@ -74,12 +74,15 @@ These features will continue to evolve as the platform develops.
   - 0–100 explainable health score
   - weighted component scores
   - strengths, improvement opportunities, evidence and diagnostics
+- Hidden Gems intelligence module
+  - immutable ranked research candidates
+  - demand, scarcity, community-rating, ownership and price-efficiency factors
+  - configurable thresholds, weights, evidence and diagnostics
 - Interactive Dashboard foundation
   - presentation-neutral intelligence view models
   - read-only Collection Health card
   - safe ready, skipped, failed and incomplete states
 - Weekend Listings
-- Hidden Gems
 - Dashboard
 - Opportunity Engine
 - Protected Records
@@ -135,6 +138,8 @@ Current documentation includes:
 - Vision.md
 - Architecture.md
 - Dashboard.md
+- IntelligenceModules/CollectionIntelligence.md
+- IntelligenceModules/HiddenGems.md
 - DevelopmentPrinciples.md *(in progress)*
 - Roadmap.md *(planned)*
 - ProductPositioning.md *(planned)*

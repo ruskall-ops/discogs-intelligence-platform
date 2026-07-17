@@ -249,6 +249,11 @@ Examples include:
 | Collection Trends | Long-term historical analysis |
 | Weekly Report | Summary of recent intelligence |
 
+Collection Health and Hidden Gems now have complete Version 0.2 engine
+vertical slices. Hidden Gems is documented separately in
+`IntelligenceModules/HiddenGems.md` and deliberately has no dashboard card or
+desktop integration in its initial slice.
+
 Future versions may introduce:
 
 - Recommendation Engine
@@ -479,6 +484,7 @@ The engine should remain stable while individual modules evolve independently.
 | Architecture.md | Software implementation |
 | Database.md | Data model |
 | ReportingEngine.md | Reporting architecture |
+| IntelligenceModules/HiddenGems.md | Hidden Gems scoring and evidence model |
 | Roadmap.md | Planned intelligence modules |
 
 ---
