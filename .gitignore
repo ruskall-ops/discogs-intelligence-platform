@@ -5,6 +5,36 @@
 __pycache__/
 *.py[cod]
 tests/__pycache__/
+*.egg-info/
+__pycache__/
+.pytest_cache/
+.venv/
+build/
+dist/
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+
+# Test artefacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build artefacts
+build/
+dist/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
 
 # --------------------------------------------------
 # Local databases

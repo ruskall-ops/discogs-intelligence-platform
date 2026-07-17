@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from config import SETTINGS
+from dip.config import SETTINGS
 
 
 class ConfigurationTestCase(unittest.TestCase):

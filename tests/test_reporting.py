@@ -4,9 +4,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from database import Database
-from reports import render_markdown
-from services import ReportingService
+from dip.experience.reporting import ReportingService, render_markdown
+from dip.persistence.sqlite import Database
 
 
 class ReportingTestCase(unittest.TestCase):

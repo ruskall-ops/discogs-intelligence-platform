@@ -5,8 +5,8 @@ import unittest
 from pathlib import Path
 
 
-from database import Database
-from services import HistoricalIntelligenceService
+from dip.persistence.sqlite import Database
+from dip.snapshots.services import HistoricalIntelligenceService
 
 
 class HistoricalIntelligenceTestCase(unittest.TestCase):

@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "discogs-intelligence-platform"
+version = "0.2.0"
+description = "Explainable collection and marketplace intelligence for Discogs collectors."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "requests>=2.31.0",
+    "XlsxWriter>=3.2.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+dip = "dip.app:main"
+
+[tool.setuptools.package-data]
+"dip.persistence.sqlite" = ["schema.sql"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
