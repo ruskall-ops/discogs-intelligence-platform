@@ -9,6 +9,7 @@ from dip.intelligence.models import IntelligenceResult
 
 class _ExampleModule:
     module_id = "example"
+    module_version = "1.0"
 
     def analyse(self, context: IntelligenceContext) -> IntelligenceResult:
         return IntelligenceResult(

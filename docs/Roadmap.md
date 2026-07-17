@@ -64,6 +64,7 @@ Build Collection Intelligence.
 
 Primary focus:
 
+- Collection Intelligence Engine foundation ✅
 - Dashboard improvements
 - Collection Health
 - Hidden Gems
@@ -112,7 +113,7 @@ This version prioritises stability over features.
 
 **Status**
 
-📅 Planned
+🚧 In Development
 
 ### Goal
 
@@ -120,6 +121,9 @@ Transform imported collection data into meaningful intelligence.
 
 Expected capabilities
 
+- Collection Intelligence Engine foundation ✅
+- Module registry and standard result contracts ✅
+- Isolated module execution and diagnostics ✅
 - Collection Health
 - Hidden Gems
 - Dashboard drill-down
