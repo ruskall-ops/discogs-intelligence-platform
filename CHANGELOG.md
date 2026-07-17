@@ -50,6 +50,26 @@ All notable changes to the Discogs Intelligence Platform will be documented here
   immutability tests.
 - Kept Hidden Gems, Market Movers and other modules outside this slice.
 
+## Hidden Gems Intelligence Module
+
+- Added the complete Version 0.2 `HiddenGemsModule` vertical slice.
+- Added dedicated configurable eligibility thresholds, factor weights and
+  score normalisation settings.
+- Added transparent demand, scarcity, community-rating, collection-ownership
+  and price-efficiency factor scores.
+- Added immutable ranked `HiddenGemCandidate` models containing supporting
+  metrics and plain-English evidence.
+- Added aggregate candidate counts, highest and average scores, ranked
+  candidates, evidence and data-quality diagnostics to the standard result.
+- Added safe handling for empty collections, missing marketplace data,
+  missing ratings and prices, invalid values and partial evidence.
+- Registered Collection Health and Hidden Gems through the explicit Version
+  0.2 intelligence registry without changing desktop behaviour.
+- Added deterministic-ordering, configuration, registry, failure-isolation,
+  explainability and candidate-immutability tests.
+- Did not add a Hidden Gems dashboard card, desktop integration, forecasting,
+  machine learning or recommendation behaviour.
+
 ---
 
 # Sprint 0 – Foundation

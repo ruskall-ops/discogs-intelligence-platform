@@ -68,9 +68,10 @@ Primary focus:
 - Collection Health vertical slice (Issue #18) ✅
 - Interactive Dashboard view-model foundation ✅
 - Collection Health dashboard card ✅
+- Hidden Gems intelligence module ✅
 - Desktop dashboard integration
 - Collection Health
-- Hidden Gems
+- Hidden Gems dashboard integration
 - Historical Trends
 - Collection Analytics
 - Dashboard drill-down
@@ -130,8 +131,10 @@ Expected capabilities
 - Collection Health module foundation ✅
 - Presentation-neutral dashboard view models ✅
 - Read-only Collection Health dashboard card ✅
+- Explainable Hidden Gems research candidates ✅
+- Version 0.2 default intelligence registry ✅
 - Collection Health desktop rendering
-- Hidden Gems
+- Hidden Gems dashboard card
 - Dashboard drill-down
 - Historical trend visualisation
 - Explainable recommendations
