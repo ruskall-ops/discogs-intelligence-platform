@@ -115,55 +115,151 @@ This version prioritises stability over features.
 
 ## Version 0.2 – Collection Intelligence
 
-**Status**
+Version 0.2 expands the platform from a collection reporting tool into a true collection intelligence platform.
 
-🚧 In Development
+The focus is on producing transparent, explainable insights that help collectors better understand their collection without making purchasing or selling decisions.
 
-### Goal
+### Foundation ✅
 
-Transform imported collection data into meaningful intelligence.
+The following capabilities have been completed:
 
-Expected capabilities
+- Collection Intelligence Engine
+- Collection Health
+- Interactive Dashboard
+- Hidden Gems Intelligence
+- Development Standards
+- AI Development Playbook
 
-- Collection Intelligence Engine foundation ✅
-- Module registry and standard result contracts ✅
-- Isolated module execution and diagnostics ✅
-- Collection Health module foundation ✅
-- Presentation-neutral dashboard view models ✅
-- Read-only Collection Health dashboard card ✅
-- Explainable Hidden Gems research candidates ✅
-- Version 0.2 default intelligence registry ✅
-- Collection Health desktop rendering
-- Hidden Gems dashboard card
-- Dashboard drill-down
-- Historical trend visualisation
-- Explainable recommendations
-- Collection opportunity analysis
-- Ownership intelligence
-- Price history
-- Value trends
-- Saved dashboard views
+These components provide the foundation for all future intelligence modules.
 
 ---
 
-## Version 0.3 – Market Intelligence
+# Intelligence Capabilities
 
-**Status**
+## Historical Intelligence (Next Priority)
 
-📅 Planned
+Historical Intelligence introduces the concept of analysing change over time.
 
-### Goal
+Rather than examining only the current collection state, this capability compares historical snapshots to identify meaningful trends and changes.
 
-Expand beyond the user's collection to understand the wider vinyl market.
+Planned capabilities include:
 
-Expected capabilities:
+- Collection Trends
+- Collection Growth
+- Value Trends
+- Artist Trends
+- Label Trends
+- Genre Trends
+- Historical Collection Summary
 
-- Market Discovery
-- Market trends
-- Opportunity Engine
-- Genre intelligence
-- Label intelligence
-- Artist intelligence
+Examples include:
+
+- Highest value increases
+- Largest value decreases
+- Fastest growing artists
+- Largest collection growth
+- Collection composition changes
+
+This capability provides the historical foundation for many future intelligence modules.
+
+---
+
+## Intelligence History
+
+The platform already stores historical snapshots.
+
+This capability introduces historical intelligence by preserving the outputs of intelligence modules over time.
+
+Examples:
+
+- Collection Health history
+- Hidden Gem score history
+- Collection value history
+- Future intelligence module history
+
+This enables users to understand how intelligence evolves rather than viewing isolated point-in-time results.
+
+---
+
+## Market Intelligence
+
+Market Intelligence analyses changes occurring within the wider Discogs marketplace.
+
+Initial scope includes:
+
+- Market Movers
+- Demand changes
+- Supply changes
+- Marketplace activity
+
+Future versions may introduce additional marketplace analytics while maintaining explainable outputs.
+
+---
+
+# Explorer
+
+## Explorer Framework
+
+Shared framework providing:
+
+- Filtering
+- Sorting
+- Searching
+- Grouping
+- Paging
+
+The Explorer Framework provides reusable infrastructure for future dashboards and user interfaces.
+
+---
+
+## Collection Intelligence Explorer
+
+The Collection Intelligence Explorer provides an enriched view of individual releases.
+
+Each release will gradually surface intelligence generated throughout the platform.
+
+Examples include:
+
+- Collection Health
+- Hidden Gems
+- Historical Trends
+- Market Intelligence
+- Future intelligence modules
+
+The explorer acts as a window into the platform's intelligence rather than simply listing collection items.
+
+---
+
+# Developer Experience
+
+The project continues to improve its internal development workflow.
+
+Completed improvements include:
+
+- Development Standard
+- AI Development Playbook
+- ChatGPT Work import workflow
+- Automated testing
+- Pull Request workflow
+- Engineering documentation
+
+These improvements increase long-term maintainability and ensure consistent implementation quality.
+
+---
+
+# Design Principles
+
+Every capability introduced during Version 0.2 should follow the project's core philosophy:
+
+> **Automate the research, not the decision.**
+
+The platform should:
+
+- produce explainable intelligence
+- remain deterministic
+- avoid opaque scoring
+- never recommend buying or selling
+- support research rather than replace judgement
 
 ---
 
