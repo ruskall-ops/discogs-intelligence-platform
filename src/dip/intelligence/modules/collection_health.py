@@ -92,7 +92,7 @@ class CollectionHealthModule:
             len(collection),
         )
         demand_score, demand_evidence_count, invalid_demand_count = (
-            self._demand_score(marketplace_rows)
+            self._demand_score(marketplace_rows, len(collection))
         )
         valuation_score, valuation_evidence_count, invalid_price_count = (
             self._valuation_score(marketplace_rows, len(collection))
@@ -233,6 +233,7 @@ class CollectionHealthModule:
     def _demand_score(
         self,
         marketplace_rows: tuple[Mapping[str, Any], ...],
+        collection_count: int,
     ) -> tuple[float, int, int]:
         scores: list[float] = []
         invalid_count = 0
@@ -257,7 +258,15 @@ class CollectionHealthModule:
         if not scores:
             return 0.0, 0, invalid_count
 
-        return round(sum(scores) / len(scores), 1), len(scores), invalid_count
+        observed_score = sum(scores) / len(scores)
+        evidence_coverage = len(scores) / collection_count
+        confidence_adjusted_score = observed_score * evidence_coverage
+
+        return (
+            round(confidence_adjusted_score, 1),
+            len(scores),
+            invalid_count,
+        )
 
     def _valuation_score(
         self,

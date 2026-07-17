@@ -32,6 +32,8 @@ All notable changes to the Discogs Intelligence Platform will be documented here
   behaviour.
 - Added unit coverage for strong, weak, empty and partially populated
   collections, configuration validation and engine integration.
+- Confidence-adjusted demand strength by usable demand evidence coverage so
+  sparse marketplace evidence cannot imply collection-wide demand strength.
 
 ---
 

@@ -136,18 +136,19 @@ class CollectionHealthModuleTestCase(unittest.TestCase):
 
         result = self.module.analyse(context)
 
-        self.assertEqual(result.metrics["overall_health_score"], 72.5)
+        self.assertEqual(result.metrics["overall_health_score"], 50.0)
         self.assertEqual(
             result.metrics["component_scores"],
             {
                 "metadata_completeness": 100.0,
                 "marketplace_coverage": 50.0,
-                "demand_strength": 100.0,
+                "demand_strength": 25.0,
                 "valuation_coverage": 25.0,
             },
         )
         self.assertEqual(result.metrics["demand_evidence_count"], 1)
         self.assertEqual(result.metrics["valuation_evidence_count"], 1)
+        self.assertIn("mixed at 50.0/100", result.summary)
         self.assertTrue(
             any("incomplete for 2 releases" in item for item in result.diagnostics)
         )
