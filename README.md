@@ -74,6 +74,10 @@ These features will continue to evolve as the platform develops.
   - 0–100 explainable health score
   - weighted component scores
   - strengths, improvement opportunities, evidence and diagnostics
+- Interactive Dashboard foundation
+  - presentation-neutral intelligence view models
+  - read-only Collection Health card
+  - safe ready, skipped, failed and incomplete states
 - Weekend Listings
 - Hidden Gems
 - Dashboard
@@ -130,6 +134,7 @@ Current documentation includes:
 
 - Vision.md
 - Architecture.md
+- Dashboard.md
 - DevelopmentPrinciples.md *(in progress)*
 - Roadmap.md *(planned)*
 - ProductPositioning.md *(planned)*
