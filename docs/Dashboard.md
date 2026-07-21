@@ -11,14 +11,17 @@ that can later be rendered by the desktop application or another interface.
 
 ---
 
-# First Vertical Slice
+# Version 0.2 Dashboard Integration
 
-The first dashboard vertical slice supports one card only:
+The dashboard now exposes three independent cards:
 
-- Collection Health
+- Collection Health;
+- Hidden Gems;
+- Historical Intelligence.
 
-Hidden Gems, Market Movers and other future intelligence cards are outside the
-scope of this slice.
+The desktop composition root prepares an `IntelligenceContext`, runs the
+existing Collection Intelligence Engine and supplies its standard results to
+the dashboard presenter. No intelligence is calculated in the dashboard.
 
 The implementation is located in:
 
@@ -35,15 +38,15 @@ src/dip/experience/dashboard/
 ```text
 IntelligenceContext
         ↓
-CollectionHealthModule
+Collection Intelligence Engine
         ↓
 IntelligenceResult
         ↓
-CollectionHealthCardPresenter
+Module-specific card presenter
         ↓
-DashboardCardViewModel
+Immutable dashboard view model
         ↓
-Future desktop or web renderer
+Desktop dashboard renderer
 ```
 
 The presenter receives an already calculated result. It may validate and
@@ -54,8 +57,11 @@ component scores.
 
 # Dashboard View Models
 
-`IntelligenceDashboardViewModel` contains an immutable tuple of intelligence
-cards. Each `DashboardCardViewModel` exposes:
+`IntelligenceDashboardViewModel` contains an immutable tuple of three
+presentation-specific cards. Collection Health continues to use
+`DashboardCardViewModel`; Hidden Gems and Historical Intelligence use their
+own lightweight immutable view models so internal intelligence models are not
+passed into Tkinter.
 
 - module identifier;
 - card title and state;
@@ -90,6 +96,20 @@ The Collection Health card consumes the standard result returned by
 The presenter copies validated values from `IntelligenceResult.metrics`. It
 does not import the Collection Health module or reproduce its weighted formula.
 
+# Hidden Gems Card
+
+The Hidden Gems card displays the candidate total and up to five ranked
+releases. Each displayed release includes a concise explanation selected from
+the module-provided evidence. Internal factors, weights and raw candidate
+scores are not exposed to the desktop UI.
+
+# Historical Intelligence Card
+
+The historical card displays snapshot dates, additions, removals,
+collection-size change, total/average/median value changes, up to five gainers
+and decliners, and valuation evidence counts. A skipped historical result is
+presented as insufficient history rather than an error.
+
 ---
 
 # Safe Card States
@@ -100,6 +120,8 @@ does not import the Collection Health module or reproduce its weighted formula.
 | `skipped` | Analysis could not meaningfully run | Display guidance and available zero-state evidence |
 | `failed` | The engine isolated a module failure | Display the failure summary and diagnostics without a score |
 | `incomplete` | A completed result lacks required valid card metrics | Display available fields and an explicit incomplete diagnostic |
+| `unavailable` | No module result was supplied | Keep the card visible with a neutral message |
+| `insufficient_history` | Fewer than two comparable snapshots exist | Display an informational history message |
 
 Scores must be finite values between 0 and 100. Invalid or missing values are
 not guessed, clamped or recalculated.
@@ -108,9 +130,12 @@ not guessed, clamped or recalculated.
 
 # Desktop Integration
 
-This slice deliberately does not modify the existing Tkinter dashboard. The
-current desktop behaviour remains unchanged while the presentation contract is
-tested independently.
+The Tkinter dashboard renders all three cards beneath the existing KPIs.
+Application orchestration prepares current collection, latest marketplace and
+two-run historical evidence through existing repository reads. The dashboard
+package itself receives only engine results and has no persistence or provider
+dependency.
 
-A future integration task can render these view models in Tkinter without
-moving scoring or engine logic into the user interface.
+Every module result and card mapping is isolated. A failed, missing or
+malformed result changes only its own card. Charts, drill-down, filters,
+arbitrary ranges and Explorer features remain outside this slice.

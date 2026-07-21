@@ -139,11 +139,11 @@ class IntelligenceDashboardPresenterTestCase(unittest.TestCase):
         dashboard = IntelligenceDashboardPresenter().present(execution)
         card = dashboard.card_for("collection_health")
 
-        self.assertEqual(len(dashboard.cards), 1)
+        self.assertEqual(len(dashboard.cards), 3)
         self.assertIsNotNone(card)
         self.assertEqual(card.state, DashboardCardState.SKIPPED)
 
-    def test_dashboard_ignores_unsupported_modules_in_this_slice(self) -> None:
+    def test_dashboard_ignores_unsupported_results_and_keeps_card_slots(self) -> None:
         unsupported = IntelligenceResult(
             module_id="future_module",
             status="completed",
@@ -152,7 +152,13 @@ class IntelligenceDashboardPresenterTestCase(unittest.TestCase):
 
         dashboard = IntelligenceDashboardPresenter().present([unsupported])
 
-        self.assertEqual(dashboard.cards, ())
+        self.assertEqual(len(dashboard.cards), 3)
+        self.assertTrue(
+            all(
+                card.state == DashboardCardState.UNAVAILABLE
+                for card in dashboard.cards
+            )
+        )
 
 
 if __name__ == "__main__":

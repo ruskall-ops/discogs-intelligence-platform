@@ -89,6 +89,23 @@ All notable changes to the Discogs Intelligence Platform will be documented here
 - Added comprehensive module, configuration, registry, immutability and
   failure-isolation tests.
 
+## Dashboard Integration – Version 0.2
+
+- Integrated Collection Health, Hidden Gems and Historical Intelligence into
+  the existing Tkinter dashboard.
+- Added immutable presentation-specific Hidden Gems and historical card models.
+- Added presenters that consume only standard `IntelligenceResult` objects and
+  never calculate intelligence.
+- Limited Hidden Gems to five explained releases without exposing raw scoring
+  internals.
+- Added snapshot dates, collection and value changes, gainers, decliners and
+  evidence coverage to the historical card.
+- Added unavailable and insufficient-history states with per-card failure
+  isolation.
+- Added application-layer context preparation using existing repository reads;
+  no persistence, schema or provider changes were introduced.
+- Added dashboard mapping, rendering, empty-state, isolation and context tests.
+
 ---
 
 # Sprint 0 – Foundation

@@ -9,11 +9,15 @@ from tkinter import ttk, filedialog, messagebox, simpledialog
 
 from dip.collection.importers import CollectionImportError
 from dip.collection.services import ImportService
+from dip.app.intelligence_context import IntelligenceContextFactory
 from dip.config import SETTINGS
 from dip.data_sources.discogs import DiscogsClient
 from dip.experience.reporting import ReportingService, render_markdown
+from dip.experience.dashboard import IntelligenceDashboardPresenter
+from dip.experience.desktop.dashboard_renderer import DesktopDashboardRenderer
 from dip.exports import export_excel
 from dip.intelligence.modules.opportunity_scoring import calculate
+from dip.intelligence import IntelligenceEngine, build_v02_intelligence_registry
 from dip.persistence.sqlite import Database
 
 class App(tk.Tk):
@@ -28,6 +32,12 @@ class App(tk.Tk):
         self.minsize(1050, 650)
         self.db = Database(SETTINGS.database_path)
         self.import_service = ImportService(self.db)
+        self.intelligence_context_factory = IntelligenceContextFactory(self.db)
+        self.intelligence_engine = IntelligenceEngine(
+            build_v02_intelligence_registry()
+        )
+        self.intelligence_dashboard_presenter = IntelligenceDashboardPresenter()
+        self.desktop_dashboard_renderer = DesktopDashboardRenderer()
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
         self.status_var = tk.StringVar(value="Ready")
@@ -103,6 +113,32 @@ class App(tk.Tk):
             "scores, decisions and notes persist between runs. Excel is generated only "
             "when you want an export."
         ), wraplength=1100, justify="left").pack(anchor="w")
+
+        self.intelligence_card_vars = {}
+        intelligence_cards = (
+            ("collection_health", "Collection Health"),
+            ("hidden_gems", "Hidden Gems"),
+            ("historical_intelligence", "Historical Intelligence"),
+        )
+        for index, (module_id, title) in enumerate(intelligence_cards):
+            card = ttk.LabelFrame(self.dashboard_tab, text=title, padding=14)
+            card.grid(
+                row=2,
+                column=index * 2,
+                columnspan=2,
+                padx=8,
+                pady=8,
+                sticky="nsew",
+            )
+            body = tk.StringVar(value="Intelligence is loading…")
+            ttk.Label(
+                card,
+                textvariable=body,
+                wraplength=350,
+                justify="left",
+            ).pack(anchor="nw", fill="both", expand=True)
+            self.intelligence_card_vars[module_id] = body
+        self.dashboard_tab.rowconfigure(2, weight=1)
 
         filters = ttk.Frame(self.review_tab)
         filters.pack(fill="x", pady=(0,8))
@@ -326,6 +362,28 @@ class App(tk.Tk):
         row = self.db.dashboard()
         for key, widget in self.kpis.items():
             widget.configure(text=f"{int(row[key] or 0):,}")
+        self.refresh_intelligence_dashboard()
+
+    def refresh_intelligence_dashboard(self):
+        try:
+            context = self.intelligence_context_factory.build()
+            execution = self.intelligence_engine.execute(context)
+            dashboard = self.intelligence_dashboard_presenter.present(execution)
+            cards = self.desktop_dashboard_renderer.render(dashboard)
+            rendered = {card.module_id: card.body for card in cards}
+        except Exception as exc:
+            rendered = {
+                module_id: (
+                    "Intelligence is unavailable.\n"
+                    f"{type(exc).__name__}: {exc}"
+                )
+                for module_id in self.intelligence_card_vars
+            }
+
+        for module_id, variable in self.intelligence_card_vars.items():
+            variable.set(
+                rendered.get(module_id, "Intelligence is unavailable.")
+            )
 
     def load_table(self):
         for item in self.tree.get_children():

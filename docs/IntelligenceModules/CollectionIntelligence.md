@@ -250,11 +250,10 @@ Examples include:
 | Weekly Report | Summary of recent intelligence |
 
 Collection Health, Hidden Gems and Historical Intelligence now have complete
-Version 0.2 engine vertical slices. Hidden Gems is documented separately in
-`IntelligenceModules/HiddenGems.md`. Historical Intelligence is documented in
+Version 0.2 engine vertical slices. Historical Intelligence is documented in
 `IntelligenceModules/HistoricalIntelligence.md` and compares only the latest
-two prepared snapshots. Neither module includes dashboard or desktop
-integration in its initial slice.
+two prepared snapshots. All three module results are now consumed by the
+presentation-only desktop dashboard integration.
 
 Future versions may introduce:
 
@@ -361,8 +360,9 @@ improvement opportunities, evidence and diagnostics into immutable view
 models. It does not import or reproduce Collection Health scoring rules.
 
 The card safely distinguishes ready, skipped, failed and incomplete results.
-The current Tkinter dashboard is not yet connected to this view model, so the
-existing desktop application behaviour remains unchanged.
+The Tkinter dashboard now consumes the unified immutable dashboard view model.
+Its renderer displays module outputs without recalculating scores or querying
+persistence.
 
 ---
 

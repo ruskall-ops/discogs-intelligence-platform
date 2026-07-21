@@ -82,6 +82,10 @@ These features will continue to evolve as the platform develops.
   - presentation-neutral intelligence view models
   - read-only Collection Health card
   - safe ready, skipped, failed and incomplete states
+- Desktop Dashboard integration
+  - Collection Health, Hidden Gems and Historical Intelligence cards
+  - per-card unavailable, insufficient-history and failure states
+  - read-only rendering of Collection Intelligence Engine results
 - Weekend Listings
 - Dashboard
 - Opportunity Engine
@@ -147,7 +151,6 @@ Current documentation includes:
 - Scoring.md *(planned)*
 - Development/DevelopmentStandard.md – engineering and implementation standards
 - Development/AIDevelopmentPlaybook.md – AI-assisted development workflow
-
 ---
 
 # Technology Stack
@@ -199,6 +202,11 @@ Intelligence compares the latest two prepared snapshots, separates collection
 additions and removals from valuation movements, and reports evidence coverage
 without inventing missing values. See
 [`docs/IntelligenceModules/HistoricalIntelligence.md`](docs/IntelligenceModules/HistoricalIntelligence.md).
+
+The desktop dashboard presents these three engine results as independent,
+read-only cards. Missing or failed intelligence affects only its own card, and
+insufficient history is shown as an informational state. See
+[`docs/Dashboard.md`](docs/Dashboard.md).
 
 ---
 
