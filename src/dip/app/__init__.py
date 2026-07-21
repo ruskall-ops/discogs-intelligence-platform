@@ -1,6 +1,7 @@
 """Application bootstrap and use-case orchestration."""
 
 from .collection_health_presentation import CollectionHealthPresentationService
+from .collection_explorer_presentation import CollectionExplorerPresentationService
 from .comparison_presentation import ComparisonPresentationService
 from .dashboard import (
     CollectionIntelligencePresentationService,
@@ -30,6 +31,7 @@ def main() -> None:
 
 __all__ = [
     "CollectionHealthPresentationService",
+    "CollectionExplorerPresentationService",
     "ComparisonHistoryUnavailableError",
     "ComparisonPresentationService",
     "CollectionIntelligencePresentationService",

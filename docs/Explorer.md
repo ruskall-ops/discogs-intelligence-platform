@@ -1,85 +1,90 @@
-# Collection Intelligence Explorer
+# Collection Explorer
 
 ## Purpose
 
-The Version 0.2 Collection Intelligence Explorer provides desktop drill-down
-views for Collection Health, Hidden Gems and Historical Intelligence. It helps
-users inspect intelligence already produced by the Collection Intelligence
-Engine; it creates no intelligence and makes no collection decisions.
+The first unified Collection Explorer is the primary desktop workspace for
+detailed Collection Intelligence. It orients the user with a concise Overview
+and provides navigation to the established Collection Health and Hidden Gems
+detail experiences.
+
+The Explorer displays completed intelligence. It does not calculate
+intelligence, make collection decisions, query persistence, or start a second
+Intelligence Engine pipeline.
 
 ## Architecture
 
-The Explorer extends the existing dashboard presentation pipeline:
+The current Dashboard homepage is the single presentation source for the
+workspace:
 
 ```text
-IntelligenceResult
-        ↓
-Dashboard presenters
-        ↓
-Immutable dashboard presentation models
-        ↓
-CollectionIntelligenceExplorerPresenter
-        ↓
-Immutable Explorer section models
-        ↓
-DesktopExplorerRenderer
-        ↓
-Tkinter Explorer window
+DashboardHomepageViewModel
+          │
+          ├── CollectionHealthPresentationService
+          ├── HiddenGemsPresentationService
+          │
+          ▼
+CollectionExplorerPresentationService
+          │
+          ▼
+CollectionExplorerViewModelBuilder
+          │
+          ▼
+DesktopCollectionExplorerController and renderer
+          │
+          ▼
+Collection Explorer window
 ```
 
-The Explorer receives only dashboard presentation models. It does not import
-intelligence modules, access SQLite, query Discogs or manipulate snapshots.
-The dashboard models retain full presentation-safe release lists for drill-down
-while the compact dashboard cards continue to show at most five releases.
+The application service passes the exact same homepage model to both detail
+services and builds the Explorer once when the window opens. Switching tabs
+does not query history, execute intelligence, or rebuild the workspace.
 
-## Sections
+The older current-engine Explorer presenter remains available as a compatibility
+boundary, but the desktop application no longer uses it or executes that second
+pipeline.
 
-### Collection Health
+## Destinations
 
-Displays the module-provided overall health, summary, named component scores,
-evidence and diagnostics. It does not reproduce component or overall scoring.
+Destinations use stable identifiers and always appear in this explicit order:
 
-### Hidden Gems
+1. Overview;
+2. Collection Health;
+3. Hidden Gems.
 
-Displays the total candidate count and all ranked presentation-safe releases
-returned by the module. Each release includes artist, title, explanation and
-supporting evidence. Raw Hidden Gem scores, component factors and weights are
-not exposed.
+Overview copies existing collection size, execution status, completed-module
+count, execution timestamp and version, Collection Health score, Hidden Gems
+count, and recent comparison summary where those values are already available.
+It does not calculate decorative statistics or interpret whether a change is
+positive or negative.
 
-### Historical Intelligence
+Collection Health composes the existing `CollectionHealthDetailViewModel` and
+uses its existing desktop renderer. Hidden Gems composes the existing
+`HiddenGemsDetailViewModel` and renderer, including the complete canonical
+candidate list. The Explorer does not introduce parallel detail models,
+recalculate scores, filter candidates, or change candidate order.
 
-Displays the latest and previous snapshots, collection-size and valuation
-changes, additions, removals, gainers, decliners, evidence coverage and
-diagnostics. Addition and removal identities are displayed separately from
-valuation movements. Fewer than two comparable snapshots remains an
-informational insufficient-history state.
+## States and degradation
 
-## Navigation and rendering
+The Explorer and destinations use explicit `loading`, `available`, `partial`,
+`empty`, `unavailable`, and `error` states. A usable Overview with one missing
+detail destination is partial rather than failed. Empty Intelligence History
+produces an empty Overview and stable unavailable detail destinations.
+Unexpected consistency errors continue to the desktop error boundary.
 
-The existing dashboard includes one **Open Collection Intelligence Explorer**
-button. It opens a lightweight Tkinter window with three tabs and scrollable,
-read-only text. No routing framework or desktop redesign is introduced.
+## Desktop navigation
 
-Presentation mapping and desktop text rendering remain separate. A small
-navigation controller converts the current dashboard view model into a
-rendered Explorer view before Tkinter creates widgets.
+The Dashboard's **Open Collection Explorer** action opens Overview in a
+three-tab, scrollable window. The window retains the homepage model that was
+current when it opened. The action is disabled while that model is loading or
+stale.
 
-## Resilience
+The existing direct **Open Collection Health** and **Open Hidden Gems** actions
+remain dedicated windows for compatibility and convenience. They share the
+same presentation services, immutable detail models, and renderer instances as
+the Explorer, so they do not maintain separate detail implementations.
 
-Every section independently preserves the dashboard state:
+## First-slice limitations
 
-- ready;
-- unavailable;
-- failed;
-- skipped;
-- incomplete;
-- insufficient history.
-
-A missing, malformed or failed section cannot prevent the other sections from
-mapping or rendering.
-
-## Version 0.2 limitations
-
-The Explorer does not implement charts, graphs, search, filtering, sorting,
-custom historical ranges, marketplace intelligence, recommendations,
-persistence changes or new intelligence modules.
+Search, filtering, user sorting, charts, historical trends, Opportunity,
+Weekend Listings, Protected Records, Market Movers, Marketplace Intelligence,
+background refresh, and AI summaries remain future work.

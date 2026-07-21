@@ -1,17 +1,352 @@
-"""Immutable, presentation-ready Collection Intelligence Explorer models."""
+"""Immutable unified Explorer models plus the legacy compatibility models."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+import math
+from typing import Any
 
+from dip.experience.collection_health import CollectionHealthDetailViewModel
 from dip.experience.dashboard import (
     DashboardCardState,
     DashboardComponentScore,
     DashboardHiddenGemViewModel,
     DashboardReleaseViewModel,
+    DashboardSectionState,
 )
+from dip.experience.hidden_gems import HiddenGemsDetailViewModel
+from dip.intelligence import IntelligenceStatus
 
 
+class CollectionExplorerConsistencyError(ValueError):
+    """Raised when unified Collection Explorer values contradict one another."""
+
+
+class CollectionExplorerDestination(str, Enum):
+    """Stable destination identifiers in their documented order."""
+
+    OVERVIEW = "overview"
+    COLLECTION_HEALTH = "collection_health"
+    HIDDEN_GEMS = "hidden_gems"
+
+
+class CollectionExplorerState(str, Enum):
+    """Explicit aggregate and destination availability states."""
+
+    LOADING = "loading"
+    AVAILABLE = "available"
+    PARTIAL = "partial"
+    EMPTY = "empty"
+    UNAVAILABLE = "unavailable"
+    ERROR = "error"
+
+
+@dataclass(frozen=True)
+class CollectionExplorerOverviewViewModel:
+    """Concise orientation copied from the current Dashboard homepage."""
+
+    state: CollectionExplorerState
+    summary: str
+    comparison_state: DashboardSectionState
+    comparison_summary: str
+    collection_size: int | None = None
+    executed_at: datetime | None = None
+    execution_status: IntelligenceStatus | None = None
+    completed_module_count: int = 0
+    total_module_count: int = 0
+    run_id: int | None = None
+    engine_version: str | None = None
+    collection_health_score: float | None = None
+    hidden_gems_count: int | None = None
+
+    def __post_init__(self) -> None:
+        _validate_state(self.state)
+        _validate_text(self.summary, "summary")
+        if type(self.comparison_state) is not DashboardSectionState:
+            raise TypeError("comparison_state must be a DashboardSectionState.")
+        _validate_text(self.comparison_summary, "comparison_summary")
+        _optional_count(self.collection_size, "collection_size")
+        _count(self.completed_module_count, "completed_module_count")
+        _count(self.total_module_count, "total_module_count")
+        if self.completed_module_count > self.total_module_count:
+            raise CollectionExplorerConsistencyError(
+                "completed_module_count cannot exceed total_module_count."
+            )
+        _optional_count(self.hidden_gems_count, "hidden_gems_count")
+        _optional_score(self.collection_health_score)
+        if self.engine_version is not None:
+            _validate_text(self.engine_version, "engine_version")
+
+        if self.state is CollectionExplorerState.AVAILABLE:
+            if type(self.executed_at) is not datetime:
+                raise CollectionExplorerConsistencyError(
+                    "An available Explorer overview requires executed_at."
+                )
+            if type(self.execution_status) is not IntelligenceStatus:
+                raise CollectionExplorerConsistencyError(
+                    "An available Explorer overview requires execution_status."
+                )
+            _positive_count(self.run_id, "run_id")
+        elif (
+            self.collection_size is not None
+            or self.executed_at is not None
+            or self.execution_status is not None
+            or self.completed_module_count
+            or self.total_module_count
+            or self.run_id is not None
+            or self.engine_version is not None
+            or self.collection_health_score is not None
+            or self.hidden_gems_count is not None
+        ):
+            raise CollectionExplorerConsistencyError(
+                "A non-available Explorer overview cannot contain execution values."
+            )
+
+
+@dataclass(frozen=True)
+class CollectionExplorerDestinationViewModel:
+    """One deterministic navigation destination and its availability."""
+
+    destination: CollectionExplorerDestination
+    label: str
+    state: CollectionExplorerState
+
+    def __post_init__(self) -> None:
+        if type(self.destination) is not CollectionExplorerDestination:
+            raise TypeError("destination must be a CollectionExplorerDestination.")
+        _validate_text(self.label, "label")
+        _validate_state(self.state)
+
+
+_DESTINATION_ORDER = tuple(CollectionExplorerDestination)
+_DESTINATION_LABELS = {
+    CollectionExplorerDestination.OVERVIEW: "Overview",
+    CollectionExplorerDestination.COLLECTION_HEALTH: "Collection Health",
+    CollectionExplorerDestination.HIDDEN_GEMS: "Hidden Gems",
+}
+
+
+@dataclass(frozen=True)
+class CollectionExplorerViewModel:
+    """One immutable Explorer workspace built from a single homepage model."""
+
+    state: CollectionExplorerState
+    destinations: tuple[CollectionExplorerDestinationViewModel, ...]
+    selected_destination: CollectionExplorerDestination
+    overview: CollectionExplorerOverviewViewModel
+    collection_health: CollectionHealthDetailViewModel
+    hidden_gems: HiddenGemsDetailViewModel
+    title: str = field(init=False, default="Collection Explorer")
+
+    def __post_init__(self) -> None:
+        _validate_state(self.state)
+        destinations = _freeze_destinations(self.destinations)
+        if type(self.selected_destination) is not CollectionExplorerDestination:
+            raise TypeError(
+                "selected_destination must be a CollectionExplorerDestination."
+            )
+        if type(self.overview) is not CollectionExplorerOverviewViewModel:
+            raise TypeError("overview must be a CollectionExplorerOverviewViewModel.")
+        if type(self.collection_health) is not CollectionHealthDetailViewModel:
+            raise TypeError(
+                "collection_health must be a CollectionHealthDetailViewModel."
+            )
+        if type(self.hidden_gems) is not HiddenGemsDetailViewModel:
+            raise TypeError("hidden_gems must be a HiddenGemsDetailViewModel.")
+
+        expected_states = (
+            self.overview.state,
+            _collection_health_state(self.collection_health),
+            _hidden_gems_state(self.hidden_gems),
+        )
+        if tuple(item.state for item in destinations) != expected_states:
+            raise CollectionExplorerConsistencyError(
+                "Destination states must match their composed detail models."
+            )
+        if self.selected_destination not in tuple(
+            item.destination for item in destinations
+        ):
+            raise CollectionExplorerConsistencyError(
+                "The selected destination must be present in the Explorer."
+            )
+        expected_state = _aggregate_state(expected_states)
+        if self.state is not expected_state:
+            raise CollectionExplorerConsistencyError(
+                "Explorer state contradicts its destination states."
+            )
+        object.__setattr__(self, "destinations", destinations)
+
+    def destination_for(
+        self,
+        destination: CollectionExplorerDestination | str,
+    ) -> CollectionExplorerDestinationViewModel | None:
+        """Return one navigation destination by stable identifier."""
+
+        try:
+            identifier = CollectionExplorerDestination(destination)
+        except (TypeError, ValueError):
+            return None
+        return next(
+            (item for item in self.destinations if item.destination is identifier),
+            None,
+        )
+
+
+def destination_view_models(
+    overview: CollectionExplorerOverviewViewModel,
+    collection_health: CollectionHealthDetailViewModel,
+    hidden_gems: HiddenGemsDetailViewModel,
+) -> tuple[CollectionExplorerDestinationViewModel, ...]:
+    """Create the fixed navigation sequence for three composed destinations."""
+
+    states = (
+        overview.state,
+        _collection_health_state(collection_health),
+        _hidden_gems_state(hidden_gems),
+    )
+    return tuple(
+        CollectionExplorerDestinationViewModel(
+            destination=destination,
+            label=_DESTINATION_LABELS[destination],
+            state=state,
+        )
+        for destination, state in zip(_DESTINATION_ORDER, states, strict=True)
+    )
+
+
+def explorer_state(
+    destinations: tuple[CollectionExplorerDestinationViewModel, ...],
+) -> CollectionExplorerState:
+    """Derive the aggregate state from already validated destinations."""
+
+    return _aggregate_state(tuple(destination.state for destination in destinations))
+
+
+def _freeze_destinations(
+    values: Any,
+) -> tuple[CollectionExplorerDestinationViewModel, ...]:
+    if isinstance(values, (str, bytes)):
+        raise TypeError("destinations must be a collection.")
+    try:
+        destinations = tuple(values)
+    except TypeError as exc:
+        raise TypeError("destinations must be a collection.") from exc
+    if any(
+        type(value) is not CollectionExplorerDestinationViewModel
+        for value in destinations
+    ):
+        raise TypeError(
+            "destinations must contain CollectionExplorerDestinationViewModel values."
+        )
+    identifiers = tuple(item.destination for item in destinations)
+    if len(set(identifiers)) != len(identifiers):
+        raise CollectionExplorerConsistencyError(
+            "Explorer destination identifiers must be unique."
+        )
+    if identifiers != _DESTINATION_ORDER:
+        raise CollectionExplorerConsistencyError(
+            "Explorer destinations must use the documented order."
+        )
+    labels = tuple(item.label for item in destinations)
+    if len(set(labels)) != len(labels):
+        raise CollectionExplorerConsistencyError(
+            "Explorer destination labels must be unique."
+        )
+    if labels != tuple(_DESTINATION_LABELS[item] for item in _DESTINATION_ORDER):
+        raise CollectionExplorerConsistencyError(
+            "Explorer destinations must use their stable display labels."
+        )
+    return destinations
+
+
+def _collection_health_state(
+    detail: CollectionHealthDetailViewModel,
+) -> CollectionExplorerState:
+    return CollectionExplorerState(detail.state.value)
+
+
+def _hidden_gems_state(detail: HiddenGemsDetailViewModel) -> CollectionExplorerState:
+    return CollectionExplorerState(detail.state.value)
+
+
+def _aggregate_state(
+    states: tuple[CollectionExplorerState, ...],
+) -> CollectionExplorerState:
+    if states == (
+        CollectionExplorerState.LOADING,
+        CollectionExplorerState.LOADING,
+        CollectionExplorerState.LOADING,
+    ):
+        return CollectionExplorerState.LOADING
+    if states == (
+        CollectionExplorerState.EMPTY,
+        CollectionExplorerState.UNAVAILABLE,
+        CollectionExplorerState.UNAVAILABLE,
+    ):
+        return CollectionExplorerState.EMPTY
+    if all(state is CollectionExplorerState.UNAVAILABLE for state in states):
+        return CollectionExplorerState.UNAVAILABLE
+    if all(state is CollectionExplorerState.ERROR for state in states):
+        return CollectionExplorerState.ERROR
+
+    usable = {
+        CollectionExplorerState.AVAILABLE,
+        CollectionExplorerState.EMPTY,
+    }
+    if all(state in usable for state in states):
+        return CollectionExplorerState.AVAILABLE
+    if any(state in usable or state is CollectionExplorerState.PARTIAL for state in states):
+        return CollectionExplorerState.PARTIAL
+    if any(state is CollectionExplorerState.ERROR for state in states):
+        return CollectionExplorerState.ERROR
+    return CollectionExplorerState.UNAVAILABLE
+
+
+def _validate_state(value: Any) -> None:
+    if type(value) is not CollectionExplorerState:
+        raise TypeError("state must be a CollectionExplorerState.")
+
+
+def _validate_text(value: Any, name: str) -> None:
+    if not isinstance(value, str):
+        raise TypeError(f"{name} must be a string.")
+    if not value or value != value.strip():
+        raise ValueError(f"{name} must be a non-empty trimmed string.")
+
+
+def _count(value: Any, name: str) -> None:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"{name} must be an integer.")
+    if value < 0:
+        raise ValueError(f"{name} must be non-negative.")
+
+
+def _optional_count(value: Any, name: str) -> None:
+    if value is not None:
+        _count(value, name)
+
+
+def _positive_count(value: Any, name: str) -> None:
+    _count(value, name)
+    if value <= 0:
+        raise ValueError(f"{name} must be positive.")
+
+
+def _optional_score(value: Any) -> None:
+    if value is None:
+        return
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TypeError("collection_health_score must be a number or None.")
+    score = float(value)
+    if not math.isfinite(score) or not 0 <= score <= 100:
+        raise ValueError(
+            "collection_health_score must be finite and between 0 and 100."
+        )
+
+
+# Compatibility models for clients of the original current-engine Explorer.
 @dataclass(frozen=True)
 class CollectionHealthExplorerViewModel:
     module_id: str

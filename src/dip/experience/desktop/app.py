@@ -16,7 +16,6 @@ from dip.experience.reporting import ReportingService, render_markdown
 from dip.experience.dashboard import (
     DashboardHomepageViewModel,
 )
-from dip.experience.desktop.explorer_renderer import DesktopExplorerController
 from dip.experience.desktop.homepage_renderer import (
     DesktopDashboardHomepageRenderer,
 )
@@ -36,21 +35,12 @@ class App(tk.Tk):
         self.minsize(1050, 650)
         self.db = dependencies.database
         self.import_service = ImportService(self.db)
-        self.intelligence_dashboard_presenter = (
-            dependencies.intelligence_dashboard_presenter
-        )
-        self.collection_intelligence_presentation = (
-            dependencies.collection_intelligence_presentation
-        )
         self.dashboard_homepage_service = dependencies.dashboard_homepage
         self.collection_health_controller = dependencies.collection_health_controller
+        self.collection_explorer_controller = dependencies.collection_explorer_controller
         self.hidden_gems_controller = dependencies.hidden_gems_controller
         self.desktop_homepage_renderer = DesktopDashboardHomepageRenderer()
         self.current_dashboard_homepage = DashboardHomepageViewModel.loading()
-        self.intelligence_explorer_controller = DesktopExplorerController()
-        self.current_intelligence_dashboard = (
-            self.intelligence_dashboard_presenter.present(())
-        )
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
         self.status_var = tk.StringVar(value="Ready")
@@ -167,11 +157,12 @@ class App(tk.Tk):
             self.dashboard_homepage_vars[section_id] = body
         self.dashboard_tab.rowconfigure(2, weight=1)
         self.dashboard_tab.rowconfigure(3, weight=1)
-        ttk.Button(
+        self.collection_explorer_button = ttk.Button(
             self.dashboard_tab,
-            text="Open Collection Intelligence Explorer",
+            text="Open Collection Explorer",
             command=self.open_intelligence_explorer,
-        ).grid(
+        )
+        self.collection_explorer_button.grid(
             row=5,
             column=0,
             columnspan=6,
@@ -424,16 +415,8 @@ class App(tk.Tk):
 
         for section_id, variable in self.dashboard_homepage_vars.items():
             variable.set(rendered.get(section_id, "Dashboard information is unavailable."))
+        self._update_collection_explorer_navigation()
         self._update_hidden_gems_navigation()
-
-        try:
-            self.current_intelligence_dashboard = (
-                self.collection_intelligence_presentation.dashboard()
-            )
-        except Exception:
-            self.current_intelligence_dashboard = (
-                self.intelligence_dashboard_presenter.present(())
-            )
 
     def open_collection_health(self):
         try:
@@ -497,6 +480,14 @@ class App(tk.Tk):
         else:
             self.hidden_gems_button.pack_forget()
 
+    def _update_collection_explorer_navigation(self):
+        if self.collection_explorer_controller.can_open(
+            self.current_dashboard_homepage
+        ):
+            self.collection_explorer_button.state(["!disabled"])
+        else:
+            self.collection_explorer_button.state(["disabled"])
+
     def open_hidden_gems(self):
         try:
             rendered = self.hidden_gems_controller.open(
@@ -550,9 +541,16 @@ class App(tk.Tk):
         )
 
     def open_intelligence_explorer(self):
-        rendered = self.intelligence_explorer_controller.open(
-            self.current_intelligence_dashboard
-        )
+        try:
+            rendered = self.collection_explorer_controller.open(
+                self.current_dashboard_homepage
+            )
+        except Exception as exc:
+            messagebox.showerror(
+                "Collection Explorer unavailable",
+                f"Collection Explorer could not be displayed:\n\n{exc}",
+            )
+            return
 
         window = tk.Toplevel(self)
         window.title(rendered.title)
@@ -563,9 +561,12 @@ class App(tk.Tk):
         notebook = ttk.Notebook(window)
         notebook.pack(fill="both", expand=True, padx=12, pady=12)
 
-        for section in rendered.sections:
+        selected_index = 0
+        for index, section in enumerate(rendered.sections):
             frame = ttk.Frame(notebook, padding=12)
             notebook.add(frame, text=section.title)
+            if section.destination is rendered.selected_destination:
+                selected_index = index
             text = tk.Text(frame, wrap="word", padx=10, pady=10)
             scrollbar = ttk.Scrollbar(
                 frame,
@@ -577,6 +578,7 @@ class App(tk.Tk):
             text.configure(state="disabled")
             text.pack(side="left", fill="both", expand=True)
             scrollbar.pack(side="right", fill="y")
+        notebook.select(selected_index)
 
         ttk.Button(window, text="Close", command=window.destroy).pack(
             pady=(0, 12)

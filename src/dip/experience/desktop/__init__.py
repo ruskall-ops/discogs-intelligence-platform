@@ -7,6 +7,13 @@ from .collection_health_renderer import (
     DesktopCollectionHealthSectionId,
     DesktopCollectionHealthView,
 )
+from .collection_explorer_renderer import (
+    DesktopCollectionExplorerController,
+    DesktopCollectionExplorerNavigationItem,
+    DesktopCollectionExplorerRenderer,
+    DesktopCollectionExplorerSection,
+    DesktopCollectionExplorerView,
+)
 from .dashboard_renderer import DesktopDashboardCard, DesktopDashboardRenderer
 from .homepage_renderer import (
     DesktopDashboardHomepageRenderer,
@@ -32,6 +39,11 @@ __all__ = [
     "DesktopCollectionHealthSection",
     "DesktopCollectionHealthSectionId",
     "DesktopCollectionHealthView",
+    "DesktopCollectionExplorerController",
+    "DesktopCollectionExplorerNavigationItem",
+    "DesktopCollectionExplorerRenderer",
+    "DesktopCollectionExplorerSection",
+    "DesktopCollectionExplorerView",
     "DesktopDashboardCard",
     "DesktopDashboardRenderer",
     "DesktopDashboardHomepageRenderer",

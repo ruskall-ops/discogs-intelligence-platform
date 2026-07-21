@@ -139,9 +139,10 @@ package itself receives only engine results and has no persistence or provider
 dependency.
 
 Every module result and card mapping is isolated. A failed, missing or
-malformed result changes only its own card. The Version 0.2 Collection
-Intelligence Explorer now provides read-only drill-down from these card models;
-charts, filters and arbitrary ranges remain outside the dashboard.
+malformed result changes only its own card. The Collection Explorer provides
+read-only navigation from the current historical homepage into Overview,
+Collection Health and Hidden Gems; charts, filters and arbitrary ranges remain
+outside the dashboard.
 
 ---
 
