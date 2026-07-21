@@ -13,6 +13,8 @@ class DashboardCardState(str, Enum):
     SKIPPED = "skipped"
     FAILED = "failed"
     INCOMPLETE = "incomplete"
+    UNAVAILABLE = "unavailable"
+    INSUFFICIENT_HISTORY = "insufficient_history"
 
 
 @dataclass(frozen=True)
@@ -42,12 +44,66 @@ class DashboardCardViewModel:
 
 
 @dataclass(frozen=True)
+class DashboardReleaseViewModel:
+    """A release prepared for display without internal scoring models."""
+
+    release_id: int
+    artist: str
+    title: str
+    explanation: str = ""
+    change: str = ""
+
+
+@dataclass(frozen=True)
+class HiddenGemsCardViewModel:
+    """Presentation-only Hidden Gems card."""
+
+    module_id: str
+    title: str
+    state: DashboardCardState
+    total_hidden_gems: int | None
+    summary: str
+    top_gems: tuple[DashboardReleaseViewModel, ...] = ()
+    explainability_summary: str = ""
+    diagnostics: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class HistoricalIntelligenceCardViewModel:
+    """Presentation-only latest-versus-previous history card."""
+
+    module_id: str
+    title: str
+    state: DashboardCardState
+    summary: str
+    latest_snapshot_date: str | None = None
+    previous_snapshot_date: str | None = None
+    releases_added: int | None = None
+    releases_removed: int | None = None
+    collection_size_change: int | None = None
+    collection_value_change: str | None = None
+    average_value_change: str | None = None
+    median_value_change: str | None = None
+    top_gainers: tuple[DashboardReleaseViewModel, ...] = ()
+    top_decliners: tuple[DashboardReleaseViewModel, ...] = ()
+    evidence_coverage_summary: str = ""
+    diagnostics: tuple[str, ...] = ()
+
+
+DashboardIntelligenceCard = (
+    DashboardCardViewModel
+    | HiddenGemsCardViewModel
+    | HistoricalIntelligenceCardViewModel
+)
+
+
+@dataclass(frozen=True)
 class IntelligenceDashboardViewModel:
     """Read-only collection of intelligence cards for a dashboard."""
 
-    cards: tuple[DashboardCardViewModel, ...] = ()
+    cards: tuple[DashboardIntelligenceCard, ...] = ()
 
-    def card_for(self, module_id: str) -> DashboardCardViewModel | None:
+    def card_for(self, module_id: str) -> DashboardIntelligenceCard | None:
         return next(
             (
                 card
