@@ -203,7 +203,8 @@ class HiddenGemsCardPresenter:
             state=state,
             total_hidden_gems=count,
             summary=result.summary,
-            top_gems=releases,
+            top_gems=releases[: self.maximum_releases],
+            ranked_gems=releases,
             explainability_summary=(
                 "Each displayed release includes evidence supplied by the "
                 "Hidden Gems intelligence result."
@@ -244,7 +245,7 @@ class HiddenGemsCardPresenter:
 
         releases: list[DashboardReleaseViewModel] = []
         malformed = False
-        for candidate in raw_candidates[: self.maximum_releases]:
+        for candidate in raw_candidates:
             release_id = self._release_id(getattr(candidate, "release_id", None))
             artist = self._text(getattr(candidate, "artist", None))
             title = self._text(getattr(candidate, "title", None))
@@ -252,13 +253,15 @@ class HiddenGemsCardPresenter:
             if release_id is None or artist is None or title is None:
                 malformed = True
                 continue
-            explanation = next(
-                (
-                    item.strip()
-                    for item in evidence
-                    if isinstance(item, str) and item.strip()
-                ),
-                "Module evidence is available in the intelligence result.",
+            presentation_evidence = tuple(
+                item.strip()
+                for item in evidence
+                if isinstance(item, str) and item.strip()
+            )
+            explanation = (
+                presentation_evidence[0]
+                if presentation_evidence
+                else "Module evidence is available in the intelligence result."
             )
             releases.append(
                 DashboardReleaseViewModel(
@@ -266,6 +269,7 @@ class HiddenGemsCardPresenter:
                     artist=artist,
                     title=title,
                     explanation=explanation,
+                    evidence=presentation_evidence,
                 )
             )
         return tuple(releases), malformed
@@ -363,8 +367,20 @@ class HistoricalIntelligenceCardPresenter:
             ),
             top_gainers=self._changes(
                 getattr(comparison, "largest_gainers", ())
-            ),
+            )[: self.maximum_releases],
             top_decliners=self._changes(
+                getattr(comparison, "largest_decliners", ())
+            )[: self.maximum_releases],
+            added_releases=self._identities(
+                getattr(comparison, "additions", ())
+            ),
+            removed_releases=self._identities(
+                getattr(comparison, "removals", ())
+            ),
+            ranked_gainers=self._changes(
+                getattr(comparison, "largest_gainers", ())
+            ),
+            ranked_decliners=self._changes(
                 getattr(comparison, "largest_decliners", ())
             ),
             evidence_coverage_summary=self._coverage(previous, current),
@@ -396,7 +412,7 @@ class HistoricalIntelligenceCardPresenter:
         if not isinstance(raw_changes, Sequence) or isinstance(raw_changes, (str, bytes)):
             return ()
         releases = []
-        for change in raw_changes[: self.maximum_releases]:
+        for change in raw_changes:
             release_id = HiddenGemsCardPresenter._release_id(
                 getattr(change, "release_id", None)
             )
@@ -411,6 +427,23 @@ class HistoricalIntelligenceCardPresenter:
                 title=title,
                 change=formatted_change,
             ))
+        return tuple(releases)
+
+    @staticmethod
+    def _identities(raw_releases: Any) -> tuple[DashboardReleaseViewModel, ...]:
+        if not isinstance(raw_releases, Sequence) or isinstance(
+            raw_releases, (str, bytes)
+        ):
+            return ()
+        releases = []
+        for item in raw_releases:
+            release_id = HiddenGemsCardPresenter._release_id(
+                getattr(item, "release_id", None)
+            )
+            artist = HiddenGemsCardPresenter._text(getattr(item, "artist", None))
+            title = HiddenGemsCardPresenter._text(getattr(item, "title", None))
+            if release_id is not None and artist is not None and title is not None:
+                releases.append(DashboardReleaseViewModel(release_id, artist, title))
         return tuple(releases)
 
     @staticmethod

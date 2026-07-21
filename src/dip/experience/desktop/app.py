@@ -15,6 +15,7 @@ from dip.data_sources.discogs import DiscogsClient
 from dip.experience.reporting import ReportingService, render_markdown
 from dip.experience.dashboard import IntelligenceDashboardPresenter
 from dip.experience.desktop.dashboard_renderer import DesktopDashboardRenderer
+from dip.experience.desktop.explorer_renderer import DesktopExplorerController
 from dip.exports import export_excel
 from dip.intelligence.modules.opportunity_scoring import calculate
 from dip.intelligence import IntelligenceEngine, build_v02_intelligence_registry
@@ -38,6 +39,10 @@ class App(tk.Tk):
         )
         self.intelligence_dashboard_presenter = IntelligenceDashboardPresenter()
         self.desktop_dashboard_renderer = DesktopDashboardRenderer()
+        self.intelligence_explorer_controller = DesktopExplorerController()
+        self.current_intelligence_dashboard = (
+            self.intelligence_dashboard_presenter.present(())
+        )
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
         self.status_var = tk.StringVar(value="Ready")
@@ -139,6 +144,17 @@ class App(tk.Tk):
             ).pack(anchor="nw", fill="both", expand=True)
             self.intelligence_card_vars[module_id] = body
         self.dashboard_tab.rowconfigure(2, weight=1)
+        ttk.Button(
+            self.dashboard_tab,
+            text="Open Collection Intelligence Explorer",
+            command=self.open_intelligence_explorer,
+        ).grid(
+            row=3,
+            column=0,
+            columnspan=6,
+            padx=8,
+            pady=(10, 4),
+        )
 
         filters = ttk.Frame(self.review_tab)
         filters.pack(fill="x", pady=(0,8))
@@ -369,9 +385,13 @@ class App(tk.Tk):
             context = self.intelligence_context_factory.build()
             execution = self.intelligence_engine.execute(context)
             dashboard = self.intelligence_dashboard_presenter.present(execution)
+            self.current_intelligence_dashboard = dashboard
             cards = self.desktop_dashboard_renderer.render(dashboard)
             rendered = {card.module_id: card.body for card in cards}
         except Exception as exc:
+            self.current_intelligence_dashboard = (
+            self.intelligence_dashboard_presenter.present(())
+            )
             rendered = {
                 module_id: (
                     "Intelligence is unavailable.\n"
@@ -384,6 +404,39 @@ class App(tk.Tk):
             variable.set(
                 rendered.get(module_id, "Intelligence is unavailable.")
             )
+
+    def open_intelligence_explorer(self):
+        rendered = self.intelligence_explorer_controller.open(
+            self.current_intelligence_dashboard
+        )
+
+        window = tk.Toplevel(self)
+        window.title(rendered.title)
+        window.geometry("1050x720")
+        window.minsize(800, 560)
+        window.transient(self)
+
+        notebook = ttk.Notebook(window)
+        notebook.pack(fill="both", expand=True, padx=12, pady=12)
+
+        for section in rendered.sections:
+            frame = ttk.Frame(notebook, padding=12)
+            notebook.add(frame, text=section.title)
+            text = tk.Text(frame, wrap="word", padx=10, pady=10)
+            scrollbar = ttk.Scrollbar(
+                frame,
+                orient="vertical",
+                command=text.yview,
+            )
+            text.configure(yscrollcommand=scrollbar.set)
+            text.insert("1.0", section.body)
+            text.configure(state="disabled")
+            text.pack(side="left", fill="both", expand=True)
+            scrollbar.pack(side="right", fill="y")
+
+        ttk.Button(window, text="Close", command=window.destroy).pack(
+            pady=(0, 12)
+        )
 
     def load_table(self):
         for item in self.tree.get_children():
