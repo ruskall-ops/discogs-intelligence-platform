@@ -389,6 +389,9 @@ class App(tk.Tk):
             cards = self.desktop_dashboard_renderer.render(dashboard)
             rendered = {card.module_id: card.body for card in cards}
         except Exception as exc:
+            self.current_intelligence_dashboard = (
+            self.intelligence_dashboard_presenter.present(())
+            )
             rendered = {
                 module_id: (
                     "Intelligence is unavailable.\n"
