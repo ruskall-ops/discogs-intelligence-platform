@@ -1590,6 +1590,20 @@ Hidden Gems
 
 Trend analysis belongs above the repository layer.
 
+## First Collection Trends presentation
+
+The first read-only Collection Trends experience queries at most the latest
+five complete historical executions through `IntelligenceHistoryQueryService`
+and selects the newest two containing a completed or skipped module result.
+It compares only that two-execution window; it does not claim a long-term
+trend, forecast, or recommendation.
+
+The existing Comparison Engine supplies deterministic run and module alignment.
+The Trends presentation projects persisted collection-level values into typed,
+neutral absolute changes. It never queries SQLite directly, writes history, or
+executes intelligence. The Collection Explorer performs the query once while
+building its workspace; selecting the Trends tab performs no additional query.
+
 ---
 
 ## Methodology Evolution

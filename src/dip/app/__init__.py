@@ -2,6 +2,7 @@
 
 from .collection_health_presentation import CollectionHealthPresentationService
 from .collection_explorer_presentation import CollectionExplorerPresentationService
+from .collection_trends_presentation import CollectionTrendsPresentationService
 from .comparison_presentation import ComparisonPresentationService
 from .dashboard import (
     CollectionIntelligencePresentationService,
@@ -32,6 +33,7 @@ def main() -> None:
 __all__ = [
     "CollectionHealthPresentationService",
     "CollectionExplorerPresentationService",
+    "CollectionTrendsPresentationService",
     "ComparisonHistoryUnavailableError",
     "ComparisonPresentationService",
     "CollectionIntelligencePresentationService",

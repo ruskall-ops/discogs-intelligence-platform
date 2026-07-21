@@ -5,7 +5,12 @@ from __future__ import annotations
 from typing import Protocol
 
 from dip.experience.collection_health import CollectionHealthDetailViewModel
-from dip.experience.dashboard import DashboardHomepageViewModel
+from dip.experience.collection_trends import CollectionTrendsViewModel
+from dip.experience.dashboard import (
+    DashboardHomepageViewModel,
+    DashboardSectionId,
+    DashboardSectionState,
+)
 from dip.experience.explorer import (
     CollectionExplorerDestination,
     CollectionExplorerViewModel,
@@ -33,6 +38,7 @@ class _CollectionExplorerBuilder(Protocol):
         homepage: DashboardHomepageViewModel,
         collection_health: CollectionHealthDetailViewModel,
         hidden_gems: HiddenGemsDetailViewModel,
+        collection_trends: CollectionTrendsViewModel,
         *,
         selected_destination: CollectionExplorerDestination,
     ) -> CollectionExplorerViewModel: ...
@@ -46,10 +52,13 @@ class CollectionExplorerPresentationService:
         collection_health: _CollectionHealthPresentation,
         hidden_gems: _HiddenGemsPresentation,
         builder: _CollectionExplorerBuilder,
+        *,
+        collection_trends: "_CollectionTrendsPresentation | None" = None,
     ) -> None:
         self._collection_health = collection_health
         self._hidden_gems = hidden_gems
         self._builder = builder
+        self._collection_trends = collection_trends
 
     def explorer_for_homepage(
         self,
@@ -69,12 +78,28 @@ class CollectionExplorerPresentationService:
             )
         collection_health = self._collection_health.detail_for_homepage(homepage)
         hidden_gems = self._hidden_gems.detail_for_homepage(homepage)
+        collection_trends = (
+            self._collection_trends.latest_trends()
+            if self._collection_trends is not None
+            else (
+                CollectionTrendsViewModel.loading()
+                if homepage.section_for(
+                    DashboardSectionId.COLLECTION_OVERVIEW
+                ).state is DashboardSectionState.LOADING
+                else CollectionTrendsViewModel.unavailable()
+            )
+        )
         return self._builder.build(
             homepage,
             collection_health,
             hidden_gems,
+            collection_trends,
             selected_destination=selected_destination,
         )
+
+
+class _CollectionTrendsPresentation(Protocol):
+    def latest_trends(self) -> CollectionTrendsViewModel: ...
 
 
 __all__ = ["CollectionExplorerPresentationService"]

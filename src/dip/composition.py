@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from dip.app.collection_health_presentation import CollectionHealthPresentationService
 from dip.app.collection_explorer_presentation import CollectionExplorerPresentationService
+from dip.app.collection_trends_presentation import CollectionTrendsPresentationService
 from dip.app.comparison_presentation import ComparisonPresentationService
 from dip.app.dashboard import DashboardHomepageService
 from dip.app.hidden_gems_presentation import HiddenGemsPresentationService
@@ -15,6 +16,7 @@ from dip.comparison import ComparisonEngine
 from dip.config import SETTINGS
 from dip.experience.collection_health import CollectionHealthDetailViewModelBuilder
 from dip.experience.comparison import ComparisonViewModelBuilder
+from dip.experience.collection_trends import CollectionTrendsViewModelBuilder
 from dip.experience.dashboard import DashboardHomepageViewModelBuilder
 from dip.experience.explorer import CollectionExplorerViewModelBuilder
 from dip.experience.desktop.collection_health_renderer import (
@@ -24,6 +26,9 @@ from dip.experience.desktop.collection_health_renderer import (
 from dip.experience.desktop.collection_explorer_renderer import (
     DesktopCollectionExplorerController,
     DesktopCollectionExplorerRenderer,
+)
+from dip.experience.desktop.collection_trends_renderer import (
+    DesktopCollectionTrendsRenderer,
 )
 from dip.experience.desktop.hidden_gems_renderer import (
     DesktopHiddenGemsController,
@@ -50,8 +55,12 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
     database = Database(SETTINGS.database_path)
     history_repository = SQLiteIntelligenceHistoryRepository(database)
     history_queries = IntelligenceHistoryQueryService(history_repository)
+    comparison_service = IntelligenceComparisonService(
+        history_queries,
+        ComparisonEngine(),
+    )
     comparison_presentation = ComparisonPresentationService(
-        IntelligenceComparisonService(history_queries, ComparisonEngine()),
+        comparison_service,
         ComparisonViewModelBuilder(),
     )
     collection_health_presentation = CollectionHealthPresentationService(
@@ -62,6 +71,12 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
     )
     collection_health_renderer = DesktopCollectionHealthRenderer()
     hidden_gems_renderer = DesktopHiddenGemsRenderer()
+    collection_trends_renderer = DesktopCollectionTrendsRenderer()
+    collection_trends_presentation = CollectionTrendsPresentationService(
+        history_queries,
+        comparison_service,
+        CollectionTrendsViewModelBuilder(),
+    )
 
     return DesktopApplicationDependencies(
         database=database,
@@ -79,10 +94,12 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
                 collection_health_presentation,
                 hidden_gems_presentation,
                 CollectionExplorerViewModelBuilder(),
+                collection_trends=collection_trends_presentation,
             ),
             DesktopCollectionExplorerRenderer(
                 collection_health_renderer,
                 hidden_gems_renderer,
+                collection_trends_renderer,
             ),
         ),
         hidden_gems_controller=DesktopHiddenGemsController(

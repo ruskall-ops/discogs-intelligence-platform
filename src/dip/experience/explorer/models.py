@@ -9,6 +9,10 @@ import math
 from typing import Any
 
 from dip.experience.collection_health import CollectionHealthDetailViewModel
+from dip.experience.collection_trends import (
+    CollectionTrendsState,
+    CollectionTrendsViewModel,
+)
 from dip.experience.dashboard import (
     DashboardCardState,
     DashboardComponentScore,
@@ -30,6 +34,7 @@ class CollectionExplorerDestination(str, Enum):
     OVERVIEW = "overview"
     COLLECTION_HEALTH = "collection_health"
     HIDDEN_GEMS = "hidden_gems"
+    COLLECTION_TRENDS = "collection_trends"
 
 
 class CollectionExplorerState(str, Enum):
@@ -41,6 +46,7 @@ class CollectionExplorerState(str, Enum):
     EMPTY = "empty"
     UNAVAILABLE = "unavailable"
     ERROR = "error"
+    INSUFFICIENT_HISTORY = "insufficient_history"
 
 
 @dataclass(frozen=True)
@@ -125,6 +131,7 @@ _DESTINATION_LABELS = {
     CollectionExplorerDestination.OVERVIEW: "Overview",
     CollectionExplorerDestination.COLLECTION_HEALTH: "Collection Health",
     CollectionExplorerDestination.HIDDEN_GEMS: "Hidden Gems",
+    CollectionExplorerDestination.COLLECTION_TRENDS: "Collection Trends",
 }
 
 
@@ -138,6 +145,7 @@ class CollectionExplorerViewModel:
     overview: CollectionExplorerOverviewViewModel
     collection_health: CollectionHealthDetailViewModel
     hidden_gems: HiddenGemsDetailViewModel
+    collection_trends: CollectionTrendsViewModel
     title: str = field(init=False, default="Collection Explorer")
 
     def __post_init__(self) -> None:
@@ -155,11 +163,14 @@ class CollectionExplorerViewModel:
             )
         if type(self.hidden_gems) is not HiddenGemsDetailViewModel:
             raise TypeError("hidden_gems must be a HiddenGemsDetailViewModel.")
+        if type(self.collection_trends) is not CollectionTrendsViewModel:
+            raise TypeError("collection_trends must be a CollectionTrendsViewModel.")
 
         expected_states = (
             self.overview.state,
             _collection_health_state(self.collection_health),
             _hidden_gems_state(self.hidden_gems),
+            _collection_trends_state(self.collection_trends),
         )
         if tuple(item.state for item in destinations) != expected_states:
             raise CollectionExplorerConsistencyError(
@@ -198,13 +209,15 @@ def destination_view_models(
     overview: CollectionExplorerOverviewViewModel,
     collection_health: CollectionHealthDetailViewModel,
     hidden_gems: HiddenGemsDetailViewModel,
+    collection_trends: CollectionTrendsViewModel,
 ) -> tuple[CollectionExplorerDestinationViewModel, ...]:
-    """Create the fixed navigation sequence for three composed destinations."""
+    """Create the fixed navigation sequence for four composed destinations."""
 
     states = (
         overview.state,
         _collection_health_state(collection_health),
         _hidden_gems_state(hidden_gems),
+        _collection_trends_state(collection_trends),
     )
     return tuple(
         CollectionExplorerDestinationViewModel(
@@ -271,10 +284,15 @@ def _hidden_gems_state(detail: HiddenGemsDetailViewModel) -> CollectionExplorerS
     return CollectionExplorerState(detail.state.value)
 
 
+def _collection_trends_state(detail: CollectionTrendsViewModel) -> CollectionExplorerState:
+    return CollectionExplorerState(detail.state.value)
+
+
 def _aggregate_state(
     states: tuple[CollectionExplorerState, ...],
 ) -> CollectionExplorerState:
     if states == (
+        CollectionExplorerState.LOADING,
         CollectionExplorerState.LOADING,
         CollectionExplorerState.LOADING,
         CollectionExplorerState.LOADING,
@@ -284,6 +302,7 @@ def _aggregate_state(
         CollectionExplorerState.EMPTY,
         CollectionExplorerState.UNAVAILABLE,
         CollectionExplorerState.UNAVAILABLE,
+        CollectionExplorerState.UNAVAILABLE,
     ):
         return CollectionExplorerState.EMPTY
     if all(state is CollectionExplorerState.UNAVAILABLE for state in states):
@@ -291,13 +310,19 @@ def _aggregate_state(
     if all(state is CollectionExplorerState.ERROR for state in states):
         return CollectionExplorerState.ERROR
 
+    core_states = states[:3]
+    trends_state = states[3]
     usable = {
         CollectionExplorerState.AVAILABLE,
         CollectionExplorerState.EMPTY,
     }
-    if all(state in usable for state in states):
+    if all(state in usable for state in core_states) and trends_state in {
+        *usable,
+        CollectionExplorerState.UNAVAILABLE,
+        CollectionExplorerState.INSUFFICIENT_HISTORY,
+    }:
         return CollectionExplorerState.AVAILABLE
-    if any(state in usable or state is CollectionExplorerState.PARTIAL for state in states):
+    if any(state in usable or state is CollectionExplorerState.PARTIAL for state in core_states):
         return CollectionExplorerState.PARTIAL
     if any(state is CollectionExplorerState.ERROR for state in states):
         return CollectionExplorerState.ERROR

@@ -18,6 +18,7 @@ from dip.experience.explorer import (
 )
 
 from .collection_health_renderer import DesktopCollectionHealthRenderer
+from .collection_trends_renderer import DesktopCollectionTrendsRenderer
 from .hidden_gems_renderer import DesktopHiddenGemsRenderer
 
 
@@ -68,17 +69,19 @@ class DesktopCollectionExplorerRenderer:
         self,
         collection_health: DesktopCollectionHealthRenderer | None = None,
         hidden_gems: DesktopHiddenGemsRenderer | None = None,
+        collection_trends: DesktopCollectionTrendsRenderer | None = None,
     ) -> None:
         self._collection_health = (
             collection_health or DesktopCollectionHealthRenderer()
         )
         self._hidden_gems = hidden_gems or DesktopHiddenGemsRenderer()
+        self._collection_trends = collection_trends or DesktopCollectionTrendsRenderer()
 
     def render(
         self,
         explorer: CollectionExplorerViewModel,
     ) -> DesktopCollectionExplorerView:
-        """Render all three destinations once in their validated order."""
+        """Render all four destinations once in their validated order."""
 
         if type(explorer) is not CollectionExplorerViewModel:
             raise TypeError("explorer must be a CollectionExplorerViewModel.")
@@ -100,6 +103,7 @@ class DesktopCollectionExplorerRenderer:
             ),
             self._health(explorer),
             self._gems(explorer),
+            self._trends(explorer),
         )
         return DesktopCollectionExplorerView(
             title=explorer.title,
@@ -181,6 +185,25 @@ class DesktopCollectionExplorerRenderer:
             parts.extend(("", "Diagnostics", rendered.diagnostics))
         return DesktopCollectionExplorerSection(
             destination=CollectionExplorerDestination.HIDDEN_GEMS,
+            title=rendered.title,
+            state=CollectionExplorerState(rendered.state.value),
+            body="\n".join(parts),
+        )
+
+    def _trends(
+        self,
+        explorer: CollectionExplorerViewModel,
+    ) -> DesktopCollectionExplorerSection:
+        rendered = self._collection_trends.render(explorer.collection_trends)
+        parts = [rendered.headline]
+        if rendered.comparison:
+            parts.extend(("", "Comparing", rendered.comparison))
+        for metric in rendered.metrics:
+            parts.extend(("", metric.heading, metric.body))
+        if rendered.messages:
+            parts.extend(("", "Messages", rendered.messages))
+        return DesktopCollectionExplorerSection(
+            destination=CollectionExplorerDestination.COLLECTION_TRENDS,
             title=rendered.title,
             state=CollectionExplorerState(rendered.state.value),
             body="\n".join(parts),

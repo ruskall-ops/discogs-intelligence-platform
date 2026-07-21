@@ -63,7 +63,7 @@ class CollectionExplorerModelTestCase(unittest.TestCase):
         )
         self.assertEqual(
             tuple(item.label for item in explorer.destinations),
-            ("Overview", "Collection Health", "Hidden Gems"),
+            ("Overview", "Collection Health", "Hidden Gems", "Collection Trends"),
         )
 
     def test_duplicate_and_reordered_destinations_are_rejected(self) -> None:
@@ -116,7 +116,7 @@ class CollectionExplorerBuilderAndOverviewTestCase(unittest.TestCase):
             CollectionExplorerState.UNAVAILABLE,
         )
 
-    def test_loading_source_builds_three_loading_destinations(self) -> None:
+    def test_loading_source_builds_all_loading_destinations(self) -> None:
         explorer = build_explorer(DashboardHomepageViewModel.loading())
 
         self.assertIs(explorer.state, CollectionExplorerState.LOADING)

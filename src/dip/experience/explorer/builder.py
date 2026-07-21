@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dip.experience.collection_health import CollectionHealthDetailViewModel
+from dip.experience.collection_trends import CollectionTrendsViewModel
 from dip.experience.dashboard import (
     DashboardChangeSummaryViewModel,
     DashboardCollectionOverviewViewModel,
@@ -32,6 +33,7 @@ class CollectionExplorerViewModelBuilder:
         homepage: DashboardHomepageViewModel,
         collection_health: CollectionHealthDetailViewModel,
         hidden_gems: HiddenGemsDetailViewModel,
+        collection_trends: CollectionTrendsViewModel | None = None,
         *,
         selected_destination: CollectionExplorerDestination = (
             CollectionExplorerDestination.OVERVIEW
@@ -75,10 +77,19 @@ class CollectionExplorerViewModelBuilder:
             collection_health,
             hidden_gems,
         )
+        if collection_trends is None:
+            collection_trends = (
+                CollectionTrendsViewModel.loading()
+                if overview.state is CollectionExplorerState.LOADING
+                else CollectionTrendsViewModel.unavailable()
+            )
+        if type(collection_trends) is not CollectionTrendsViewModel:
+            raise TypeError("collection_trends must be a CollectionTrendsViewModel.")
         destinations = destination_view_models(
             overview,
             collection_health,
             hidden_gems,
+            collection_trends,
         )
         return CollectionExplorerViewModel(
             state=explorer_state(destinations),
@@ -87,6 +98,7 @@ class CollectionExplorerViewModelBuilder:
             overview=overview,
             collection_health=collection_health,
             hidden_gems=hidden_gems,
+            collection_trends=collection_trends,
         )
 
     @staticmethod

@@ -14,6 +14,11 @@ from .collection_explorer_renderer import (
     DesktopCollectionExplorerSection,
     DesktopCollectionExplorerView,
 )
+from .collection_trends_renderer import (
+    DesktopCollectionTrendMetric,
+    DesktopCollectionTrendsRenderer,
+    DesktopCollectionTrendsView,
+)
 from .dashboard_renderer import DesktopDashboardCard, DesktopDashboardRenderer
 from .homepage_renderer import (
     DesktopDashboardHomepageRenderer,
@@ -44,6 +49,9 @@ __all__ = [
     "DesktopCollectionExplorerRenderer",
     "DesktopCollectionExplorerSection",
     "DesktopCollectionExplorerView",
+    "DesktopCollectionTrendMetric",
+    "DesktopCollectionTrendsRenderer",
+    "DesktopCollectionTrendsView",
     "DesktopDashboardCard",
     "DesktopDashboardRenderer",
     "DesktopDashboardHomepageRenderer",
