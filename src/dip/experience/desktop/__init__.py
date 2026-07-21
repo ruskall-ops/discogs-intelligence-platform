@@ -12,6 +12,12 @@ from .homepage_renderer import (
     DesktopDashboardHomepageRenderer,
     DesktopDashboardHomepageSection,
 )
+from .hidden_gems_renderer import (
+    DesktopHiddenGemCandidate,
+    DesktopHiddenGemsController,
+    DesktopHiddenGemsRenderer,
+    DesktopHiddenGemsView,
+)
 from .explorer_renderer import (
     DesktopExplorerController,
     DesktopExplorerRenderer,
@@ -34,6 +40,10 @@ __all__ = [
     "DesktopExplorerController",
     "DesktopExplorerSection",
     "DesktopExplorerView",
+    "DesktopHiddenGemCandidate",
+    "DesktopHiddenGemsController",
+    "DesktopHiddenGemsRenderer",
+    "DesktopHiddenGemsView",
 ]
 
 

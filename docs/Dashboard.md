@@ -100,8 +100,10 @@ does not import the Collection Health module or reproduce its weighted formula.
 
 The Hidden Gems card displays the candidate total and up to five ranked
 releases. Each displayed release includes a concise explanation selected from
-the module-provided evidence. Internal factors, weights and raw candidate
-scores are not exposed to the desktop UI.
+the module-provided evidence. Its shared presentation model also retains the
+module-provided score and ordered supporting and factor values for read-only
+detail clients; the compact card does not display those additional values.
+Weights and scoring rules are not exposed to the desktop UI.
 
 # Historical Intelligence Card
 
@@ -232,3 +234,51 @@ The Dashboard Collection Health card provides the navigation action. Because
 the detail is built from the current homepage ViewModel, the card and detail
 window always describe the same historical result. Trends, charts, filtering
 and comparisons remain outside this experience.
+
+---
+
+# Hidden Gems Experience
+
+The dedicated Hidden Gems experience is a read-only detail presentation over
+the Hidden Gems section already assembled for the Dashboard homepage. Opening
+it performs no second history query or Intelligence Engine execution and does
+not recalculate qualification or scores.
+
+```text
+DashboardHiddenGemsViewModel
+                │
+                ▼
+HiddenGemsPresentationService
+                │
+                ▼
+HiddenGemsDetailViewModelBuilder
+                │
+                ▼
+DesktopHiddenGemsController and renderer
+                │
+                ▼
+Hidden Gems detail window
+```
+
+The shared Dashboard model contains both the bounded homepage preview and the
+complete candidate tuple. The detail builder copies the complete tuple in its
+existing rank order; it never sorts or filters it. Each frozen detail candidate
+contains the supplied release identity, display metadata, score, explanation,
+evidence, and these explicitly ordered values:
+
+- supporting metrics: wants, copies for sale, demand-to-supply ratio,
+  community rating, owned quantity, lowest price, wants per price unit;
+- factor scores: demand, scarcity, community rating, collection ownership,
+  price efficiency.
+
+The detail experience supports `loading`, `available`, `partial`, `empty`,
+`unavailable` and `error`. `partial` is used when a valid candidate contains a
+legitimately unavailable optional value, such as rating or price evidence; the
+candidate remains in place and the renderer labels that value unavailable.
+Aggregate invariants cover rank continuity, unique release and metric IDs,
+candidate counts, score ranges and state consistency.
+
+The Dashboard action is shown only when the current Hidden Gems section has
+meaningful detail to open. The dedicated window displays the complete list in
+a scrollable view. User sorting, filtering, charts, trends, comparisons and
+changes to Hidden Gems scoring remain future work.

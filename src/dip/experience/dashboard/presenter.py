@@ -19,6 +19,8 @@ from .models import (
     DashboardCardState,
     DashboardCardViewModel,
     DashboardComponentScore,
+    DashboardHiddenGemViewModel,
+    DashboardMetricValueViewModel,
     DashboardReleaseViewModel,
     HiddenGemsCardViewModel,
     HistoricalIntelligenceCardViewModel,
@@ -169,6 +171,23 @@ class HiddenGemsCardPresenter:
     title = "Hidden Gems"
     maximum_releases = 5
 
+    _SUPPORTING_METRICS = (
+        ("wants", "Wants"),
+        ("copies_for_sale", "Copies for sale"),
+        ("demand_to_supply_ratio", "Demand-to-supply ratio"),
+        ("community_rating", "Community rating"),
+        ("owned_quantity", "Owned quantity"),
+        ("lowest_price", "Lowest price"),
+        ("wants_per_price_unit", "Wants per price unit"),
+    )
+    _FACTOR_SCORES = (
+        ("demand", "Demand"),
+        ("scarcity", "Scarcity"),
+        ("community_rating", "Community rating"),
+        ("collection_ownership", "Collection ownership"),
+        ("price_efficiency", "Price efficiency"),
+    )
+
     def present(self, result: IntelligenceResult) -> HiddenGemsCardViewModel:
         if result.module_id != self.module_id:
             raise ValueError("HiddenGemsCardPresenter requires a hidden_gems result.")
@@ -237,13 +256,13 @@ class HiddenGemsCardPresenter:
     def _releases(
         self,
         raw_candidates: Any,
-    ) -> tuple[tuple[DashboardReleaseViewModel, ...], bool]:
+    ) -> tuple[tuple[DashboardHiddenGemViewModel, ...], bool]:
         if not isinstance(raw_candidates, Sequence) or isinstance(
             raw_candidates, (str, bytes)
         ):
             return (), True
 
-        releases: list[DashboardReleaseViewModel] = []
+        releases: list[DashboardHiddenGemViewModel] = []
         malformed = False
         for candidate in raw_candidates:
             release_id = self._release_id(getattr(candidate, "release_id", None))
@@ -264,15 +283,64 @@ class HiddenGemsCardPresenter:
                 else "Module evidence is available in the intelligence result."
             )
             releases.append(
-                DashboardReleaseViewModel(
+                DashboardHiddenGemViewModel(
                     release_id=release_id,
                     artist=artist,
                     title=title,
+                    score=self._number(
+                        getattr(candidate, "hidden_gem_score", None),
+                        maximum=100.0,
+                    ),
                     explanation=explanation,
                     evidence=presentation_evidence,
+                    supporting_metrics=self._metrics(
+                        getattr(candidate, "supporting_metrics", None),
+                        self._SUPPORTING_METRICS,
+                    ),
+                    factor_scores=self._metrics(
+                        getattr(candidate, "factor_scores", None),
+                        self._FACTOR_SCORES,
+                        maximum=100.0,
+                    ),
                 )
             )
         return tuple(releases), malformed
+
+    @classmethod
+    def _metrics(
+        cls,
+        values: Any,
+        order: tuple[tuple[str, str], ...],
+        *,
+        maximum: float | None = None,
+    ) -> tuple[DashboardMetricValueViewModel, ...]:
+        mapping = values if isinstance(values, Mapping) else {}
+        return tuple(
+            DashboardMetricValueViewModel(
+                metric_id=metric_id,
+                label=label,
+                value=cls._number(mapping.get(metric_id), maximum=maximum),
+            )
+            for metric_id, label in order
+        )
+
+    @staticmethod
+    def _number(
+        value: Any,
+        *,
+        maximum: float | None = None,
+    ) -> float | None:
+        if isinstance(value, bool):
+            return None
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return None
+        if not math.isfinite(number) or number < 0:
+            return None
+        if maximum is not None and number > maximum:
+            return None
+        return number
 
     @staticmethod
     def _count(value: Any) -> int | None:

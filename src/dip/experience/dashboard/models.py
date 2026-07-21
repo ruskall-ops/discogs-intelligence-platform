@@ -56,6 +56,29 @@ class DashboardReleaseViewModel:
 
 
 @dataclass(frozen=True)
+class DashboardMetricValueViewModel:
+    """One ordered metric value copied from an intelligence result."""
+
+    metric_id: str
+    label: str
+    value: float | None
+
+
+@dataclass(frozen=True)
+class DashboardHiddenGemViewModel:
+    """A ranked Hidden Gem retaining detail data for presentation clients."""
+
+    release_id: int
+    artist: str
+    title: str
+    score: float | None
+    explanation: str = ""
+    evidence: tuple[str, ...] = ()
+    supporting_metrics: tuple[DashboardMetricValueViewModel, ...] = ()
+    factor_scores: tuple[DashboardMetricValueViewModel, ...] = ()
+
+
+@dataclass(frozen=True)
 class HiddenGemsCardViewModel:
     """Presentation-only Hidden Gems card."""
 
@@ -64,8 +87,8 @@ class HiddenGemsCardViewModel:
     state: DashboardCardState
     total_hidden_gems: int | None
     summary: str
-    top_gems: tuple[DashboardReleaseViewModel, ...] = ()
-    ranked_gems: tuple[DashboardReleaseViewModel, ...] = ()
+    top_gems: tuple[DashboardHiddenGemViewModel, ...] = ()
+    ranked_gems: tuple[DashboardHiddenGemViewModel, ...] = ()
     explainability_summary: str = ""
     diagnostics: tuple[str, ...] = ()
 

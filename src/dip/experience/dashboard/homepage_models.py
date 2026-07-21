@@ -13,7 +13,7 @@ from dip.intelligence import IntelligenceStatus
 from .models import (
     DashboardCardState,
     DashboardCardViewModel,
-    DashboardReleaseViewModel,
+    DashboardHiddenGemViewModel,
     HiddenGemsCardViewModel,
 )
 
@@ -133,7 +133,7 @@ class DashboardHiddenGemsViewModel:
 
     state: DashboardSectionState
     card: HiddenGemsCardViewModel | None
-    preview: tuple[DashboardReleaseViewModel, ...] = ()
+    preview: tuple[DashboardHiddenGemViewModel, ...] = ()
     preview_limit: int = 3
     section_id: DashboardSectionId = field(
         init=False,
@@ -476,13 +476,13 @@ def _section_state_for_card(state: DashboardCardState) -> DashboardSectionState:
     }[state]
 
 
-def _freeze_preview(value: Any) -> tuple[DashboardReleaseViewModel, ...]:
+def _freeze_preview(value: Any) -> tuple[DashboardHiddenGemViewModel, ...]:
     try:
         preview = tuple(value)
     except TypeError as exc:
         raise TypeError("preview must be a collection of release ViewModels.") from exc
-    if any(type(item) is not DashboardReleaseViewModel for item in preview):
-        raise TypeError("preview must contain DashboardReleaseViewModel values.")
+    if any(type(item) is not DashboardHiddenGemViewModel for item in preview):
+        raise TypeError("preview must contain DashboardHiddenGemViewModel values.")
     return preview
 
 

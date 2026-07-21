@@ -44,6 +44,7 @@ class App(tk.Tk):
         )
         self.dashboard_homepage_service = dependencies.dashboard_homepage
         self.collection_health_controller = dependencies.collection_health_controller
+        self.hidden_gems_controller = dependencies.hidden_gems_controller
         self.desktop_homepage_renderer = DesktopDashboardHomepageRenderer()
         self.current_dashboard_homepage = DashboardHomepageViewModel.loading()
         self.intelligence_explorer_controller = DesktopExplorerController()
@@ -157,6 +158,12 @@ class App(tk.Tk):
                     text="Open Collection Health",
                     command=self.open_collection_health,
                 ).pack(anchor="w", pady=(10, 0))
+            elif section_id == "hidden_gems":
+                self.hidden_gems_button = ttk.Button(
+                    card,
+                    text="Open Hidden Gems",
+                    command=self.open_hidden_gems,
+                )
             self.dashboard_homepage_vars[section_id] = body
         self.dashboard_tab.rowconfigure(2, weight=1)
         self.dashboard_tab.rowconfigure(3, weight=1)
@@ -406,6 +413,7 @@ class App(tk.Tk):
                 for section in sections
             }
         except Exception as exc:
+            self.current_dashboard_homepage = DashboardHomepageViewModel.loading()
             rendered = {
                 section_id: (
                     "Dashboard information is unavailable.\n"
@@ -416,6 +424,7 @@ class App(tk.Tk):
 
         for section_id, variable in self.dashboard_homepage_vars.items():
             variable.set(rendered.get(section_id, "Dashboard information is unavailable."))
+        self._update_hidden_gems_navigation()
 
         try:
             self.current_intelligence_dashboard = (
@@ -474,6 +483,64 @@ class App(tk.Tk):
             "section_heading",
             font=("Helvetica", 12, "bold"),
         )
+        text.configure(state="disabled")
+        text.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        ttk.Button(window, text="Close", command=window.destroy).pack(
+            pady=(0, 12)
+        )
+
+    def _update_hidden_gems_navigation(self):
+        if self.hidden_gems_controller.can_open(self.current_dashboard_homepage):
+            self.hidden_gems_button.pack(anchor="w", pady=(10, 0))
+        else:
+            self.hidden_gems_button.pack_forget()
+
+    def open_hidden_gems(self):
+        try:
+            rendered = self.hidden_gems_controller.open(
+                self.current_dashboard_homepage
+            )
+        except Exception as exc:
+            messagebox.showerror(
+                "Hidden Gems unavailable",
+                f"Hidden Gems could not be displayed:\n\n{exc}",
+            )
+            return
+
+        window = tk.Toplevel(self)
+        window.title(rendered.title)
+        window.geometry("820x720")
+        window.minsize(640, 520)
+        window.transient(self)
+
+        header = ttk.Frame(window, padding=(18, 18, 18, 8))
+        header.pack(fill="x")
+        ttk.Label(
+            header,
+            text=rendered.headline,
+            font=("Helvetica", 20, "bold"),
+        ).pack(anchor="w")
+        ttk.Label(
+            header,
+            text=rendered.summary,
+            wraplength=760,
+            justify="left",
+        ).pack(anchor="w", pady=(8, 0))
+
+        content = ttk.Frame(window, padding=(18, 8, 18, 12))
+        content.pack(fill="both", expand=True)
+        text = tk.Text(content, wrap="word", padx=10, pady=10)
+        scrollbar = ttk.Scrollbar(content, orient="vertical", command=text.yview)
+        text.configure(yscrollcommand=scrollbar.set)
+        for candidate in rendered.candidates:
+            text.insert("end", f"{candidate.heading}\n", "candidate_heading")
+            text.insert("end", f"{candidate.body}\n\n")
+        if rendered.diagnostics:
+            text.insert("end", "Diagnostics\n", "candidate_heading")
+            text.insert("end", rendered.diagnostics)
+        text.tag_configure("candidate_heading", font=("Helvetica", 12, "bold"))
         text.configure(state="disabled")
         text.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")

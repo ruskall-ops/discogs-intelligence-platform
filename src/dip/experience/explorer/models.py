@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from dip.experience.dashboard import (
     DashboardCardState,
     DashboardComponentScore,
+    DashboardHiddenGemViewModel,
     DashboardReleaseViewModel,
 )
 
@@ -30,7 +31,7 @@ class HiddenGemsExplorerViewModel:
     state: DashboardCardState
     total_hidden_gems: int | None
     summary: str
-    ranked_releases: tuple[DashboardReleaseViewModel, ...] = ()
+    ranked_releases: tuple[DashboardHiddenGemViewModel, ...] = ()
     diagnostics: tuple[str, ...] = ()
 
 
