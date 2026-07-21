@@ -1016,6 +1016,59 @@ This supports future reporting and diagnostics.
 
 ---
 
+# Read-Only Application Queries
+
+Historical data is exposed to future Dashboard, Explorer and comparison callers
+through `IntelligenceHistoryQueryService`. The service depends only on the
+`IntelligenceHistoryRepository` protocol and contains no SQLite, presentation,
+comparison or write behaviour.
+
+The public query boundary provides:
+
+- the latest complete execution;
+- the previous complete execution;
+- one complete execution by persisted run identifier;
+- a limited sequence of recent complete executions;
+- module-specific history with parent-run context;
+- the latest and previous result for one module.
+
+A complete execution contains its `IntelligenceHistoryRun` and every associated
+`IntelligenceHistoryRecord`. Records remain in their deterministic persisted
+order, which is the engine registry order established when the execution was
+saved.
+
+Execution queries are newest first by:
+
+```text
+executed_at DESC
+
+run_id DESC
+```
+
+Module history is also returned newest first using the parent run's execution
+timestamp and run identifier. “Previous module result” is module-specific, so a
+global run that did not contain that module does not interrupt its history.
+
+Absence is represented consistently:
+
+- singular queries return `None`;
+- plural queries return an empty immutable tuple.
+
+Public identifiers and limits are validated before repository access. A
+historical execution is rejected as inconsistent when its declared result count
+does not match its records, a record belongs to another run, a module occurs
+more than once, or a module record references a missing run. Stored counts are
+never silently adjusted and partial executions are never returned.
+
+The first implementation deliberately composes narrow repository reads. Recent
+execution retrieval performs one limited run query followed by one ordered
+record query for each selected run; module history resolves each selected
+record's parent run. This keeps the repository contract focused and the recent
+query cost bounded by the caller's positive limit. A batch read may replace this
+strategy later if measured history volumes justify the additional contract.
+
+---
+
 # Comparison Philosophy
 
 History stores observations.

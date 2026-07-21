@@ -37,6 +37,9 @@ class IntelligenceHistoryRepositoryTestCase(unittest.TestCase):
     def test_empty_repository_returns_no_history(self) -> None:
         self.assertIsNone(self.repository.latest_run())
         self.assertIsNone(self.repository.previous_run())
+        self.assertIsNone(self.repository.run_by_id(1))
+        self.assertEqual(self.repository.recent_runs(3), ())
+        self.assertEqual(self.repository.records_for_run(1), ())
         self.assertIsNone(self.repository.latest_result("collection_health"))
         self.assertIsNone(self.repository.previous_result("collection_health"))
         self.assertEqual(
@@ -75,6 +78,35 @@ class IntelligenceHistoryRepositoryTestCase(unittest.TestCase):
         self.assertEqual(collection_health.run_id, saved_run.run_id)
         self.assertEqual(collection_health.module_version, "1.2")
         self.assertEqual(collection_health.metrics["score"], 82)
+
+    def test_retrieves_run_by_id_and_records_in_persisted_order(self) -> None:
+        run = self._run(datetime(2026, 7, 21, 10), result_count=2)
+        saved = self.repository.save_execution(
+            run,
+            (
+                self._record("hidden_gems", 7),
+                self._record("collection_health", 82),
+            ),
+        )
+
+        restored = self.repository.run_by_id(saved.run_id)
+        records = self.repository.records_for_run(saved.run_id)
+
+        self.assertEqual(restored, saved)
+        self.assertEqual(
+            tuple(record.module_id for record in records),
+            ("hidden_gems", "collection_health"),
+        )
+        self.assertTrue(all(record.run_id == saved.run_id for record in records))
+        self.assertLess(records[0].record_id, records[1].record_id)
+
+    def test_recent_runs_respects_limit_and_newest_first_order(self) -> None:
+        first = self._save_at(datetime(2026, 7, 20, 10), score=70)
+        second = self._save_at(datetime(2026, 7, 21, 10), score=80)
+        latest = self._save_at(datetime(2026, 7, 22, 10), score=90)
+
+        self.assertEqual(self.repository.recent_runs(2), (latest, second))
+        self.assertNotIn(first, self.repository.recent_runs(2))
 
     def test_latest_and_previous_runs_are_ordered_by_execution_time(self) -> None:
         first = self._save_at(datetime(2026, 7, 20, 10), score=70)
@@ -143,6 +175,7 @@ class IntelligenceHistoryRepositoryTestCase(unittest.TestCase):
         self.assertGreater(second.run_id, first.run_id)
         self.assertEqual(self.repository.latest_run(), second)
         self.assertEqual(self.repository.previous_run(), first)
+        self.assertEqual(self.repository.recent_runs(2), (second, first))
         self.assertEqual(
             tuple(
                 result.metrics["score"]
@@ -290,6 +323,8 @@ class IntelligenceHistoryRepositoryTestCase(unittest.TestCase):
         self.database.conn.commit()
 
         with self.assertRaises(IntelligenceDeserializationError):
+            self.repository.records_for_run(saved_run.run_id)
+        with self.assertRaises(IntelligenceDeserializationError):
             self.repository.latest_result("collection_health")
 
     def test_retrieval_rejects_malformed_run_timestamp(self) -> None:
@@ -304,6 +339,10 @@ class IntelligenceHistoryRepositoryTestCase(unittest.TestCase):
         )
         self.database.conn.commit()
 
+        with self.assertRaises(IntelligenceDeserializationError):
+            self.repository.run_by_id(saved_run.run_id)
+        with self.assertRaises(IntelligenceDeserializationError):
+            self.repository.recent_runs(1)
         with self.assertRaises(IntelligenceDeserializationError):
             self.repository.latest_run()
 

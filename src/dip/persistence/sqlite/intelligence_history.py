@@ -139,6 +139,53 @@ class SQLiteIntelligenceHistoryRepository(IntelligenceHistoryRepository):
     def previous_run(self) -> IntelligenceHistoryRun | None:
         return self._run_at_offset(1)
 
+    def run_by_id(self, run_id: int) -> IntelligenceHistoryRun | None:
+        with self._database.locked_connection() as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM intelligence_runs
+                WHERE id = ?
+                """,
+                (run_id,),
+            ).fetchone()
+
+        return None if row is None else self._run_from_row(row)
+
+    def recent_runs(
+        self,
+        limit: int,
+    ) -> tuple[IntelligenceHistoryRun, ...]:
+        with self._database.locked_connection() as connection:
+            rows = connection.execute(
+                """
+                SELECT *
+                FROM intelligence_runs
+                ORDER BY executed_at DESC, id DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+
+        return tuple(self._run_from_row(row) for row in rows)
+
+    def records_for_run(
+        self,
+        run_id: int,
+    ) -> tuple[IntelligenceHistoryRecord, ...]:
+        with self._database.locked_connection() as connection:
+            rows = connection.execute(
+                """
+                SELECT *
+                FROM intelligence_results
+                WHERE run_id = ?
+                ORDER BY id ASC
+                """,
+                (run_id,),
+            ).fetchall()
+
+        return tuple(self._record_from_row(row) for row in rows)
+
     def latest_result(
         self,
         module_id: str,

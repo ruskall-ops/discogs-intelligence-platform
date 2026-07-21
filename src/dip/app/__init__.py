@@ -1,5 +1,12 @@
 """Application bootstrap and use-case orchestration."""
 
+from .intelligence_history import (
+    HistoricalIntelligenceExecution,
+    HistoricalModuleResult,
+    IntelligenceHistoryConsistencyError,
+    IntelligenceHistoryQueryService,
+)
+
 
 def main() -> None:
     """Start the desktop application."""
@@ -9,4 +16,10 @@ def main() -> None:
     App().mainloop()
 
 
-__all__ = ["main"]
+__all__ = [
+    "HistoricalIntelligenceExecution",
+    "HistoricalModuleResult",
+    "IntelligenceHistoryConsistencyError",
+    "IntelligenceHistoryQueryService",
+    "main",
+]

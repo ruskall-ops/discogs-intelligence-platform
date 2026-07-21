@@ -25,6 +25,24 @@ class IntelligenceHistoryRepository(Protocol):
         """Return the run immediately preceding the latest run."""
         ...
 
+    def run_by_id(self, run_id: int) -> IntelligenceHistoryRun | None:
+        """Return one persisted run by identifier, if it exists."""
+        ...
+
+    def recent_runs(
+        self,
+        limit: int,
+    ) -> tuple[IntelligenceHistoryRun, ...]:
+        """Return up to limit runs in deterministic newest-first order."""
+        ...
+
+    def records_for_run(
+        self,
+        run_id: int,
+    ) -> tuple[IntelligenceHistoryRecord, ...]:
+        """Return a run's records in deterministic persisted order."""
+        ...
+
     def latest_result(
         self,
         module_id: str,
