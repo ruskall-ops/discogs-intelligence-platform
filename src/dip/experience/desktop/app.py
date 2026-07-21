@@ -43,6 +43,7 @@ class App(tk.Tk):
             dependencies.collection_intelligence_presentation
         )
         self.dashboard_homepage_service = dependencies.dashboard_homepage
+        self.collection_health_controller = dependencies.collection_health_controller
         self.desktop_homepage_renderer = DesktopDashboardHomepageRenderer()
         self.current_dashboard_homepage = DashboardHomepageViewModel.loading()
         self.intelligence_explorer_controller = DesktopExplorerController()
@@ -150,6 +151,12 @@ class App(tk.Tk):
                 wraplength=350,
                 justify="left",
             ).pack(anchor="nw", fill="both", expand=True)
+            if section_id == "collection_health":
+                ttk.Button(
+                    card,
+                    text="Open Collection Health",
+                    command=self.open_collection_health,
+                ).pack(anchor="w", pady=(10, 0))
             self.dashboard_homepage_vars[section_id] = body
         self.dashboard_tab.rowconfigure(2, weight=1)
         self.dashboard_tab.rowconfigure(3, weight=1)
@@ -418,6 +425,62 @@ class App(tk.Tk):
             self.current_intelligence_dashboard = (
                 self.intelligence_dashboard_presenter.present(())
             )
+
+    def open_collection_health(self):
+        try:
+            rendered = self.collection_health_controller.open(
+                self.current_dashboard_homepage
+            )
+        except Exception as exc:
+            messagebox.showerror(
+                "Collection Health unavailable",
+                f"Collection Health could not be displayed:\n\n{exc}",
+            )
+            return
+
+        window = tk.Toplevel(self)
+        window.title(rendered.title)
+        window.geometry("780x680")
+        window.minsize(620, 500)
+        window.transient(self)
+
+        header = ttk.Frame(window, padding=(18, 18, 18, 8))
+        header.pack(fill="x")
+        ttk.Label(
+            header,
+            text=rendered.headline,
+            font=("Helvetica", 20, "bold"),
+        ).pack(anchor="w")
+        ttk.Label(
+            header,
+            text=rendered.summary,
+            wraplength=720,
+            justify="left",
+        ).pack(anchor="w", pady=(8, 0))
+
+        content = ttk.Frame(window, padding=(18, 8, 18, 12))
+        content.pack(fill="both", expand=True)
+        text = tk.Text(content, wrap="word", padx=10, pady=10)
+        scrollbar = ttk.Scrollbar(
+            content,
+            orient="vertical",
+            command=text.yview,
+        )
+        text.configure(yscrollcommand=scrollbar.set)
+        for section in rendered.sections:
+            text.insert("end", f"{section.title}\n", "section_heading")
+            text.insert("end", f"{section.body}\n\n")
+        text.tag_configure(
+            "section_heading",
+            font=("Helvetica", 12, "bold"),
+        )
+        text.configure(state="disabled")
+        text.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        ttk.Button(window, text="Close", command=window.destroy).pack(
+            pady=(0, 12)
+        )
 
     def open_intelligence_explorer(self):
         rendered = self.intelligence_explorer_controller.open(

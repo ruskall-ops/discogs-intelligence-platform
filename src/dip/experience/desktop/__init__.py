@@ -1,5 +1,12 @@
 """Tkinter desktop experience with import-safe presentation models."""
 
+from .collection_health_renderer import (
+    DesktopCollectionHealthController,
+    DesktopCollectionHealthRenderer,
+    DesktopCollectionHealthSection,
+    DesktopCollectionHealthSectionId,
+    DesktopCollectionHealthView,
+)
 from .dashboard_renderer import DesktopDashboardCard, DesktopDashboardRenderer
 from .homepage_renderer import (
     DesktopDashboardHomepageRenderer,
@@ -14,6 +21,11 @@ from .explorer_renderer import (
 
 __all__ = [
     "App",
+    "DesktopCollectionHealthController",
+    "DesktopCollectionHealthRenderer",
+    "DesktopCollectionHealthSection",
+    "DesktopCollectionHealthSectionId",
+    "DesktopCollectionHealthView",
     "DesktopDashboardCard",
     "DesktopDashboardRenderer",
     "DesktopDashboardHomepageRenderer",

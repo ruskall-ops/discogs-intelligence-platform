@@ -190,3 +190,45 @@ to propagate to the desktop error boundary.
 
 Filtering, drill-down, charts, multi-run trends and background refresh remain
 future work and are not implemented by this homepage slice.
+
+---
+
+# Collection Health Experience
+
+The dedicated Collection Health experience is a read-only detail presentation
+over the Collection Health card already assembled for the Dashboard homepage.
+It does not query history independently, run the Intelligence Engine, or
+recalculate any score.
+
+```text
+DashboardCollectionHealthViewModel
+                │
+                ▼
+CollectionHealthPresentationService
+                │
+                ▼
+CollectionHealthDetailViewModelBuilder
+                │
+                ▼
+DesktopCollectionHealthController and renderer
+                │
+                ▼
+Collection Health detail window
+```
+
+The frozen detail ViewModel preserves the supplied overall score, the four
+component scores in canonical module order, strengths, improvement
+opportunities, evidence and diagnostics. The renderer displays those values in
+the explicit order: component scores, strengths, improvement opportunities,
+evidence and diagnostics.
+
+The detail experience supports `loading`, `available`, `empty`, `unavailable`
+and `error` states. A skipped empty-collection result retains the module's
+existing guidance and zero-valued scores. Missing results remain unavailable;
+failed or incomplete results retain available diagnostics and partial values
+without guessing missing data.
+
+The Dashboard Collection Health card provides the navigation action. Because
+the detail is built from the current homepage ViewModel, the card and detail
+window always describe the same historical result. Trends, charts, filtering
+and comparisons remain outside this experience.

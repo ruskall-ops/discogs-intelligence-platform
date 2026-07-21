@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from dip.app.collection_health_presentation import CollectionHealthPresentationService
 from dip.app.comparison_presentation import ComparisonPresentationService
 from dip.app.dashboard import (
     CollectionIntelligencePresentationService,
@@ -14,10 +15,14 @@ from dip.app.intelligence_context import IntelligenceContextFactory
 from dip.app.intelligence_history import IntelligenceHistoryQueryService
 from dip.comparison import ComparisonEngine
 from dip.config import SETTINGS
+from dip.experience.collection_health import CollectionHealthDetailViewModelBuilder
 from dip.experience.comparison import ComparisonViewModelBuilder
 from dip.experience.dashboard import (
     DashboardHomepageViewModelBuilder,
     IntelligenceDashboardPresenter,
+)
+from dip.experience.desktop.collection_health_renderer import (
+    DesktopCollectionHealthController,
 )
 from dip.intelligence import IntelligenceEngine, build_v02_intelligence_registry
 from dip.persistence.sqlite import Database, SQLiteIntelligenceHistoryRepository
@@ -30,6 +35,7 @@ class DesktopApplicationDependencies:
     database: Database
     dashboard_homepage: DashboardHomepageService
     collection_intelligence_presentation: CollectionIntelligencePresentationService
+    collection_health_controller: DesktopCollectionHealthController
     intelligence_dashboard_presenter: IntelligenceDashboardPresenter
 
 
@@ -59,6 +65,11 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
                 context_factory,
                 engine,
                 intelligence_dashboard_presenter,
+            )
+        ),
+        collection_health_controller=DesktopCollectionHealthController(
+            CollectionHealthPresentationService(
+                CollectionHealthDetailViewModelBuilder()
             )
         ),
         intelligence_dashboard_presenter=intelligence_dashboard_presenter,
