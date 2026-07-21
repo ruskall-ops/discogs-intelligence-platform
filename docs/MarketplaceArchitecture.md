@@ -1,0 +1,673 @@
+# Marketplace Architecture
+
+## Purpose
+
+Marketplace Architecture defines how the Discogs Intelligence Platform (DIP) acquires, stores, updates and exposes marketplace information.
+
+The objective is to provide a reusable foundation for every future Marketplace Intelligence capability while remaining independent from presentation, user interface and individual intelligence modules.
+
+Marketplace Architecture should allow future intelligence modules to answer questions such as:
+
+- Is demand increasing?
+- Is supply becoming scarce?
+- Is an artist gaining momentum?
+- Is a release undervalued relative to comparable releases?
+- Is a label becoming more collectible?
+- How has marketplace behaviour changed over time?
+
+The architecture is intentionally generic.
+
+Individual Marketplace Intelligence modules build upon this foundation rather than introducing their own storage or data acquisition systems.
+
+---
+
+# Philosophy
+
+Marketplace data is another source of evidence.
+
+It should be treated in exactly the same way as collection data:
+
+```text
+Marketplace Data
+        ↓
+Marketplace Snapshot
+        ↓
+Marketplace Context
+        ↓
+Marketplace Intelligence
+        ↓
+Dashboard / Explorer
+```
+
+Marketplace Intelligence should remain:
+
+- deterministic;
+- explainable;
+- evidence-based;
+- presentation-independent.
+
+It must never recommend buying or selling.
+
+It exists to support research.
+
+---
+
+# Design Goals
+
+The Marketplace Architecture should:
+
+- isolate external APIs from intelligence modules;
+- minimise unnecessary API requests;
+- preserve historical marketplace observations;
+- support deterministic intelligence calculations;
+- allow offline analysis;
+- support future caching;
+- remain independent of presentation;
+- support future data providers.
+
+---
+
+# Guiding Principle
+
+Marketplace Intelligence should consume marketplace data.
+
+It should never be responsible for collecting marketplace data.
+
+The architecture therefore separates:
+
+```text
+Data acquisition
+
+↓
+
+Data persistence
+
+↓
+
+Data access
+
+↓
+
+Intelligence modules
+```
+
+Each layer has a single responsibility.
+
+---
+
+# High-Level Architecture
+
+```text
+                Discogs API
+                     │
+                     ▼
+        Marketplace Import Service
+                     │
+                     ▼
+         Marketplace Snapshot Store
+                     │
+                     ▼
+      Marketplace Repository Interface
+                     │
+                     ▼
+          Marketplace Context Builder
+                     │
+                     ▼
+          Intelligence Context
+                     │
+                     ▼
+Marketplace Intelligence Modules
+                     │
+                     ▼
+Dashboard / Explorer
+```
+
+---
+
+# Marketplace Snapshot
+
+Marketplace information should never be queried directly by intelligence modules.
+
+Instead, every import creates a Marketplace Snapshot.
+
+A Marketplace Snapshot represents the state of the marketplace at one point in time.
+
+Examples include:
+
+- lowest price;
+- median price;
+- highest price;
+- number for sale;
+- number wanted;
+- last sold date;
+- marketplace listings;
+- marketplace statistics.
+
+Snapshots become the historical foundation for future trend analysis.
+
+---
+
+# Why Snapshots?
+
+Suppose a release currently has:
+
+```text
+For Sale:
+42
+
+Wanted:
+315
+```
+
+Without snapshots, DIP only knows today's values.
+
+With snapshots:
+
+```text
+1 Jan
+For Sale: 58
+
+Wanted: 210
+
+↓
+
+1 Feb
+For Sale: 49
+
+Wanted: 250
+
+↓
+
+1 Mar
+For Sale: 42
+
+Wanted: 315
+```
+
+The platform can now identify:
+
+- demand growth;
+- supply reduction;
+- changing scarcity;
+- marketplace momentum.
+
+History creates intelligence.
+
+---
+
+# Marketplace Snapshot Model
+
+Suggested model:
+
+```python
+@dataclass(frozen=True)
+class MarketplaceSnapshot:
+    release_id: int
+    captured_at: datetime
+
+    lowest_price: Decimal | None
+    median_price: Decimal | None
+    highest_price: Decimal | None
+
+    num_for_sale: int | None
+    num_wanted: int | None
+
+    last_sold: date | None
+
+    currency: str
+```
+
+Additional attributes may be added over time without changing the architecture.
+
+---
+
+# Marketplace Repository
+
+Marketplace data should only be accessed through a repository.
+
+Suggested interface:
+
+```python
+class MarketplaceRepository(Protocol):
+
+    def latest_snapshot(
+        self,
+        release_id: int,
+    ) -> MarketplaceSnapshot | None:
+        ...
+
+    def historical_snapshots(
+        self,
+        release_id: int,
+    ) -> tuple[MarketplaceSnapshot, ...]:
+        ...
+
+    def save_snapshot(
+        self,
+        snapshot: MarketplaceSnapshot,
+    ) -> None:
+        ...
+```
+
+Intelligence modules should never know whether data originated from:
+
+- Discogs;
+- cached data;
+- local storage;
+- future providers.
+
+---
+
+# Marketplace Import Service
+
+The Marketplace Import Service is responsible for communicating with external APIs.
+
+Responsibilities include:
+
+- rate limiting;
+- retries;
+- authentication;
+- provider-specific mapping;
+- error handling;
+- snapshot creation.
+
+It is **not** responsible for intelligence.
+
+---
+
+# Marketplace Context
+
+Marketplace modules should not query repositories directly.
+
+Instead they receive marketplace information through a Marketplace Context.
+
+```text
+Repository
+
+↓
+
+Marketplace Context
+
+↓
+
+Marketplace Module
+```
+
+Suggested model:
+
+```python
+@dataclass(frozen=True)
+class MarketplaceContext:
+    latest_snapshots: Mapping[int, MarketplaceSnapshot]
+```
+
+Future versions may include:
+
+- historical lookup;
+- exchange rates;
+- cached calculations;
+- provider metadata.
+
+---
+
+# Relationship with IntelligenceContext
+
+Marketplace Context should become another component of the existing IntelligenceContext.
+
+Conceptually:
+
+```python
+IntelligenceContext
+
+├── Collection
+├── Historical Collection
+├── Marketplace
+└── Configuration
+```
+
+This keeps every intelligence module using the same dependency.
+
+---
+
+# Marketplace Cache
+
+Marketplace requests should not occur during intelligence execution.
+
+Instead:
+
+```text
+Scheduled Import
+
+↓
+
+Snapshot Database
+
+↓
+
+Intelligence Engine
+```
+
+This provides:
+
+- deterministic execution;
+- offline capability;
+- reproducible results;
+- faster dashboard loading.
+
+---
+
+# Refresh Strategy
+
+Marketplace data changes independently of collection data.
+
+Possible refresh schedules:
+
+| Data | Frequency |
+|--------|----------|
+| User collection | On import |
+| Marketplace | Daily |
+| Exchange rates | Daily |
+| Intelligence | On demand |
+
+Refresh schedules may become configurable.
+
+---
+
+# Historical Marketplace Data
+
+Marketplace snapshots should never overwrite previous observations.
+
+Every refresh creates another historical snapshot.
+
+```text
+Release 12345
+
+↓
+
+1 Jan Snapshot
+
+↓
+
+2 Jan Snapshot
+
+↓
+
+3 Jan Snapshot
+```
+
+This enables:
+
+- trend detection;
+- rolling averages;
+- moving momentum;
+- volatility analysis.
+
+---
+
+# Marketplace Intelligence Modules
+
+Future modules may include:
+
+## Supply Trends
+
+Analyse changes in:
+
+- number for sale;
+- listing velocity;
+- supply growth;
+- scarcity.
+
+---
+
+## Demand Trends
+
+Analyse:
+
+- wanted count;
+- wanted growth;
+- demand acceleration;
+- collector interest.
+
+---
+
+## Price Momentum
+
+Analyse:
+
+- median movement;
+- lowest price movement;
+- volatility;
+- appreciation.
+
+---
+
+## Artist Momentum
+
+Aggregate marketplace behaviour across releases.
+
+Possible indicators:
+
+- rising wanted counts;
+- rising prices;
+- growing scarcity.
+
+---
+
+## Label Activity
+
+Analyse labels rather than individual releases.
+
+Possible metrics include:
+
+- average appreciation;
+- supply trends;
+- release performance.
+
+---
+
+# Marketplace Intelligence Results
+
+Marketplace modules should continue returning the standard IntelligenceResult.
+
+They should not introduce a different result type.
+
+```text
+Marketplace Context
+
+↓
+
+Marketplace Module
+
+↓
+
+IntelligenceResult
+```
+
+This allows:
+
+- Dashboard integration;
+- Explorer integration;
+- Intelligence History;
+- future comparison layers.
+
+No additional presentation logic is required.
+
+---
+
+# Relationship with Intelligence History
+
+Marketplace Intelligence automatically participates in Intelligence History.
+
+```text
+Marketplace Snapshot
+
+↓
+
+Marketplace Intelligence
+
+↓
+
+IntelligenceResult
+
+↓
+
+Intelligence History
+```
+
+Marketplace snapshots preserve the raw market.
+
+Intelligence History preserves the conclusions drawn from that market.
+
+These solve different problems.
+
+---
+
+# Future Data Providers
+
+Marketplace Architecture should not assume Discogs is the only provider.
+
+Future providers could include:
+
+- eBay;
+- Popsike;
+- Record Collector;
+- user-contributed pricing;
+- regional marketplaces.
+
+Provider-specific logic belongs inside the Import Service.
+
+The repository interface should remain unchanged.
+
+---
+
+# Versioning
+
+Marketplace models should evolve without breaking existing snapshots.
+
+New fields should be additive wherever practical.
+
+Historic snapshots should remain valid.
+
+---
+
+# Error Handling
+
+Marketplace failures should not prevent Collection Intelligence from executing.
+
+Example:
+
+```text
+Collection Health
+
+Completed
+
+Hidden Gems
+
+Completed
+
+Marketplace Trends
+
+Skipped
+```
+
+The platform should continue producing partial intelligence whenever possible.
+
+---
+
+# Database Design
+
+Conceptually:
+
+```text
+marketplace_snapshots
+
+release_id
+
+captured_at
+
+lowest_price
+
+median_price
+
+highest_price
+
+num_for_sale
+
+num_wanted
+
+last_sold
+
+currency
+```
+
+Future tables may include:
+
+- marketplace providers;
+- cached exchange rates;
+- import history.
+
+The initial schema should remain intentionally small.
+
+---
+
+# Architectural Constraints
+
+Marketplace Architecture must:
+
+- isolate external APIs;
+- remain deterministic;
+- preserve history;
+- support offline execution;
+- remain presentation-independent;
+- expose repository interfaces;
+- support future providers;
+- integrate through IntelligenceContext;
+- return IntelligenceResult;
+- avoid direct UI dependencies.
+
+---
+
+# Future Extensions
+
+Potential future capabilities include:
+
+- Marketplace Alerts;
+- Opportunity Engine;
+- comparable release analysis;
+- artist popularity forecasting;
+- regional pricing;
+- currency normalisation;
+- volatility indicators;
+- liquidity analysis;
+- marketplace confidence scoring;
+- cross-provider aggregation.
+
+These should extend the architecture rather than replacing it.
+
+---
+
+# Summary
+
+Marketplace Architecture provides the reusable foundation for all future Marketplace Intelligence.
+
+It separates:
+
+- acquisition;
+- storage;
+- access;
+- intelligence;
+- presentation.
+
+Marketplace snapshots preserve what happened in the marketplace.
+
+Marketplace Intelligence explains what those observations mean.
+
+Together with Collection History and Intelligence History, Marketplace Architecture completes the three historical pillars of the Discogs Intelligence Platform:
+
+- Collection History
+- Intelligence History
+- Marketplace History
+
+These foundations enable transparent, explainable and evidence-based intelligence while remaining faithful to DIP's guiding principle:
+
+> **Automate the research, not the collecting decision.**
