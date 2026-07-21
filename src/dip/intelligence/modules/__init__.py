@@ -10,6 +10,14 @@ from .hidden_gems import (
     HiddenGemsConfig,
     HiddenGemsModule,
 )
+from .historical_intelligence import (
+    HistoricalComparison,
+    HistoricalIntelligenceConfig,
+    HistoricalIntelligenceModule,
+    HistoricalReleaseChange,
+    HistoricalReleaseIdentity,
+    HistoricalSnapshotInfo,
+)
 from .opportunity_scoring import calculate
 
 __all__ = [
@@ -19,5 +27,11 @@ __all__ = [
     "HiddenGemCandidate",
     "HiddenGemsConfig",
     "HiddenGemsModule",
+    "HistoricalComparison",
+    "HistoricalIntelligenceConfig",
+    "HistoricalIntelligenceModule",
+    "HistoricalReleaseChange",
+    "HistoricalReleaseIdentity",
+    "HistoricalSnapshotInfo",
     "calculate",
 ]

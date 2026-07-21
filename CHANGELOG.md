@@ -70,6 +70,25 @@ All notable changes to the Discogs Intelligence Platform will be documented here
 - Did not add a Hidden Gems dashboard card, desktop integration, forecasting,
   machine learning or recommendation behaviour.
 
+## Historical Intelligence – First Vertical Slice
+
+- Added a deterministic `HistoricalIntelligenceModule` using only prepared
+  `IntelligenceContext.history` evidence.
+- Added immutable snapshot, release identity, release change and aggregate
+  comparison models.
+- Added explicit latest/preceding snapshot selection, release-ID matching,
+  additions, removals and collection-size change.
+- Added complete-coverage total, average and median valuation metrics with
+  value changes and safe percentage handling.
+- Added configurable ranked gainers and decliners with deterministic release-ID
+  tie-breakers; additions and removals are excluded from movements.
+- Added safe handling and diagnostics for sparse history, malformed rows,
+  duplicates, empty snapshots, missing values, zero prior values, partial
+  coverage and identical timestamps.
+- Registered the engine-only module without desktop or dashboard changes.
+- Added comprehensive module, configuration, registry, immutability and
+  failure-isolation tests.
+
 ---
 
 # Sprint 0 – Foundation
@@ -86,12 +105,6 @@ All notable changes to the Discogs Intelligence Platform will be documented here
 - Created Glossary.
 - Established GitHub project structure.
 - Established development workflow.
-
-## Development
-
-- Added `docs/Development/DevelopmentStandard.md`.
-- Documented the project's engineering standards, architecture principles,
-  testing expectations, Git workflow and implementation process.
 
 ---
 

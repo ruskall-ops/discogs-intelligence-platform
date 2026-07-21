@@ -249,10 +249,12 @@ Examples include:
 | Collection Trends | Long-term historical analysis |
 | Weekly Report | Summary of recent intelligence |
 
-Collection Health and Hidden Gems now have complete Version 0.2 engine
-vertical slices. Hidden Gems is documented separately in
-`IntelligenceModules/HiddenGems.md` and deliberately has no dashboard card or
-desktop integration in its initial slice.
+Collection Health, Hidden Gems and Historical Intelligence now have complete
+Version 0.2 engine vertical slices. Hidden Gems is documented separately in
+`IntelligenceModules/HiddenGems.md`. Historical Intelligence is documented in
+`IntelligenceModules/HistoricalIntelligence.md` and compares only the latest
+two prepared snapshots. Neither module includes dashboard or desktop
+integration in its initial slice.
 
 Future versions may introduce:
 

@@ -235,7 +235,7 @@ class HiddenGemsModuleTestCase(unittest.TestCase):
 
         self.assertEqual(
             registry.module_ids,
-            ("collection_health", "hidden_gems"),
+            ("collection_health", "hidden_gems", "historical_intelligence"),
         )
         self.assertIsInstance(registry.get("hidden_gems"), HiddenGemsModule)
 

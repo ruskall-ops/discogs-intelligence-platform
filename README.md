@@ -146,6 +146,7 @@ Current documentation includes:
 - Database.md *(planned)*
 - Scoring.md *(planned)*
 - Development/DevelopmentStandard.md – engineering and implementation standards
+- Development/AIDevelopmentPlaybook.md – AI-assisted development workflow
 
 ---
 
@@ -191,6 +192,13 @@ discogs-intelligence-platform/
 ```
 
 The package boundaries mirror the platform architecture: external providers and presentation remain replaceable, while intelligence stays deterministic, explainable and reusable.
+
+Version 0.2 intelligence currently includes Collection Health, Hidden Gems and
+a presentation-independent Historical Intelligence comparison. Historical
+Intelligence compares the latest two prepared snapshots, separates collection
+additions and removals from valuation movements, and reports evidence coverage
+without inventing missing values. See
+[`docs/IntelligenceModules/HistoricalIntelligence.md`](docs/IntelligenceModules/HistoricalIntelligence.md).
 
 ---
 
