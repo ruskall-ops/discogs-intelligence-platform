@@ -219,6 +219,98 @@ class MarketplaceSnapshot:
 
 Additional attributes may be added over time without changing the architecture.
 
+## Implemented foundation contract
+
+The first Marketplace Intelligence foundation is implemented as the peer domain
+package `dip.marketplace_intelligence`. It contains immutable models and
+deterministic serialization only. It does not fetch, persist, refresh or present
+Marketplace data.
+
+The package distinguishes four responsibilities:
+
+- `MarketplaceListingObservation` is one specific offer observed at a supplied
+  time. It contains the offer price and optional shipping, condition and seller
+  region facts. It contains no opportunity or desirability interpretation.
+- `MarketplaceReleaseObservation` contains provider-supplied release-level
+  facts such as price bounds, supply, demand and last-sold date. Its constructor
+  validates those facts but does not calculate aggregates.
+- `MarketplaceSnapshot` is the observation-window aggregate. It owns the source,
+  capture time, release observations, optional listing observations, capture
+  status and diagnostics.
+- `MarketplaceModuleResult` pairs a stable Marketplace execution context with
+  the existing standard `IntelligenceResult`. It is a history-ready envelope,
+  not a replacement module-result hierarchy.
+
+Release observations are canonical by `release_id`. Listing observations are
+canonical by `(release_id, listing_id)`. Their source order carries no domain
+meaning, so construction defensively copies and canonicalises these sequences.
+Diagnostic and execution snapshot-reference order is preserved because those
+sequences may explain source or execution chronology.
+
+## Status semantics
+
+`MarketplaceDataStatus` uses the following explicit meanings:
+
+| Status | Meaning |
+|---|---|
+| `complete` | A successful capture containing supplied marketplace facts |
+| `partial` | Some usable facts exist, with diagnostics explaining incomplete capture |
+| `empty` | A valid capture produced no observations or facts |
+| `unavailable` | The marketplace source could not provide data |
+| `failed` | The capture failed and contains no successful observations |
+
+An observed release with `num_for_sale=0` is a supplied marketplace fact and is
+therefore distinct from an empty or unavailable release. Partial, unavailable
+and failed values require diagnostics. Failed snapshots and failed module-result
+envelopes cannot contain successful derived records.
+
+## Money and currency policy
+
+`MarketplaceMoney` uses `Decimal` exclusively and never accepts or converts a
+binary floating-point amount. Amounts must be finite and non-negative. Missing
+money is represented by an optional field containing `None`; it is never
+represented by a fabricated zero.
+
+Currency remains attached to every amount. The foundation accepts a strict
+uppercase three-letter ASCII currency identifier and performs no case
+normalisation, allow-list lookup, exchange-rate conversion or cross-currency
+comparison. Prices within one release observation, and price and shipping
+within one listing observation, must use the same currency.
+
+## Timestamp and identifier policy
+
+All Marketplace datetimes must be explicitly supplied and timezone-aware.
+Models never read the current clock. Original offsets are preserved in
+ISO-8601 serialization; UTC normalisation is used only when validating temporal
+ordering. Release, listing, snapshot and execution identifiers are supplied by
+the caller and are never generated during construction or deserialization.
+
+## Immutability and diagnostics
+
+All public Marketplace models are frozen dataclasses. Caller-supplied
+collections are copied into tuples, result mappings are recursively frozen, and
+diagnostic detail mappings accept only deterministic string keys and values.
+Diagnostics use stable codes, typed severity and domain-facing messages; they do
+not contain UI state or raw traceback objects.
+
+## Deterministic serialization
+
+`serialization.py` defines explicit snapshot and module-result operations. The
+top-level schema version is `1`. Serialized trees contain JSON-compatible
+primitives only; decimals use exact strings, enums use their stable values and
+aware datetimes use ISO-8601 strings. Mapping keys and observation collections
+use their documented canonical order, while canonical JSON also sorts object
+keys and uses compact separators.
+
+Deserialization requires the exact documented keys and schema version. It
+rejects duplicate JSON keys, unknown enum values, naive or malformed timestamps,
+invalid decimals, non-finite numeric values, malformed records and unknown
+tagged metric values. It never invents identifiers or timestamps and never
+silently discards a record.
+
+The format is domain serialization, not persistence. No repository, SQLite
+schema or migration is introduced by this foundation.
+
 ---
 
 # Marketplace Repository
@@ -483,6 +575,13 @@ Marketplace Module
 IntelligenceResult
 ```
 
+The foundation's `MarketplaceModuleResult` is an immutable execution envelope
+around that standard result. It preserves the Marketplace execution identifier,
+ordered snapshot references and execution timestamp for deterministic
+serialization. Module-specific typed outputs remain the responsibility of each
+future module; the foundation does not invent a generic opportunity record or
+opaque recommendation payload.
+
 This allows:
 
 - Dashboard integration;
@@ -496,7 +595,8 @@ No additional presentation logic is required.
 
 # Relationship with Intelligence History
 
-Marketplace Intelligence automatically participates in Intelligence History.
+Future Marketplace Intelligence should participate in Intelligence History
+through the standard `IntelligenceResult` contract.
 
 ```text
 Marketplace Snapshot
@@ -519,6 +619,20 @@ Marketplace snapshots preserve the raw market.
 Intelligence History preserves the conclusions drawn from that market.
 
 These solve different problems.
+
+The foundation is history-ready but not history-integrated. Its serialization
+does not write Intelligence History and this slice does not change history
+models, repositories or formats. A future application boundary may persist raw
+Marketplace snapshots in a peer Marketplace History store and preserve the
+standard result through Intelligence History without changing either meaning.
+
+## Foundation exclusions
+
+The first foundation does not implement data acquisition, API clients,
+authentication, repositories, SQLite, migrations, scheduling, caching,
+Marketplace modules, Weekend Listings, price-change detection, opportunity
+scoring, Dashboard or Explorer presentation, recommendations, buying or selling
+automation, or AI-generated summaries.
 
 ---
 
