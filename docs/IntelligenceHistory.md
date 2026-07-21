@@ -1176,6 +1176,59 @@ not-found error.
 
 ---
 
+# Comparison ViewModel Boundary
+
+Structured `ExecutionComparison` results are transformed for future interfaces
+through the presentation-neutral Comparison ViewModel boundary under
+`dip.experience.comparison`.
+
+Conceptually:
+
+```text
+IntelligenceComparisonService
+            │
+            ▼
+ComparisonPresentationService
+            │
+            ▼
+ComparisonViewModelBuilder
+            │
+            ▼
+ExecutionComparisonViewModel
+            │
+      ┌─────┴─────┐
+      ▼           ▼
+Dashboard       Explorer
+ future         future
+```
+
+The builder receives an already calculated comparison. It performs no history
+queries, persistence access, comparison calculation, scoring, or domain
+interpretation. Dashboard and Explorer components are not part of this slice.
+
+The immutable ViewModels expose execution-level state counts, module-level
+change classifications, and the five generic field changes. Canonical IDs are
+preserved separately from stable presentation labels. Known module and field
+labels use explicit immutable mappings; unknown module IDs receive a
+deterministic snake-case-to-title-case fallback.
+
+Module ordering remains exactly as supplied by `ExecutionComparison`. Generic
+fields use the explicit order: status, summary, metrics, evidence, diagnostics.
+Neither sequence is sorted by its display label.
+
+Each field records previous and current availability independently. An
+unavailable side is therefore distinct from an available comparison value whose
+legitimate value is `None`. Structured typed values remain immutable and are not
+flattened into display strings.
+
+Contradictory comparison states, duplicate modules or fields, malformed added
+or removed modules, and inconsistent summary counts raise an explicit
+`ComparisonViewModelConsistencyError`; the builder does not silently repair
+them. `ComparisonPresentationService` composes the existing comparison service
+with the builder and does not swallow failures from either dependency.
+
+---
+
 # Why Generic Storage?
 
 The repository intentionally stores generic IntelligenceResult information.
