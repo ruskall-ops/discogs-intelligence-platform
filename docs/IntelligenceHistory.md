@@ -459,6 +459,10 @@ Naive datetimes should remain naive.
 
 Datetime serialization should never depend upon the local machine locale.
 
+For repository ordering, naive execution datetimes are treated as UTC. This
+normalisation affects only the deterministic ordering key; the original naive
+datetime remains preserved in its serialized form.
+
 ---
 
 # Dates
@@ -1533,4 +1537,3 @@ Maintaining these responsibilities as separate concerns keeps the platform deter
 Ultimately, Intelligence History embodies the core philosophy of the Discogs Intelligence Platform:
 
 > **Automate the research, not the collecting decision.**
-

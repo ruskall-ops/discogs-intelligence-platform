@@ -434,7 +434,7 @@ def _validate_run_fields(fields: dict[str, Any], path: str) -> None:
 
 def _validate_record_fields(fields: dict[str, Any], path: str) -> None:
     _require_optional_int(fields["record_id"], f"{path}.record_id")
-    _require_int(fields["run_id"], f"{path}.run_id")
+    _require_optional_int(fields["run_id"], f"{path}.run_id")
     _require_string(fields["module_id"], f"{path}.module_id")
     _require_optional_string(fields["module_version"], f"{path}.module_version")
     if type(fields["status"]) is not IntelligenceStatus:

@@ -54,13 +54,32 @@ class IntelligenceHistoryRun:
     collection_snapshot_id: int | None = None
     result_count: int = 0
 
+    def __post_init__(self) -> None:
+        """Validate immutable execution metadata."""
+
+        if self.run_id is not None and type(self.run_id) is not int:
+            raise TypeError("run_id must be an integer or None.")
+        if type(self.executed_at) is not datetime:
+            raise TypeError("executed_at must be a datetime.")
+        if self.engine_version is not None and not isinstance(
+            self.engine_version,
+            str,
+        ):
+            raise TypeError("engine_version must be a string or None.")
+        if self.collection_snapshot_id is not None and type(
+            self.collection_snapshot_id
+        ) is not int:
+            raise TypeError("collection_snapshot_id must be an integer or None.")
+        if type(self.result_count) is not int or self.result_count < 0:
+            raise TypeError("result_count must be a non-negative integer.")
+
 
 @dataclass(frozen=True)
 class IntelligenceHistoryRecord:
     """A preserved module result belonging to one historical run."""
 
     record_id: int | None
-    run_id: int
+    run_id: int | None
     module_id: str
     module_version: str | None
     status: IntelligenceStatus
@@ -75,8 +94,8 @@ class IntelligenceHistoryRecord:
 
         if self.record_id is not None and type(self.record_id) is not int:
             raise TypeError("record_id must be an integer or None.")
-        if type(self.run_id) is not int:
-            raise TypeError("run_id must be an integer.")
+        if self.run_id is not None and type(self.run_id) is not int:
+            raise TypeError("run_id must be an integer or None.")
         if not isinstance(self.module_id, str):
             raise TypeError("module_id must be a string.")
         if self.module_version is not None and not isinstance(
