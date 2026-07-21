@@ -140,3 +140,53 @@ Every module result and card mapping is isolated. A failed, missing or
 malformed result changes only its own card. The Version 0.2 Collection
 Intelligence Explorer now provides read-only drill-down from these card models;
 charts, filters and arbitrary ranges remain outside the dashboard.
+
+---
+
+# Version 0.2 Dashboard Homepage
+
+The first Dashboard homepage is a read-only presentation and integration
+boundary over completed Intelligence History. It does not run intelligence,
+query SQLite, compare executions or rank candidates.
+
+```text
+IntelligenceHistoryQueryService     ComparisonPresentationService
+                │                               │
+                └───────────────┬───────────────┘
+                                ▼
+                 DashboardHomepageService
+                                ▼
+              DashboardHomepageViewModelBuilder
+                                ▼
+                     Desktop Dashboard UI
+```
+
+The immutable homepage contains exactly five sections in this order:
+
+1. Collection overview;
+2. Collection Health;
+3. Hidden Gems;
+4. What Changed;
+5. Latest execution.
+
+Collection Health and Hidden Gems reuse their established card presenters.
+Their calculated scores, counts and ranked candidate order are copied from the
+latest completed historical execution. The homepage neither recalculates a
+score nor re-ranks a candidate. Hidden Gems displays at most the first three
+candidates in the supplied order.
+
+What Changed consumes the existing comparison ViewModel. Changed, unchanged,
+added and removed counts are preserved, and non-unchanged modules retain the
+order supplied by the comparison boundary. Empty history and a single
+execution are normal states; the latter is shown as insufficient history rather
+than an error.
+
+Every section has an explicit typed state: `loading`, `available`, `empty`,
+`unavailable`, `error` or `insufficient_history`. Missing optional module data
+degrades only its corresponding section. The expected comparison-availability
+error for fewer than two executions becomes `insufficient_history`; malformed
+history, inconsistent ViewModels and unexpected programming failures continue
+to propagate to the desktop error boundary.
+
+Filtering, drill-down, charts, multi-run trends and background refresh remain
+future work and are not implemented by this homepage slice.

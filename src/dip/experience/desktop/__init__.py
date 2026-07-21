@@ -1,6 +1,10 @@
 """Tkinter desktop experience with import-safe presentation models."""
 
 from .dashboard_renderer import DesktopDashboardCard, DesktopDashboardRenderer
+from .homepage_renderer import (
+    DesktopDashboardHomepageRenderer,
+    DesktopDashboardHomepageSection,
+)
 from .explorer_renderer import (
     DesktopExplorerController,
     DesktopExplorerRenderer,
@@ -12,6 +16,8 @@ __all__ = [
     "App",
     "DesktopDashboardCard",
     "DesktopDashboardRenderer",
+    "DesktopDashboardHomepageRenderer",
+    "DesktopDashboardHomepageSection",
     "DesktopExplorerRenderer",
     "DesktopExplorerController",
     "DesktopExplorerSection",

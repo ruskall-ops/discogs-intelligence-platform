@@ -1,5 +1,19 @@
 """Presentation-neutral intelligence dashboard boundary."""
 
+from .homepage import DashboardHomepageViewModelBuilder
+from .homepage_models import (
+    DashboardChangeSummaryViewModel,
+    DashboardChangedModuleViewModel,
+    DashboardCollectionHealthViewModel,
+    DashboardCollectionOverviewViewModel,
+    DashboardExecutionViewModel,
+    DashboardHiddenGemsViewModel,
+    DashboardHomepageConsistencyError,
+    DashboardHomepageSection,
+    DashboardHomepageViewModel,
+    DashboardSectionId,
+    DashboardSectionState,
+)
 from .models import (
     DashboardCardState,
     DashboardCardViewModel,
@@ -18,10 +32,22 @@ from .presenter import (
 
 __all__ = [
     "CollectionHealthCardPresenter",
+    "DashboardChangeSummaryViewModel",
+    "DashboardChangedModuleViewModel",
     "DashboardCardState",
     "DashboardCardViewModel",
+    "DashboardCollectionHealthViewModel",
+    "DashboardCollectionOverviewViewModel",
     "DashboardComponentScore",
+    "DashboardExecutionViewModel",
+    "DashboardHiddenGemsViewModel",
+    "DashboardHomepageConsistencyError",
+    "DashboardHomepageSection",
+    "DashboardHomepageViewModel",
+    "DashboardHomepageViewModelBuilder",
     "DashboardReleaseViewModel",
+    "DashboardSectionId",
+    "DashboardSectionState",
     "HiddenGemsCardPresenter",
     "HiddenGemsCardViewModel",
     "HistoricalIntelligenceCardPresenter",

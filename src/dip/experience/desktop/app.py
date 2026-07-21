@@ -9,21 +9,24 @@ from tkinter import ttk, filedialog, messagebox, simpledialog
 
 from dip.collection.importers import CollectionImportError
 from dip.collection.services import ImportService
-from dip.app.intelligence_context import IntelligenceContextFactory
+from dip.composition import build_desktop_application_dependencies
 from dip.config import SETTINGS
 from dip.data_sources.discogs import DiscogsClient
 from dip.experience.reporting import ReportingService, render_markdown
-from dip.experience.dashboard import IntelligenceDashboardPresenter
-from dip.experience.desktop.dashboard_renderer import DesktopDashboardRenderer
+from dip.experience.dashboard import (
+    DashboardHomepageViewModel,
+)
 from dip.experience.desktop.explorer_renderer import DesktopExplorerController
+from dip.experience.desktop.homepage_renderer import (
+    DesktopDashboardHomepageRenderer,
+)
 from dip.exports import export_excel
 from dip.intelligence.modules.opportunity_scoring import calculate
-from dip.intelligence import IntelligenceEngine, build_v02_intelligence_registry
-from dip.persistence.sqlite import Database
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
+        dependencies = build_desktop_application_dependencies()
         self.title(SETTINGS.application_name)
         self.geometry(
 
@@ -31,14 +34,17 @@ class App(tk.Tk):
 
 )
         self.minsize(1050, 650)
-        self.db = Database(SETTINGS.database_path)
+        self.db = dependencies.database
         self.import_service = ImportService(self.db)
-        self.intelligence_context_factory = IntelligenceContextFactory(self.db)
-        self.intelligence_engine = IntelligenceEngine(
-            build_v02_intelligence_registry()
+        self.intelligence_dashboard_presenter = (
+            dependencies.intelligence_dashboard_presenter
         )
-        self.intelligence_dashboard_presenter = IntelligenceDashboardPresenter()
-        self.desktop_dashboard_renderer = DesktopDashboardRenderer()
+        self.collection_intelligence_presentation = (
+            dependencies.collection_intelligence_presentation
+        )
+        self.dashboard_homepage_service = dependencies.dashboard_homepage
+        self.desktop_homepage_renderer = DesktopDashboardHomepageRenderer()
+        self.current_dashboard_homepage = DashboardHomepageViewModel.loading()
         self.intelligence_explorer_controller = DesktopExplorerController()
         self.current_intelligence_dashboard = (
             self.intelligence_dashboard_presenter.present(())
@@ -119,18 +125,20 @@ class App(tk.Tk):
             "when you want an export."
         ), wraplength=1100, justify="left").pack(anchor="w")
 
-        self.intelligence_card_vars = {}
-        intelligence_cards = (
-            ("collection_health", "Collection Health"),
-            ("hidden_gems", "Hidden Gems"),
-            ("historical_intelligence", "Historical Intelligence"),
+        self.dashboard_homepage_vars = {}
+        homepage_sections = (
+            ("collection_overview", "Collection overview", 2, 0, 3),
+            ("collection_health", "Collection Health", 2, 3, 3),
+            ("hidden_gems", "Hidden Gems", 3, 0, 3),
+            ("what_changed", "What Changed", 3, 3, 3),
+            ("latest_execution", "Latest execution", 4, 0, 6),
         )
-        for index, (module_id, title) in enumerate(intelligence_cards):
+        for section_id, title, row, column, columnspan in homepage_sections:
             card = ttk.LabelFrame(self.dashboard_tab, text=title, padding=14)
             card.grid(
-                row=2,
-                column=index * 2,
-                columnspan=2,
+                row=row,
+                column=column,
+                columnspan=columnspan,
                 padx=8,
                 pady=8,
                 sticky="nsew",
@@ -142,14 +150,15 @@ class App(tk.Tk):
                 wraplength=350,
                 justify="left",
             ).pack(anchor="nw", fill="both", expand=True)
-            self.intelligence_card_vars[module_id] = body
+            self.dashboard_homepage_vars[section_id] = body
         self.dashboard_tab.rowconfigure(2, weight=1)
+        self.dashboard_tab.rowconfigure(3, weight=1)
         ttk.Button(
             self.dashboard_tab,
             text="Open Collection Intelligence Explorer",
             command=self.open_intelligence_explorer,
         ).grid(
-            row=3,
+            row=5,
             column=0,
             columnspan=6,
             padx=8,
@@ -382,27 +391,32 @@ class App(tk.Tk):
 
     def refresh_intelligence_dashboard(self):
         try:
-            context = self.intelligence_context_factory.build()
-            execution = self.intelligence_engine.execute(context)
-            dashboard = self.intelligence_dashboard_presenter.present(execution)
-            self.current_intelligence_dashboard = dashboard
-            cards = self.desktop_dashboard_renderer.render(dashboard)
-            rendered = {card.module_id: card.body for card in cards}
-        except Exception as exc:
-            self.current_intelligence_dashboard = (
-            self.intelligence_dashboard_presenter.present(())
-            )
+            homepage = self.dashboard_homepage_service.homepage()
+            self.current_dashboard_homepage = homepage
+            sections = self.desktop_homepage_renderer.render(homepage)
             rendered = {
-                module_id: (
-                    "Intelligence is unavailable.\n"
+                section.section_id.value: section.body
+                for section in sections
+            }
+        except Exception as exc:
+            rendered = {
+                section_id: (
+                    "Dashboard information is unavailable.\n"
                     f"{type(exc).__name__}: {exc}"
                 )
-                for module_id in self.intelligence_card_vars
+                for section_id in self.dashboard_homepage_vars
             }
 
-        for module_id, variable in self.intelligence_card_vars.items():
-            variable.set(
-                rendered.get(module_id, "Intelligence is unavailable.")
+        for section_id, variable in self.dashboard_homepage_vars.items():
+            variable.set(rendered.get(section_id, "Dashboard information is unavailable."))
+
+        try:
+            self.current_intelligence_dashboard = (
+                self.collection_intelligence_presentation.dashboard()
+            )
+        except Exception:
+            self.current_intelligence_dashboard = (
+                self.intelligence_dashboard_presenter.present(())
             )
 
     def open_intelligence_explorer(self):
