@@ -52,6 +52,7 @@ class DashboardReleaseViewModel:
     title: str
     explanation: str = ""
     change: str = ""
+    evidence: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -64,6 +65,7 @@ class HiddenGemsCardViewModel:
     total_hidden_gems: int | None
     summary: str
     top_gems: tuple[DashboardReleaseViewModel, ...] = ()
+    ranked_gems: tuple[DashboardReleaseViewModel, ...] = ()
     explainability_summary: str = ""
     diagnostics: tuple[str, ...] = ()
 
@@ -86,6 +88,10 @@ class HistoricalIntelligenceCardViewModel:
     median_value_change: str | None = None
     top_gainers: tuple[DashboardReleaseViewModel, ...] = ()
     top_decliners: tuple[DashboardReleaseViewModel, ...] = ()
+    added_releases: tuple[DashboardReleaseViewModel, ...] = ()
+    removed_releases: tuple[DashboardReleaseViewModel, ...] = ()
+    ranked_gainers: tuple[DashboardReleaseViewModel, ...] = ()
+    ranked_decliners: tuple[DashboardReleaseViewModel, ...] = ()
     evidence_coverage_summary: str = ""
     diagnostics: tuple[str, ...] = ()
 

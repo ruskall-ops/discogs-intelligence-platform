@@ -228,22 +228,6 @@ Together they provide a complete historical understanding of both the collection
 
 # Explorer
 
-## Explorer Framework
-
-The Explorer Framework provides shared infrastructure for all future intelligence explorers.
-
-Core capabilities include:
-
-- Filtering
-- Sorting
-- Searching
-- Grouping
-- Paging
-
-The framework should remain intelligence-agnostic so that future modules automatically benefit from consistent exploration capabilities.
-
----
-
 ## Collection Intelligence Explorer
 
 The Collection Intelligence Explorer provides an enriched view of every release.

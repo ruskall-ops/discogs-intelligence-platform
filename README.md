@@ -86,6 +86,10 @@ These features will continue to evolve as the platform develops.
   - Collection Health, Hidden Gems and Historical Intelligence cards
   - per-card unavailable, insufficient-history and failure states
   - read-only rendering of Collection Intelligence Engine results
+- Collection Intelligence Explorer
+  - dashboard navigation to Collection Health, Hidden Gems and Historical drill-down
+  - full explainable release evidence without raw scoring internals
+  - independent unavailable, failed and insufficient-history sections
 - Weekend Listings
 - Dashboard
 - Opportunity Engine
@@ -151,6 +155,7 @@ Current documentation includes:
 - Scoring.md *(planned)*
 - Development/DevelopmentStandard.md – engineering and implementation standards
 - Development/AIDevelopmentPlaybook.md – AI-assisted development workflow
+
 ---
 
 # Technology Stack
@@ -207,6 +212,10 @@ The desktop dashboard presents these three engine results as independent,
 read-only cards. Missing or failed intelligence affects only its own card, and
 insufficient history is shown as an informational state. See
 [`docs/Dashboard.md`](docs/Dashboard.md).
+
+The [Collection Intelligence Explorer](docs/Explorer.md) expands those same
+presentation models into read-only desktop drill-down sections. It does not
+query persistence or providers and does not calculate intelligence.
 
 ---
 

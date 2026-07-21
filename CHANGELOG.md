@@ -106,6 +106,24 @@ All notable changes to the Discogs Intelligence Platform will be documented here
   no persistence, schema or provider changes were introduced.
 - Added dashboard mapping, rendering, empty-state, isolation and context tests.
 
+## Collection Intelligence Explorer – Version 0.2
+
+- Added a presentation-only Explorer for Collection Health, Hidden Gems and
+  Historical Intelligence.
+- Reused the dashboard presentation pipeline instead of introducing a second
+  `IntelligenceResult` mapping path.
+- Added immutable Explorer section models and a separate desktop renderer.
+- Added full explainable Hidden Gems drill-down without raw scores, factors or
+  weights.
+- Added historical snapshot, valuation, additions, removals, gainers,
+  decliners, evidence-coverage and diagnostic drill-down.
+- Added a lightweight dashboard button and three-tab, read-only Tkinter
+  Explorer window.
+- Preserved ready, unavailable, failed, skipped, incomplete and insufficient-
+  history states independently for every section.
+- Added presentation, navigation, rendering, resilience, immutability and
+  desktop-controller tests.
+
 ---
 
 # Sprint 0 – Foundation
