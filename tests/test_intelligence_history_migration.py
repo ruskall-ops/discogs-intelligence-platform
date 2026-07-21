@@ -25,15 +25,17 @@ class IntelligenceHistoryMigrationTestCase(unittest.TestCase):
     def tearDown(self) -> None:
         self.connection.close()
 
-    def test_real_version_one_schema_upgrades_to_version_two(self) -> None:
+    def test_real_version_one_schema_upgrades_through_current_migrations(self) -> None:
         self._install_version_one_schema(self.connection)
 
         applied = run_migrations(self.connection)
 
         self.assertEqual(
-            tuple((migration.version, migration.name) for migration in applied),
-            ((2, "Add Intelligence History tables"),),
+            tuple(migration.version for migration in applied),
+            (2, 3),
         )
+        self.assertEqual(applied[0].name, "Add Intelligence History tables")
+        self.assertIn("Marketplace History", applied[1].name)
         self._assert_intelligence_history_schema(self.connection)
         versions = {
             row["version"]
@@ -41,7 +43,7 @@ class IntelligenceHistoryMigrationTestCase(unittest.TestCase):
                 "SELECT version FROM schema_migrations"
             ).fetchall()
         }
-        self.assertEqual(versions, {1, 2})
+        self.assertEqual(versions, {1, 2, 3})
 
     def test_migration_failure_rolls_back_ddl_and_version_record(self) -> None:
         self._install_version_one_schema(self.connection)
@@ -67,7 +69,7 @@ class IntelligenceHistoryMigrationTestCase(unittest.TestCase):
         self.assertIsNone(table)
         self.assertIsNone(version)
 
-    def test_current_schema_and_version_two_migration_are_equivalent(self) -> None:
+    def test_current_schema_and_pending_migrations_are_equivalent(self) -> None:
         self._install_version_one_schema(self.connection)
         run_migrations(self.connection)
         migrated_signature = self._schema_signature(self.connection)

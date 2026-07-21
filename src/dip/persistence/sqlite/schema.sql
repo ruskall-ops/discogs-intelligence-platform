@@ -148,5 +148,25 @@ ON intelligence_runs(executed_at DESC, id DESC);
 CREATE INDEX IF NOT EXISTS idx_intelligence_results_module_run
 ON intelligence_results(module_id, run_id DESC);
 
+CREATE TABLE IF NOT EXISTS marketplace_snapshots (
+    snapshot_id TEXT PRIMARY KEY NOT NULL,
+    captured_at TEXT NOT NULL,
+    source TEXT NOT NULL,
+    status TEXT NOT NULL
+        CHECK (status IN (
+            'complete',
+            'partial',
+            'empty',
+            'unavailable',
+            'failed'
+        )),
+    schema_version INTEGER NOT NULL
+        CHECK (schema_version > 0),
+    payload_json TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_marketplace_snapshots_captured
+ON marketplace_snapshots(captured_at DESC, snapshot_id DESC);
+
 INSERT OR IGNORE INTO schema_migrations(version)
 VALUES (1);

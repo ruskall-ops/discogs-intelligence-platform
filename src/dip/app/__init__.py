@@ -20,6 +20,11 @@ from .intelligence_history import (
     IntelligenceHistoryConsistencyError,
     IntelligenceHistoryQueryService,
 )
+from .marketplace_history import (
+    MarketplaceHistoryCommandService,
+    MarketplaceHistoryConsistencyError,
+    MarketplaceHistoryQueryService,
+)
 from .weekend_listings_presentation import WeekendListingsPresentationService
 
 
@@ -46,6 +51,9 @@ __all__ = [
     "IntelligenceComparisonService",
     "IntelligenceHistoryConsistencyError",
     "IntelligenceHistoryQueryService",
+    "MarketplaceHistoryCommandService",
+    "MarketplaceHistoryConsistencyError",
+    "MarketplaceHistoryQueryService",
     "WeekendListingsPresentationService",
     "main",
 ]

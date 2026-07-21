@@ -46,6 +46,7 @@ class DatabaseTestCase(unittest.TestCase):
             "schema_migrations",
             "intelligence_runs",
             "intelligence_results",
+            "marketplace_snapshots",
         }
 
         self.assertTrue(

@@ -12,6 +12,10 @@ from dip.app.dashboard import DashboardHomepageService
 from dip.app.hidden_gems_presentation import HiddenGemsPresentationService
 from dip.app.intelligence_comparison import IntelligenceComparisonService
 from dip.app.intelligence_history import IntelligenceHistoryQueryService
+from dip.app.marketplace_history import (
+    MarketplaceHistoryCommandService,
+    MarketplaceHistoryQueryService,
+)
 from dip.app.weekend_listings_presentation import WeekendListingsPresentationService
 from dip.comparison import ComparisonEngine
 from dip.config import SETTINGS
@@ -40,7 +44,11 @@ from dip.experience.weekend_listings import WeekendListingsDetailViewModelBuilde
 from dip.experience.desktop.weekend_listings_renderer import (
     DesktopWeekendListingsRenderer,
 )
-from dip.persistence.sqlite import Database, SQLiteIntelligenceHistoryRepository
+from dip.persistence.sqlite import (
+    Database,
+    SQLiteIntelligenceHistoryRepository,
+    SQLiteMarketplaceHistoryRepository,
+)
 
 
 @dataclass(frozen=True)
@@ -52,12 +60,21 @@ class DesktopApplicationDependencies:
     collection_health_controller: DesktopCollectionHealthController
     collection_explorer_controller: DesktopCollectionExplorerController
     hidden_gems_controller: DesktopHiddenGemsController
+    marketplace_history_commands: MarketplaceHistoryCommandService | None = None
+    marketplace_history_queries: MarketplaceHistoryQueryService | None = None
 
 
 def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
     """Construct concrete adapters at the application's composition boundary."""
 
     database = Database(SETTINGS.database_path)
+    marketplace_history_repository = SQLiteMarketplaceHistoryRepository(database)
+    marketplace_history_commands = MarketplaceHistoryCommandService(
+        marketplace_history_repository
+    )
+    marketplace_history_queries = MarketplaceHistoryQueryService(
+        marketplace_history_repository
+    )
     history_repository = SQLiteIntelligenceHistoryRepository(database)
     history_queries = IntelligenceHistoryQueryService(history_repository)
     comparison_service = IntelligenceComparisonService(
@@ -89,6 +106,8 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
 
     return DesktopApplicationDependencies(
         database=database,
+        marketplace_history_commands=marketplace_history_commands,
+        marketplace_history_queries=marketplace_history_queries,
         dashboard_homepage=DashboardHomepageService(
             history_queries,
             comparison_presentation,

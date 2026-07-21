@@ -309,39 +309,53 @@ tagged metric values. It never invents identifiers or timestamps and never
 silently discards a record.
 
 The format is domain serialization, not persistence. No repository, SQLite
-schema or migration is introduced by this foundation.
+schema or migration is introduced by the Marketplace Intelligence
+model-and-serialization foundation itself.
 
 ---
 
 # Marketplace Repository
 
-Marketplace data should only be accessed through a repository.
-
-Suggested interface:
+Persisted aggregate snapshots are accessed through the implemented
+Marketplace History repository. Its domain-facing interface is:
 
 ```python
-class MarketplaceRepository(Protocol):
-
-    def latest_snapshot(
-        self,
-        release_id: int,
-    ) -> MarketplaceSnapshot | None:
-        ...
-
-    def historical_snapshots(
-        self,
-        release_id: int,
-    ) -> tuple[MarketplaceSnapshot, ...]:
-        ...
+class MarketplaceHistoryRepository(Protocol):
 
     def save_snapshot(
         self,
         snapshot: MarketplaceSnapshot,
     ) -> None:
         ...
+
+    def get_snapshot(
+        self,
+        snapshot_id: str,
+    ) -> MarketplaceSnapshot | None:
+        ...
+
+    def latest_snapshot(
+        self,
+    ) -> MarketplaceSnapshot | None:
+        ...
+
+    def recent_snapshots(
+        self,
+        limit: int,
+    ) -> tuple[MarketplaceSnapshot, ...]:
+        ...
+
+    def previous_snapshot(
+        self,
+        snapshot_id: str,
+    ) -> MarketplaceSnapshot | None:
+        ...
 ```
 
-Intelligence modules should never know whether data originated from:
+The repository returns complete immutable observation-window aggregates, not
+release-specific rows. Intelligence modules still receive supplied context and
+do not query this repository directly. They should never know whether data
+originated from:
 
 - Discogs;
 - cached data;
@@ -494,6 +508,87 @@ This enables:
 - moving momentum;
 - volatility analysis.
 
+## Implemented Marketplace History foundation
+
+Marketplace History is implemented as a peer boundary to Marketplace
+Intelligence and Intelligence History. It preserves raw, immutable
+`MarketplaceSnapshot` aggregates; it does not store module conclusions or make
+comparison decisions.
+
+```text
+Already-created MarketplaceSnapshot
+                │
+                ▼
+MarketplaceHistoryCommandService
+                │
+                ▼
+MarketplaceHistoryRepository
+                │
+                ▼
+SQLiteMarketplaceHistoryRepository
+                │
+                ▼
+marketplace_snapshots
+```
+
+The domain-facing repository is append-only. Saving a new stable `snapshot_id`
+inserts one fact. Saving the exact same canonical snapshot again is an
+idempotent no-op. Reusing that identifier for different content raises an
+explicit conflict and never overwrites the original observation. The command
+service accepts only an already-constructed valid snapshot; it does not fetch
+data, choose a timestamp, generate an identifier or run intelligence.
+
+The SQLite table `marketplace_snapshots` is deliberately distinct from the
+legacy per-release `market_snapshots` table. It stores the stable snapshot ID,
+a UTC-normalised capture-time ordering key, source, status, Marketplace schema
+version and the exact canonical JSON payload. The payload produced by the
+public Marketplace serializer is authoritative. Release and listing
+observations are not duplicated into relational tables, and money never passes
+through a floating-point storage column.
+
+The original timezone offset remains in the canonical payload. The normalised
+UTC column exists only for chronological queries. Newest-first queries use the
+complete order:
+
+```text
+captured_at DESC
+snapshot_id DESC
+```
+
+The previous-snapshot query follows this same global order. It does not filter
+by source or status and does not decide whether two snapshots are analytically
+comparable. Future modules own that decision.
+
+Every valid status is preserved, including `empty`, `unavailable` and
+`failed`, because capture absence and failure are historical audit facts. On
+retrieval, the adapter deserializes through the strict public Marketplace
+serializer and cross-checks the indexed ID, time, source, status, schema
+version and canonical payload. Malformed JSON, unsupported versions and
+metadata disagreement fail with an explicit history-integrity error; stored
+data is never skipped or repaired silently.
+
+Writes use the shared database transaction boundary. Canonical serialization
+occurs before mutation, and an active caller transaction is isolated with the
+existing savepoint policy. A complete snapshot is therefore stored atomically
+or not at all.
+
+`MarketplaceHistoryQueryService` exposes full immutable snapshots by ID,
+latest snapshot, immediate predecessor and bounded recent history. Recent
+history defaults to 20 snapshots and accepts explicit limits from 1 through
+100. Singular absence is `None`; plural absence is an empty tuple. Queries
+preserve repository order and do not calculate intelligence, compare
+snapshots, format presentation values or contact a provider.
+
+The first persistence slice performs no automatic capture or backfill. It is
+not consumed by the Dashboard, Explorer or desktop UI, and it adds no
+scheduling, caching or network behaviour.
+
+Future Price Changes, Rare Appearances and Supply Trends modules may consume
+these stored observations through later application orchestration. Weekend
+Listings still means only "observed within the supplied weekend window"; it
+does not yet compare the current snapshot with a prior snapshot to establish
+newness.
+
 ---
 
 # Marketplace Intelligence Modules
@@ -620,11 +715,11 @@ Intelligence History preserves the conclusions drawn from that market.
 
 These solve different problems.
 
-The foundation is history-ready but not history-integrated. Its serialization
-does not write Intelligence History and this slice does not change history
-models, repositories or formats. A future application boundary may persist raw
-Marketplace snapshots in a peer Marketplace History store and preserve the
-standard result through Intelligence History without changing either meaning.
+Marketplace serialization does not write Intelligence History. Raw snapshots
+may now be preserved through the peer Marketplace History boundary, while
+future Marketplace module results continue to use the standard result contract
+and may be recorded through Intelligence History. Neither history changes the
+meaning or persistence format of the other.
 
 ## Weekend Listings Intelligence
 
@@ -663,19 +758,20 @@ default engine registry yet because the current composition boundary has no
 Marketplace snapshot or explicit weekend window to supply. Callers may execute
 it through the existing module contract once those inputs are available.
 
-The first slice deliberately excludes Marketplace fetching and persistence,
-monitoring, scheduling, scoring, recommendations, user sorting, and filtering.
-Its Explorer presentation consumes an already-produced result and never runs
-the module on navigation.
+The Weekend Listings slice deliberately excludes Marketplace fetching and
+history persistence, monitoring, scheduling, scoring, recommendations, user
+sorting, and filtering. Its Explorer presentation consumes an already-produced
+result and never runs the module on navigation.
 
-## Foundation exclusions
+## Marketplace Intelligence foundation exclusions
 
-The Marketplace foundation itself does not implement data acquisition, API
-clients, authentication, repositories, SQLite, migrations, scheduling, caching,
-price-change detection, opportunity scoring, Dashboard presentation,
+The Marketplace Intelligence model-and-serialization foundation itself does
+not implement data acquisition, API clients, authentication, scheduling,
+caching, price-change detection, opportunity scoring, Dashboard presentation,
 recommendations, buying or selling automation, or AI-generated summaries.
-Weekend Listings is an additive consumer of the foundation rather than a
-foundation responsibility.
+Marketplace History is the separate repository and SQLite boundary described
+above. Weekend Listings is an additive intelligence consumer of the models
+rather than a foundation or persistence responsibility.
 
 ---
 
@@ -733,29 +829,22 @@ The platform should continue producing partial intelligence whenever possible.
 
 # Database Design
 
-Conceptually:
+The implemented aggregate history schema is intentionally compact:
 
 ```text
 marketplace_snapshots
-
-release_id
-
-captured_at
-
-lowest_price
-
-median_price
-
-highest_price
-
-num_for_sale
-
-num_wanted
-
-last_sold
-
-currency
+├── snapshot_id
+├── captured_at
+├── source
+├── status
+├── schema_version
+└── payload_json
 ```
+
+`payload_json` contains the complete canonical aggregate, including exact money,
+release observations and listing observations. The existing legacy
+`market_snapshots` release table remains separate and unchanged; it is not the
+Marketplace History contract.
 
 Future tables may include:
 

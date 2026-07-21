@@ -1299,7 +1299,13 @@ marketplace analysis runs or create Collection History solely for linkage.
 
 # Relationship with Marketplace History
 
-Marketplace Intelligence should eventually participate automatically.
+Marketplace History is now a separate append-only repository boundary for raw,
+canonical `MarketplaceSnapshot` observations. It does not place listings,
+release observations or capture diagnostics inside Intelligence History
+records.
+
+Marketplace Intelligence may participate in Intelligence History through the
+existing standard result contract:
 
 Conceptually:
 
@@ -1319,7 +1325,11 @@ IntelligenceResult
 Intelligence History
 ```
 
-No special repository behaviour should be required.
+No special Intelligence History repository behaviour is required. Marketplace
+History preserves what the source reported; Intelligence History preserves
+what a versioned module concluded from supplied evidence. Links between those
+observations may be introduced by future orchestration without conflating the
+two stores.
 
 Marketplace Intelligence should integrate naturally through the existing IntelligenceResult contract.
 
