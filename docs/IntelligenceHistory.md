@@ -1109,6 +1109,73 @@ These responsibilities remain separate.
 
 ---
 
+# Comparison Engine Foundation
+
+The Comparison Engine is a deterministic, storage-independent domain service.
+It compares two complete `HistoricalIntelligenceExecution` values that have
+already been assembled by the read-only Intelligence History query boundary.
+It never queries SQLite, calculates new intelligence, or creates presentation
+models.
+
+Conceptually:
+
+```text
+IntelligenceHistoryQueryService
+            │
+            ▼
+IntelligenceComparisonService
+            │
+            ▼
+      ComparisonEngine
+            │
+            ▼
+     ComparisonRegistry
+            │
+            ▼
+       ModuleComparer
+```
+
+The engine validates both historical executions, aligns their module IDs, and
+dispatches each module to its registered comparer. Module-specific comparison
+logic belongs in comparer plugins rather than the engine.
+
+The default registry explicitly registers generic comparers for the current
+Collection Intelligence modules. An unregistered future module receives a
+stateless generic comparer without mutating registry order. Specialised
+comparers may replace generic registrations in future slices.
+
+The generic comparer reports structural `ValueChange` values for:
+
+- status;
+- summary;
+- metrics;
+- evidence;
+- diagnostics.
+
+Each value exposes its previous value, current value and deterministic `changed`
+boolean. Equality uses the canonical type-preserving Intelligence History
+representation, so values such as `true`, `1`, and `1.0` remain distinct. The
+generic comparer does not calculate scores, metric deltas, trends, or
+natural-language explanations.
+
+Every module in either execution produces one immutable `ModuleComparison`.
+Modules found only in the current execution are marked `added`; modules found
+only in the previous execution are marked `removed`. Shared modules are marked
+`changed` or `unchanged` from their structural field comparisons.
+
+Module ordering follows the current execution's persisted engine-registry order.
+Removed modules, which have no current position, follow afterward in their
+previous persisted order. No alphabetical or database-dependent ordering is
+introduced.
+
+The application service supports comparing the latest two executions, two
+already loaded executions, or two persisted run identifiers. Empty or
+single-execution history cannot produce a latest comparison and raises an
+explicit availability error. Missing run identifiers also raise an explicit
+not-found error.
+
+---
+
 # Why Generic Storage?
 
 The repository intentionally stores generic IntelligenceResult information.

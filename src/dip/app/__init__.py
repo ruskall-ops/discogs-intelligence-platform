@@ -1,5 +1,10 @@
 """Application bootstrap and use-case orchestration."""
 
+from .intelligence_comparison import (
+    ComparisonHistoryUnavailableError,
+    HistoricalExecutionNotFoundError,
+    IntelligenceComparisonService,
+)
 from .intelligence_history import (
     HistoricalIntelligenceExecution,
     HistoricalModuleResult,
@@ -17,8 +22,11 @@ def main() -> None:
 
 
 __all__ = [
+    "ComparisonHistoryUnavailableError",
     "HistoricalIntelligenceExecution",
     "HistoricalModuleResult",
+    "HistoricalExecutionNotFoundError",
+    "IntelligenceComparisonService",
     "IntelligenceHistoryConsistencyError",
     "IntelligenceHistoryQueryService",
     "main",
