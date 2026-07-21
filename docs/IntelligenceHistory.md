@@ -339,6 +339,8 @@ Historical records may contain:
 - mappings with string keys
 - date
 - datetime
+- Decimal
+- timedelta
 - Enum
 - approved immutable dataclasses
 
@@ -357,7 +359,6 @@ Examples include:
 - functions;
 - generators;
 - sets;
-- Decimal (unless later explicitly supported);
 - complex numbers;
 - bytes;
 - NaN;
@@ -759,6 +760,18 @@ The Intelligence Engine produces intelligence.
 
 The application service decides whether and how that intelligence should be persisted.
 
+The Collection Intelligence execution service is the orchestration boundary for
+the current implementation. It executes the engine, verifies that every
+registered module completed, converts results into immutable history records,
+and asks the repository to save the complete execution atomically.
+
+Records preserve the Intelligence Engine's registry order. The registry already
+provides deterministic, unique module registration, so no presentation label or
+unordered collection is used to determine historical ordering.
+
+An execution with no registered modules is a valid observation and produces a
+run with `result_count=0`.
+
 ---
 
 # Why Separate Persistence?
@@ -806,7 +819,9 @@ Persist atomically
 Return IntelligenceResult collection
 ```
 
-Notice that the caller receives the same IntelligenceResult objects regardless of whether persistence succeeds.
+On success, the caller receives the original `IntelligenceExecution` together
+with the persisted `IntelligenceHistoryRun`. A persistence failure is propagated
+and no successful orchestrated result is returned.
 
 ---
 
@@ -876,9 +891,10 @@ Marketplace Trends
 Failed
 ```
 
-This is valid intelligence.
-
-The failed module result should still be recorded.
+This is a valid engine result, but it is not persisted by the current Collection
+Intelligence orchestration slice. History is written only when every intended
+module has status `Completed`; failed or skipped executions remain visible to
+the caller and create no historical run.
 
 ---
 
@@ -895,6 +911,9 @@ The intelligence execution succeeded.
 Only historical recording failed.
 
 These should not be treated as the same failure.
+
+The application service surfaces the persistence error without rerunning the
+engine. Repository transaction guarantees ensure no partial execution remains.
 
 ---
 
@@ -1098,6 +1117,10 @@ History Run
 ```
 
 However, neither system should require the other to function.
+
+The application service populates `collection_snapshot_id` only when the caller
+already has a valid collection snapshot identifier. It does not infer one from
+marketplace analysis runs or create Collection History solely for linkage.
 
 ---
 

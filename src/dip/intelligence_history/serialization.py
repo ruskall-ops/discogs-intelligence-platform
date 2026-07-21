@@ -5,13 +5,16 @@ from __future__ import annotations
 import json
 import math
 from collections.abc import Mapping
-from datetime import date, datetime
+from dataclasses import fields as dataclass_fields
+from datetime import date, datetime, timedelta
+from decimal import Decimal, InvalidOperation
 from enum import Enum
 from typing import Any, NoReturn, TypeAlias
 
 from dip.intelligence.models import IntelligenceStatus
 
 from .models import IntelligenceHistoryRecord, IntelligenceHistoryRun, _FrozenList
+from .type_registry import APPROVED_DATACLASS_TYPES, approved_dataclass_name
 
 JsonValue: TypeAlias = (
     None | bool | int | float | str | list["JsonValue"] | dict[str, "JsonValue"]
@@ -23,6 +26,9 @@ _DATE_TYPE = "date"
 _DATETIME_TYPE = "datetime"
 _ENUM_TYPE = "enum"
 _MAPPING_TYPE = "mapping"
+_DECIMAL_TYPE = "decimal"
+_TIMEDELTA_TYPE = "timedelta"
+_DATACLASS_TYPE = "approved_dataclass"
 _RUN_TYPE = "intelligence_history_run"
 _RECORD_TYPE = "intelligence_history_record"
 
@@ -106,11 +112,24 @@ def _serialize(value: Any, *, path: str, approved_model: bool) -> JsonValue:
             _serialization_error(path, value, "non-finite floats are unsupported")
         return value
 
+    if isinstance(value, Decimal):
+        if not value.is_finite():
+            _serialization_error(path, value, "non-finite decimals are unsupported")
+        return {_TYPE_KEY: _DECIMAL_TYPE, "value": str(value)}
+
     if isinstance(value, datetime):
         return {_TYPE_KEY: _DATETIME_TYPE, "value": value.isoformat()}
 
     if isinstance(value, date):
         return {_TYPE_KEY: _DATE_TYPE, "value": value.isoformat()}
+
+    if isinstance(value, timedelta):
+        return {
+            _TYPE_KEY: _TIMEDELTA_TYPE,
+            "days": value.days,
+            "seconds": value.seconds,
+            "microseconds": value.microseconds,
+        }
 
     if isinstance(value, IntelligenceHistoryRun):
         return {
@@ -195,6 +214,21 @@ def _serialize(value: Any, *, path: str, approved_model: bool) -> JsonValue:
                 path=f"{path}.summary",
                 approved_model=True,
             ),
+        }
+
+    dataclass_name = approved_dataclass_name(value)
+    if dataclass_name is not None:
+        return {
+            _TYPE_KEY: _DATACLASS_TYPE,
+            "dataclass": dataclass_name,
+            "fields": {
+                item.name: _serialize(
+                    getattr(value, item.name),
+                    path=f"{path}.{item.name}",
+                    approved_model=True,
+                )
+                for item in dataclass_fields(value)
+            },
         }
 
     if isinstance(value, (list, _FrozenList)):
@@ -326,6 +360,19 @@ def _deserialize(value: Any, *, path: str, approved_model: bool) -> Any:
                 f"{path}.value is not a valid ISO date: {raw_value!r}."
             ) from exc
 
+    if tag == _DECIMAL_TYPE:
+        _require_keys(value, {_TYPE_KEY, "value"}, path)
+        raw_value = _require_string(value["value"], f"{path}.value")
+        try:
+            result = Decimal(raw_value)
+        except InvalidOperation as exc:
+            raise IntelligenceDeserializationError(
+                f"{path}.value is not a valid decimal: {raw_value!r}."
+            ) from exc
+        if not result.is_finite():
+            _deserialization_error(f"{path}.value", "must be a finite decimal")
+        return result
+
     if tag == _DATETIME_TYPE:
         _require_keys(value, {_TYPE_KEY, "value"}, path)
         raw_value = _require_string(value["value"], f"{path}.value")
@@ -335,6 +382,31 @@ def _deserialize(value: Any, *, path: str, approved_model: bool) -> Any:
             raise IntelligenceDeserializationError(
                 f"{path}.value is not a valid ISO datetime: {raw_value!r}."
             ) from exc
+
+    if tag == _TIMEDELTA_TYPE:
+        _require_keys(
+            value,
+            {_TYPE_KEY, "days", "seconds", "microseconds"},
+            path,
+        )
+        days = _require_int(value["days"], f"{path}.days")
+        seconds = _require_int(value["seconds"], f"{path}.seconds")
+        microseconds = _require_int(
+            value["microseconds"],
+            f"{path}.microseconds",
+        )
+        if not 0 <= seconds < 86400:
+            _deserialization_error(f"{path}.seconds", "must be between 0 and 86399")
+        if not 0 <= microseconds < 1000000:
+            _deserialization_error(
+                f"{path}.microseconds",
+                "must be between 0 and 999999",
+            )
+        return timedelta(
+            days=days,
+            seconds=seconds,
+            microseconds=microseconds,
+        )
 
     if tag == _ENUM_TYPE:
         _require_keys(value, {_TYPE_KEY, "enum", "value"}, path)
@@ -352,6 +424,40 @@ def _deserialize(value: Any, *, path: str, approved_model: bool) -> Any:
         except (TypeError, ValueError) as exc:
             raise IntelligenceDeserializationError(
                 f"{path}.value is invalid for enum {enum_name!r}: {enum_value!r}."
+            ) from exc
+
+    if tag == _DATACLASS_TYPE:
+        _require_keys(value, {_TYPE_KEY, "dataclass", "fields"}, path)
+        dataclass_name = _require_string(
+            value["dataclass"],
+            f"{path}.dataclass",
+        )
+        dataclass_type = APPROVED_DATACLASS_TYPES.get(dataclass_name)
+        if dataclass_type is None:
+            _deserialization_error(
+                path,
+                f"unsupported dataclass type {dataclass_name!r}",
+            )
+        raw_fields = value["fields"]
+        if not isinstance(raw_fields, dict):
+            _deserialization_error(f"{path}.fields", "must be a mapping")
+        expected_fields = {
+            item.name for item in dataclass_fields(dataclass_type)
+        }
+        _require_keys(raw_fields, expected_fields, f"{path}.fields")
+        decoded_fields = {
+            name: _deserialize(
+                raw_fields[name],
+                path=f"{path}.{name}",
+                approved_model=True,
+            )
+            for name in sorted(raw_fields)
+        }
+        try:
+            return dataclass_type(**decoded_fields)
+        except (TypeError, ValueError) as exc:
+            raise IntelligenceDeserializationError(
+                f"{path} is not a valid {dataclass_name}: {exc}"
             ) from exc
 
     if tag == _RUN_TYPE:

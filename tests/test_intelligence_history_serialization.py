@@ -6,6 +6,10 @@ from decimal import Decimal
 from enum import Enum
 
 from dip.intelligence import IntelligenceStatus
+from dip.intelligence.modules import (
+    HiddenGemCandidate,
+    HistoricalSnapshotInfo,
+)
 from dip.intelligence_history import (
     IntelligenceDeserializationError,
     IntelligenceHistoryRecord,
@@ -59,6 +63,38 @@ class IntelligenceHistorySerializationTestCase(unittest.TestCase):
         self.assertIs(type(restored[1]), datetime)
         self.assertIsNone(restored[1].tzinfo)
         self.assertEqual(restored[2].utcoffset(), timedelta(hours=1))
+
+    def test_decimal_and_timedelta_round_trip_without_type_loss(self) -> None:
+        value = (Decimal("12.340"), timedelta(days=2, microseconds=7))
+
+        restored = loads_intelligence_value(dumps_intelligence_value(value))
+
+        self.assertEqual(restored, value)
+        self.assertIsInstance(restored[0], Decimal)
+        self.assertIsInstance(restored[1], timedelta)
+
+    def test_approved_module_dataclasses_round_trip(self) -> None:
+        value = {
+            "candidate": HiddenGemCandidate(
+                release_id=1,
+                artist="Artist",
+                title="Title",
+                hidden_gem_score=91.5,
+                evidence=("Evidence",),
+                supporting_metrics={"price": 12},
+                factor_scores={"demand": 95.0},
+            ),
+            "snapshot": HistoricalSnapshotInfo(
+                snapshot_id="2",
+                timestamp=datetime(2026, 7, 21, 10, tzinfo=timezone.utc),
+                collection_size=1,
+                valued_release_count=1,
+            ),
+        }
+
+        restored = loads_intelligence_value(dumps_intelligence_value(value))
+
+        self.assertEqual(restored, value)
 
     def test_intelligence_status_round_trips_as_an_enum(self) -> None:
         restored = loads_intelligence_value(
@@ -138,7 +174,6 @@ class IntelligenceHistorySerializationTestCase(unittest.TestCase):
             complex(1, 2),
             {1, 2},
             b"bytes",
-            Decimal("1.5"),
             object(),
             lambda: None,
             (item for item in (1, 2)),
@@ -154,6 +189,11 @@ class IntelligenceHistorySerializationTestCase(unittest.TestCase):
 
     def test_non_finite_floats_are_rejected_for_serialization_and_loading(self) -> None:
         for value in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(value=value):
+                with self.assertRaises(IntelligenceSerializationError):
+                    dumps_intelligence_value(value)
+
+        for value in (Decimal("NaN"), Decimal("Infinity")):
             with self.subTest(value=value):
                 with self.assertRaises(IntelligenceSerializationError):
                     dumps_intelligence_value(value)

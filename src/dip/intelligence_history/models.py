@@ -1,11 +1,14 @@
 """Immutable domain models for Intelligence History."""
 
-from dataclasses import dataclass, field
-from datetime import date, datetime
+from dataclasses import dataclass, field, fields
+from datetime import date, datetime, timedelta
+from decimal import Decimal
 from types import MappingProxyType
 from typing import Any, Mapping
 
 from dip.intelligence.models import IntelligenceStatus
+
+from .type_registry import approved_dataclass_name
 
 
 class _FrozenList(tuple[Any, ...]):
@@ -33,9 +36,26 @@ def _freeze_value(value: Any) -> Any:
         return _FrozenList(value)
     if isinstance(value, tuple):
         return tuple(_freeze_value(item) for item in value)
+    if approved_dataclass_name(value) is not None:
+        return type(value)(
+            **{
+                item.name: _freeze_value(getattr(value, item.name))
+                for item in fields(value)
+            }
+        )
     if value is None or isinstance(
         value,
-        (bool, int, float, str, date, datetime, IntelligenceStatus),
+        (
+            bool,
+            int,
+            float,
+            str,
+            date,
+            datetime,
+            timedelta,
+            Decimal,
+            IntelligenceStatus,
+        ),
     ):
         return value
     raise TypeError(
