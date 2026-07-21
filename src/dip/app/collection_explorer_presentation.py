@@ -16,6 +16,8 @@ from dip.experience.explorer import (
     CollectionExplorerViewModel,
 )
 from dip.experience.hidden_gems import HiddenGemsDetailViewModel
+from dip.experience.weekend_listings import WeekendListingsDetailViewModel
+from dip.intelligence import IntelligenceResult
 
 
 class _CollectionHealthPresentation(Protocol):
@@ -39,6 +41,7 @@ class _CollectionExplorerBuilder(Protocol):
         collection_health: CollectionHealthDetailViewModel,
         hidden_gems: HiddenGemsDetailViewModel,
         collection_trends: CollectionTrendsViewModel,
+        weekend_listings: WeekendListingsDetailViewModel,
         *,
         selected_destination: CollectionExplorerDestination,
     ) -> CollectionExplorerViewModel: ...
@@ -54,11 +57,13 @@ class CollectionExplorerPresentationService:
         builder: _CollectionExplorerBuilder,
         *,
         collection_trends: "_CollectionTrendsPresentation | None" = None,
+        weekend_listings: "_WeekendListingsPresentation | None" = None,
     ) -> None:
         self._collection_health = collection_health
         self._hidden_gems = hidden_gems
         self._builder = builder
         self._collection_trends = collection_trends
+        self._weekend_listings = weekend_listings
 
     def explorer_for_homepage(
         self,
@@ -67,6 +72,7 @@ class CollectionExplorerPresentationService:
         selected_destination: CollectionExplorerDestination = (
             CollectionExplorerDestination.OVERVIEW
         ),
+        weekend_listings_result: IntelligenceResult | None = None,
     ) -> CollectionExplorerViewModel:
         """Build every destination once from the exact same homepage model."""
 
@@ -89,17 +95,37 @@ class CollectionExplorerPresentationService:
                 else CollectionTrendsViewModel.unavailable()
             )
         )
+        overview_loading = homepage.section_for(
+            DashboardSectionId.COLLECTION_OVERVIEW
+        ).state is DashboardSectionState.LOADING
+        weekend_listings = (
+            WeekendListingsDetailViewModel.loading()
+            if overview_loading
+            else (
+                self._weekend_listings.detail_for_result(weekend_listings_result)
+                if self._weekend_listings is not None
+                else WeekendListingsDetailViewModel.unavailable()
+            )
+        )
         return self._builder.build(
             homepage,
             collection_health,
             hidden_gems,
             collection_trends,
+            weekend_listings,
             selected_destination=selected_destination,
         )
 
 
 class _CollectionTrendsPresentation(Protocol):
     def latest_trends(self) -> CollectionTrendsViewModel: ...
+
+
+class _WeekendListingsPresentation(Protocol):
+    def detail_for_result(
+        self,
+        result: IntelligenceResult | None,
+    ) -> WeekendListingsDetailViewModel: ...
 
 
 __all__ = ["CollectionExplorerPresentationService"]

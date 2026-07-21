@@ -30,6 +30,11 @@ from .hidden_gems_renderer import (
     DesktopHiddenGemsRenderer,
     DesktopHiddenGemsView,
 )
+from .weekend_listings_renderer import (
+    DesktopWeekendListing,
+    DesktopWeekendListingsRenderer,
+    DesktopWeekendListingsView,
+)
 from .explorer_renderer import (
     DesktopExplorerController,
     DesktopExplorerRenderer,
@@ -64,6 +69,9 @@ __all__ = [
     "DesktopHiddenGemsController",
     "DesktopHiddenGemsRenderer",
     "DesktopHiddenGemsView",
+    "DesktopWeekendListing",
+    "DesktopWeekendListingsRenderer",
+    "DesktopWeekendListingsView",
 ]
 
 

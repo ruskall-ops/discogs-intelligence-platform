@@ -7,6 +7,10 @@ from types import MappingProxyType
 from typing import Any, Mapping
 
 from dip.intelligence.models import IntelligenceStatus
+from dip.marketplace_intelligence.models import (
+    MarketplaceDataStatus,
+    MarketplaceDiagnosticSeverity,
+)
 
 from .type_registry import approved_dataclass_name
 
@@ -55,6 +59,8 @@ def _freeze_value(value: Any) -> Any:
             timedelta,
             Decimal,
             IntelligenceStatus,
+            MarketplaceDataStatus,
+            MarketplaceDiagnosticSeverity,
         ),
     ):
         return value

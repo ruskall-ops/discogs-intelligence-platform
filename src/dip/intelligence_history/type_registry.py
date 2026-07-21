@@ -10,6 +10,12 @@ from dip.intelligence.modules.historical_intelligence import (
     HistoricalReleaseIdentity,
     HistoricalSnapshotInfo,
 )
+from dip.marketplace_intelligence.models import MarketplaceDiagnostic, MarketplaceMoney
+from dip.marketplace_intelligence.weekend_listings import (
+    WeekendListingCandidate,
+    WeekendListingsOutput,
+    WeekendWindow,
+)
 
 
 APPROVED_DATACLASS_TYPES: dict[str, type[Any]] = {
@@ -20,6 +26,11 @@ APPROVED_DATACLASS_TYPES: dict[str, type[Any]] = {
         HistoricalReleaseChange,
         HistoricalReleaseIdentity,
         HistoricalSnapshotInfo,
+        MarketplaceDiagnostic,
+        MarketplaceMoney,
+        WeekendListingCandidate,
+        WeekendListingsOutput,
+        WeekendWindow,
     )
 }
 

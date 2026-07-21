@@ -12,6 +12,10 @@ from enum import Enum
 from typing import Any, NoReturn, TypeAlias
 
 from dip.intelligence.models import IntelligenceStatus
+from dip.marketplace_intelligence.models import (
+    MarketplaceDataStatus,
+    MarketplaceDiagnosticSeverity,
+)
 
 from .models import IntelligenceHistoryRecord, IntelligenceHistoryRun, _FrozenList
 from .type_registry import APPROVED_DATACLASS_TYPES, approved_dataclass_name
@@ -35,6 +39,11 @@ _RECORD_TYPE = "intelligence_history_record"
 
 _ENUM_TYPES: dict[str, type[Enum]] = {
     "dip.intelligence.models.IntelligenceStatus": IntelligenceStatus,
+    "dip.marketplace_intelligence.models.MarketplaceDataStatus": MarketplaceDataStatus,
+    (
+        "dip.marketplace_intelligence.models."
+        "MarketplaceDiagnosticSeverity"
+    ): MarketplaceDiagnosticSeverity,
 }
 
 

@@ -626,13 +626,56 @@ models, repositories or formats. A future application boundary may persist raw
 Marketplace snapshots in a peer Marketplace History store and preserve the
 standard result through Intelligence History without changing either meaning.
 
+## Weekend Listings Intelligence
+
+Weekend Listings is the first deterministic Marketplace Intelligence module.
+It consumes an immutable `MarketplaceSnapshot`, collection membership from the
+standard `IntelligenceContext`, and an explicit timezone-aware weekend window.
+The strict window is Saturday 00:00 inclusive to Monday 00:00 exclusive; the
+module does not read a clock or infer the machine timezone.
+
+For this slice, "observed during the weekend window" means only that the
+listing observation timestamp falls inside the supplied window. A single
+snapshot cannot prove that a listing is new to the marketplace, so the module
+does not make that claim. A listing qualifies when its release identifier is
+present in the supplied collection, its observation is inside the window, its
+identifiers and price are valid under the snapshot contract, and the snapshot
+status permits evaluation. Shipping, condition, seller region, artist, and
+title remain optional evidence and do not exclude a listing.
+
+`COMPLETE` snapshots are evaluated normally, `PARTIAL` snapshots retain valid
+listings and source diagnostics, and `EMPTY` snapshots produce a completed
+empty result. `UNAVAILABLE` and absent inputs produce a skipped result, while a
+`FAILED` snapshot produces a failed result. Candidates are ordered by observed
+timestamp descending, then release identifier and listing identifier ascending.
+This order is part of the typed `WeekendListingsOutput` contract.
+
+Prices and shipping use exact `MarketplaceMoney` values. They remain separate;
+the module performs no floating-point conversion, currency conversion,
+cross-currency comparison, total calculation, or price-based ranking. Each
+candidate carries stable factual inclusion evidence, and source diagnostics
+remain available at result level.
+
+The module returns the standard `IntelligenceResult`; its typed output is
+allowed by the existing Intelligence History serialization registry without a
+history format or Marketplace serialization schema change. It is not in the
+default engine registry yet because the current composition boundary has no
+Marketplace snapshot or explicit weekend window to supply. Callers may execute
+it through the existing module contract once those inputs are available.
+
+The first slice deliberately excludes Marketplace fetching and persistence,
+monitoring, scheduling, scoring, recommendations, user sorting, and filtering.
+Its Explorer presentation consumes an already-produced result and never runs
+the module on navigation.
+
 ## Foundation exclusions
 
-The first foundation does not implement data acquisition, API clients,
-authentication, repositories, SQLite, migrations, scheduling, caching,
-Marketplace modules, Weekend Listings, price-change detection, opportunity
-scoring, Dashboard or Explorer presentation, recommendations, buying or selling
-automation, or AI-generated summaries.
+The Marketplace foundation itself does not implement data acquisition, API
+clients, authentication, repositories, SQLite, migrations, scheduling, caching,
+price-change detection, opportunity scoring, Dashboard presentation,
+recommendations, buying or selling automation, or AI-generated summaries.
+Weekend Listings is an additive consumer of the foundation rather than a
+foundation responsibility.
 
 ---
 

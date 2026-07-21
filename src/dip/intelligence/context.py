@@ -1,8 +1,13 @@
 """Prepared, presentation-independent input for intelligence modules."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Mapping, Sequence
+
+if TYPE_CHECKING:
+    from dip.marketplace_intelligence.models import MarketplaceSnapshot
 
 
 @dataclass(frozen=True)
@@ -21,3 +26,4 @@ class IntelligenceContext:
     filters: Mapping[str, Any] = field(default_factory=dict)
     analysis_run_id: int | None = None
     captured_at: datetime | None = None
+    marketplace_snapshot: MarketplaceSnapshot | None = None

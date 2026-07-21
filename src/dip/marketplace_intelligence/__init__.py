@@ -26,6 +26,13 @@ from .serialization import (
     marketplace_snapshot_from_dict,
     marketplace_snapshot_to_dict,
 )
+from .weekend_listings import (
+    WeekendListingCandidate,
+    WeekendListingsDomainError,
+    WeekendListingsModule,
+    WeekendListingsOutput,
+    WeekendWindow,
+)
 
 __all__ = [
     "JsonValue",
@@ -42,6 +49,11 @@ __all__ = [
     "MarketplaceReleaseObservation",
     "MarketplaceSerializationError",
     "MarketplaceSnapshot",
+    "WeekendListingCandidate",
+    "WeekendListingsDomainError",
+    "WeekendListingsModule",
+    "WeekendListingsOutput",
+    "WeekendWindow",
     "dumps_marketplace_module_result",
     "dumps_marketplace_snapshot",
     "loads_marketplace_module_result",

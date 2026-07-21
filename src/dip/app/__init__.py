@@ -20,6 +20,7 @@ from .intelligence_history import (
     IntelligenceHistoryConsistencyError,
     IntelligenceHistoryQueryService,
 )
+from .weekend_listings_presentation import WeekendListingsPresentationService
 
 
 def main() -> None:
@@ -45,5 +46,6 @@ __all__ = [
     "IntelligenceComparisonService",
     "IntelligenceHistoryConsistencyError",
     "IntelligenceHistoryQueryService",
+    "WeekendListingsPresentationService",
     "main",
 ]

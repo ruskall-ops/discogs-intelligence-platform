@@ -12,6 +12,7 @@ from dip.app.dashboard import DashboardHomepageService
 from dip.app.hidden_gems_presentation import HiddenGemsPresentationService
 from dip.app.intelligence_comparison import IntelligenceComparisonService
 from dip.app.intelligence_history import IntelligenceHistoryQueryService
+from dip.app.weekend_listings_presentation import WeekendListingsPresentationService
 from dip.comparison import ComparisonEngine
 from dip.config import SETTINGS
 from dip.experience.collection_health import CollectionHealthDetailViewModelBuilder
@@ -35,6 +36,10 @@ from dip.experience.desktop.hidden_gems_renderer import (
     DesktopHiddenGemsRenderer,
 )
 from dip.experience.hidden_gems import HiddenGemsDetailViewModelBuilder
+from dip.experience.weekend_listings import WeekendListingsDetailViewModelBuilder
+from dip.experience.desktop.weekend_listings_renderer import (
+    DesktopWeekendListingsRenderer,
+)
 from dip.persistence.sqlite import Database, SQLiteIntelligenceHistoryRepository
 
 
@@ -77,6 +82,10 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         comparison_service,
         CollectionTrendsViewModelBuilder(),
     )
+    weekend_listings_presentation = WeekendListingsPresentationService(
+        WeekendListingsDetailViewModelBuilder()
+    )
+    weekend_listings_renderer = DesktopWeekendListingsRenderer()
 
     return DesktopApplicationDependencies(
         database=database,
@@ -95,11 +104,13 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
                 hidden_gems_presentation,
                 CollectionExplorerViewModelBuilder(),
                 collection_trends=collection_trends_presentation,
+                weekend_listings=weekend_listings_presentation,
             ),
             DesktopCollectionExplorerRenderer(
                 collection_health_renderer,
                 hidden_gems_renderer,
                 collection_trends_renderer,
+                weekend_listings_renderer,
             ),
         ),
         hidden_gems_controller=DesktopHiddenGemsController(

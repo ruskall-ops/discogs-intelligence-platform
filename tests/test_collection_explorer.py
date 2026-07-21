@@ -63,7 +63,13 @@ class CollectionExplorerModelTestCase(unittest.TestCase):
         )
         self.assertEqual(
             tuple(item.label for item in explorer.destinations),
-            ("Overview", "Collection Health", "Hidden Gems", "Collection Trends"),
+            (
+                "Overview",
+                "Collection Health",
+                "Hidden Gems",
+                "Collection Trends",
+                "Weekend Listings",
+            ),
         )
 
     def test_duplicate_and_reordered_destinations_are_rejected(self) -> None:

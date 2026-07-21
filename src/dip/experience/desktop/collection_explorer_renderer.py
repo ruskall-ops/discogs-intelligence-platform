@@ -16,10 +16,12 @@ from dip.experience.explorer import (
     CollectionExplorerState,
     CollectionExplorerViewModel,
 )
+from dip.intelligence import IntelligenceResult
 
 from .collection_health_renderer import DesktopCollectionHealthRenderer
 from .collection_trends_renderer import DesktopCollectionTrendsRenderer
 from .hidden_gems_renderer import DesktopHiddenGemsRenderer
+from .weekend_listings_renderer import DesktopWeekendListingsRenderer
 
 
 @dataclass(frozen=True)
@@ -59,6 +61,7 @@ class _CollectionExplorerPresentation(Protocol):
         homepage: DashboardHomepageViewModel,
         *,
         selected_destination: CollectionExplorerDestination,
+        weekend_listings_result: IntelligenceResult | None = None,
     ) -> CollectionExplorerViewModel: ...
 
 
@@ -70,18 +73,20 @@ class DesktopCollectionExplorerRenderer:
         collection_health: DesktopCollectionHealthRenderer | None = None,
         hidden_gems: DesktopHiddenGemsRenderer | None = None,
         collection_trends: DesktopCollectionTrendsRenderer | None = None,
+        weekend_listings: DesktopWeekendListingsRenderer | None = None,
     ) -> None:
         self._collection_health = (
             collection_health or DesktopCollectionHealthRenderer()
         )
         self._hidden_gems = hidden_gems or DesktopHiddenGemsRenderer()
         self._collection_trends = collection_trends or DesktopCollectionTrendsRenderer()
+        self._weekend_listings = weekend_listings or DesktopWeekendListingsRenderer()
 
     def render(
         self,
         explorer: CollectionExplorerViewModel,
     ) -> DesktopCollectionExplorerView:
-        """Render all four destinations once in their validated order."""
+        """Render all five destinations once in their validated order."""
 
         if type(explorer) is not CollectionExplorerViewModel:
             raise TypeError("explorer must be a CollectionExplorerViewModel.")
@@ -104,6 +109,7 @@ class DesktopCollectionExplorerRenderer:
             self._health(explorer),
             self._gems(explorer),
             self._trends(explorer),
+            self._weekend(explorer),
         )
         return DesktopCollectionExplorerView(
             title=explorer.title,
@@ -209,6 +215,25 @@ class DesktopCollectionExplorerRenderer:
             body="\n".join(parts),
         )
 
+    def _weekend(
+        self,
+        explorer: CollectionExplorerViewModel,
+    ) -> DesktopCollectionExplorerSection:
+        rendered = self._weekend_listings.render(explorer.weekend_listings)
+        parts = [rendered.headline, rendered.summary]
+        if rendered.context:
+            parts.extend(("", "Observation context", rendered.context))
+        for candidate in rendered.candidates:
+            parts.extend(("", candidate.heading, candidate.body))
+        if rendered.diagnostics:
+            parts.extend(("", "Diagnostics", rendered.diagnostics))
+        return DesktopCollectionExplorerSection(
+            destination=CollectionExplorerDestination.WEEKEND_LISTINGS,
+            title=rendered.title,
+            state=CollectionExplorerState(rendered.state.value),
+            body="\n".join(parts),
+        )
+
 
 class DesktopCollectionExplorerController:
     """Open one cached Explorer model from the current homepage source."""
@@ -241,13 +266,21 @@ class DesktopCollectionExplorerController:
         selected_destination: CollectionExplorerDestination = (
             CollectionExplorerDestination.OVERVIEW
         ),
+        weekend_listings_result: IntelligenceResult | None = None,
     ) -> DesktopCollectionExplorerView:
         """Build and render one Explorer; tab changes need no further service call."""
 
-        explorer = self._presentation.explorer_for_homepage(
-            homepage,
-            selected_destination=selected_destination,
-        )
+        if weekend_listings_result is None:
+            explorer = self._presentation.explorer_for_homepage(
+                homepage,
+                selected_destination=selected_destination,
+            )
+        else:
+            explorer = self._presentation.explorer_for_homepage(
+                homepage,
+                selected_destination=selected_destination,
+                weekend_listings_result=weekend_listings_result,
+            )
         return self._renderer.render(explorer)
 
 
