@@ -1300,9 +1300,10 @@ marketplace analysis runs or create Collection History solely for linkage.
 # Relationship with Marketplace History
 
 Marketplace History is now a separate append-only repository boundary for raw,
-canonical `MarketplaceSnapshot` observations. It does not place listings,
-release observations or capture diagnostics inside Intelligence History
-records.
+canonical `MarketplaceSnapshot` observations. It does not place complete raw
+listings, release observations or snapshot payloads inside Intelligence History
+records. A module result may retain only the narrow typed evidence and
+diagnostics required to explain its derived conclusion.
 
 Marketplace Intelligence may participate in Intelligence History through the
 existing standard result contract:
@@ -1332,6 +1333,22 @@ observations may be introduced by future orchestration without conflating the
 two stores.
 
 Marketplace Intelligence should integrate naturally through the existing IntelligenceResult contract.
+
+Price Changes follows this boundary. Marketplace History retains the two full
+raw snapshots, while the `price_changes` result retains narrow snapshot
+references, typed factual listing and release-price changes, summary counts and
+diagnostics. It does not copy either complete snapshot into an Intelligence
+History record. Historical snapshot selection remains application
+orchestration; neither Intelligence History nor its repository selects or
+recalculates the comparison.
+
+The frozen Price Changes output, snapshot reference, listing-change,
+release-change and signed-delta value types, together with their stable enums,
+are explicit additions to the deterministic Intelligence History allow-list.
+They use the existing approved-dataclass and enum tags. This is an additive type
+registration only: the Intelligence History wire format, repository contract
+and SQLite schema are unchanged, as is Marketplace serialization schema
+version 1. Unknown dataclasses, enums and tagged values remain rejected.
 
 ---
 
@@ -1644,9 +1661,14 @@ These metrics should remain optional and should not complicate the core historic
 
 ## Marketplace Intelligence
 
-Marketplace Intelligence modules should integrate automatically.
+Marketplace Intelligence module results integrate through the standard result
+contract without a repository redesign. Weekend Listings and Price Changes
+typed outputs use explicit deterministic type registrations; registration does
+not make either module execute or persist automatically.
 
-Because Intelligence History stores generic `IntelligenceResult` objects, future modules require no repository redesign.
+Because Intelligence History stores generic `IntelligenceResult` objects,
+future modules require no repository redesign when their complex immutable
+values are deliberately added to the serialization allow-list.
 
 The architecture remains open for extension but closed for modification.
 

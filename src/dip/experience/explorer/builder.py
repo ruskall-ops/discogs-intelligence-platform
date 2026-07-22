@@ -14,6 +14,7 @@ from dip.experience.dashboard import (
     DashboardSectionState,
 )
 from dip.experience.hidden_gems import HiddenGemsDetailViewModel
+from dip.experience.price_changes import PriceChangesDetailViewModel
 from dip.experience.weekend_listings import WeekendListingsDetailViewModel
 
 from .models import (
@@ -36,6 +37,7 @@ class CollectionExplorerViewModelBuilder:
         hidden_gems: HiddenGemsDetailViewModel,
         collection_trends: CollectionTrendsViewModel | None = None,
         weekend_listings: WeekendListingsDetailViewModel | None = None,
+        price_changes: PriceChangesDetailViewModel | None = None,
         *,
         selected_destination: CollectionExplorerDestination = (
             CollectionExplorerDestination.OVERVIEW
@@ -95,12 +97,21 @@ class CollectionExplorerViewModelBuilder:
             )
         if type(weekend_listings) is not WeekendListingsDetailViewModel:
             raise TypeError("weekend_listings must be a WeekendListingsDetailViewModel.")
+        if price_changes is None:
+            price_changes = (
+                PriceChangesDetailViewModel.loading()
+                if overview.state is CollectionExplorerState.LOADING
+                else PriceChangesDetailViewModel.unavailable()
+            )
+        if type(price_changes) is not PriceChangesDetailViewModel:
+            raise TypeError("price_changes must be a PriceChangesDetailViewModel.")
         destinations = destination_view_models(
             overview,
             collection_health,
             hidden_gems,
             collection_trends,
             weekend_listings,
+            price_changes,
         )
         return CollectionExplorerViewModel(
             state=explorer_state(destinations),
@@ -111,6 +122,7 @@ class CollectionExplorerViewModelBuilder:
             hidden_gems=hidden_gems,
             collection_trends=collection_trends,
             weekend_listings=weekend_listings,
+            price_changes=price_changes,
         )
 
     @staticmethod

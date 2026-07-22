@@ -21,6 +21,7 @@ from dip.intelligence import IntelligenceResult
 from .collection_health_renderer import DesktopCollectionHealthRenderer
 from .collection_trends_renderer import DesktopCollectionTrendsRenderer
 from .hidden_gems_renderer import DesktopHiddenGemsRenderer
+from .price_changes_renderer import DesktopPriceChangesRenderer
 from .weekend_listings_renderer import DesktopWeekendListingsRenderer
 
 
@@ -62,6 +63,7 @@ class _CollectionExplorerPresentation(Protocol):
         *,
         selected_destination: CollectionExplorerDestination,
         weekend_listings_result: IntelligenceResult | None = None,
+        price_changes_result: IntelligenceResult | None = None,
     ) -> CollectionExplorerViewModel: ...
 
 
@@ -74,6 +76,7 @@ class DesktopCollectionExplorerRenderer:
         hidden_gems: DesktopHiddenGemsRenderer | None = None,
         collection_trends: DesktopCollectionTrendsRenderer | None = None,
         weekend_listings: DesktopWeekendListingsRenderer | None = None,
+        price_changes: DesktopPriceChangesRenderer | None = None,
     ) -> None:
         self._collection_health = (
             collection_health or DesktopCollectionHealthRenderer()
@@ -81,12 +84,13 @@ class DesktopCollectionExplorerRenderer:
         self._hidden_gems = hidden_gems or DesktopHiddenGemsRenderer()
         self._collection_trends = collection_trends or DesktopCollectionTrendsRenderer()
         self._weekend_listings = weekend_listings or DesktopWeekendListingsRenderer()
+        self._price_changes = price_changes or DesktopPriceChangesRenderer()
 
     def render(
         self,
         explorer: CollectionExplorerViewModel,
     ) -> DesktopCollectionExplorerView:
-        """Render all five destinations once in their validated order."""
+        """Render all six destinations once in their validated order."""
 
         if type(explorer) is not CollectionExplorerViewModel:
             raise TypeError("explorer must be a CollectionExplorerViewModel.")
@@ -110,6 +114,7 @@ class DesktopCollectionExplorerRenderer:
             self._gems(explorer),
             self._trends(explorer),
             self._weekend(explorer),
+            self._price(explorer),
         )
         return DesktopCollectionExplorerView(
             title=explorer.title,
@@ -234,6 +239,33 @@ class DesktopCollectionExplorerRenderer:
             body="\n".join(parts),
         )
 
+    def _price(
+        self,
+        explorer: CollectionExplorerViewModel,
+    ) -> DesktopCollectionExplorerSection:
+        rendered = self._price_changes.render(explorer.price_changes)
+        parts = [rendered.headline, rendered.summary]
+        if rendered.context:
+            parts.extend(("", "Comparison context", rendered.context))
+        if rendered.counts:
+            parts.extend(("", "Comparison counts", rendered.counts))
+        if rendered.listing_changes:
+            parts.extend(("", "Listing changes"))
+            for change in rendered.listing_changes:
+                parts.extend(("", change.heading, change.body))
+        if rendered.release_changes:
+            parts.extend(("", "Release-level changes"))
+            for change in rendered.release_changes:
+                parts.extend(("", change.heading, change.body))
+        if rendered.diagnostics:
+            parts.extend(("", "Diagnostics", rendered.diagnostics))
+        return DesktopCollectionExplorerSection(
+            destination=CollectionExplorerDestination.PRICE_CHANGES,
+            title=rendered.title,
+            state=CollectionExplorerState(rendered.state.value),
+            body="\n".join(parts),
+        )
+
 
 class DesktopCollectionExplorerController:
     """Open one cached Explorer model from the current homepage source."""
@@ -267,20 +299,20 @@ class DesktopCollectionExplorerController:
             CollectionExplorerDestination.OVERVIEW
         ),
         weekend_listings_result: IntelligenceResult | None = None,
+        price_changes_result: IntelligenceResult | None = None,
     ) -> DesktopCollectionExplorerView:
         """Build and render one Explorer; tab changes need no further service call."""
 
-        if weekend_listings_result is None:
-            explorer = self._presentation.explorer_for_homepage(
-                homepage,
-                selected_destination=selected_destination,
-            )
-        else:
-            explorer = self._presentation.explorer_for_homepage(
-                homepage,
-                selected_destination=selected_destination,
-                weekend_listings_result=weekend_listings_result,
-            )
+        result_arguments = {}
+        if weekend_listings_result is not None:
+            result_arguments["weekend_listings_result"] = weekend_listings_result
+        if price_changes_result is not None:
+            result_arguments["price_changes_result"] = price_changes_result
+        explorer = self._presentation.explorer_for_homepage(
+            homepage,
+            selected_destination=selected_destination,
+            **result_arguments,
+        )
         return self._renderer.render(explorer)
 
 

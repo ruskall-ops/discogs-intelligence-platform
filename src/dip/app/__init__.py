@@ -25,6 +25,11 @@ from .marketplace_history import (
     MarketplaceHistoryConsistencyError,
     MarketplaceHistoryQueryService,
 )
+from .price_changes import (
+    PriceChangesExecutionConsistencyError,
+    PriceChangesExecutionService,
+)
+from .price_changes_presentation import PriceChangesPresentationService
 from .weekend_listings_presentation import WeekendListingsPresentationService
 
 
@@ -54,6 +59,9 @@ __all__ = [
     "MarketplaceHistoryCommandService",
     "MarketplaceHistoryConsistencyError",
     "MarketplaceHistoryQueryService",
+    "PriceChangesExecutionConsistencyError",
+    "PriceChangesExecutionService",
+    "PriceChangesPresentationService",
     "WeekendListingsPresentationService",
     "main",
 ]

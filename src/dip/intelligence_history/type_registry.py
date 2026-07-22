@@ -11,6 +11,14 @@ from dip.intelligence.modules.historical_intelligence import (
     HistoricalSnapshotInfo,
 )
 from dip.marketplace_intelligence.models import MarketplaceDiagnostic, MarketplaceMoney
+from dip.marketplace_intelligence.price_changes import (
+    ListingPriceChange,
+    PriceChangeDelta,
+    PriceChangesOutput,
+    PriceChangesSnapshotReference,
+    PriceChangesSummary,
+    ReleasePriceChange,
+)
 from dip.marketplace_intelligence.weekend_listings import (
     WeekendListingCandidate,
     WeekendListingsOutput,
@@ -28,6 +36,12 @@ APPROVED_DATACLASS_TYPES: dict[str, type[Any]] = {
         HistoricalSnapshotInfo,
         MarketplaceDiagnostic,
         MarketplaceMoney,
+        ListingPriceChange,
+        PriceChangeDelta,
+        PriceChangesOutput,
+        PriceChangesSnapshotReference,
+        PriceChangesSummary,
+        ReleasePriceChange,
         WeekendListingCandidate,
         WeekendListingsOutput,
         WeekendWindow,

@@ -583,11 +583,11 @@ The first persistence slice performs no automatic capture or backfill. It is
 not consumed by the Dashboard, Explorer or desktop UI, and it adds no
 scheduling, caching or network behaviour.
 
-Future Price Changes, Rare Appearances and Supply Trends modules may consume
-these stored observations through later application orchestration. Weekend
-Listings still means only "observed within the supplied weekend window"; it
-does not yet compare the current snapshot with a prior snapshot to establish
-newness.
+Price Changes can consume two of these stored observations through explicit
+application orchestration. Rare Appearances, Supply Trends and stronger
+Weekend newness remain future consumers. Weekend Listings still means only
+"observed within the supplied weekend window"; it does not compare the current
+snapshot with a prior snapshot to establish newness.
 
 ---
 
@@ -684,7 +684,8 @@ This allows:
 - Intelligence History;
 - future comparison layers.
 
-No additional presentation logic is required.
+Module-specific presentation may project the typed output, but it does not
+change the standard result contract.
 
 ---
 
@@ -763,15 +764,148 @@ history persistence, monitoring, scheduling, scoring, recommendations, user
 sorting, and filtering. Its Explorer presentation consumes an already-produced
 result and never runs the module on navigation.
 
+## Price Changes Intelligence
+
+Price Changes is the first two-snapshot Marketplace Intelligence module. It
+compares exactly the previous and latest immutable snapshots supplied in a
+dedicated `MarketplaceSnapshotComparisonInput` through
+`IntelligenceContext.marketplace_comparison`. The existing singular
+`marketplace_snapshot` input remains the Weekend Listings boundary.
+
+Snapshot selection and price comparison remain separate responsibilities:
+
+```text
+MarketplaceHistoryQueryService
+              │
+              ▼
+PriceChangesExecutionService
+              │
+              ▼
+MarketplaceSnapshotComparisonInput
+              │
+              ▼
+PriceChangesModule
+              │
+              ▼
+IntelligenceResult
+```
+
+The application service performs one bounded newest-first history query and
+supplies at most the newest two snapshots in explicit previous/latest roles.
+It does not filter sources or statuses, calculate changes, write history or
+format presentation values. The module does not query a repository, select a
+different historical pair, read a clock or contact a provider. Neither the
+service nor the module runs automatically during startup, Explorer navigation
+or tab selection.
+
+### Snapshot comparability
+
+A comparison requires two distinct snapshot identifiers, a previous
+`captured_at` strictly earlier than the latest value in absolute time, and the
+same stable Marketplace source. The Marketplace History snapshot-ID tie-break
+continues to make repository queries deterministic, but it does not make
+equal-time snapshots analytically ordered. Different source versions do not by
+themselves prevent comparison of canonical domain fields; their difference is
+retained as diagnostic evidence.
+
+`COMPLETE`, `PARTIAL` and `EMPTY` snapshots are eligible. A partial input keeps
+valid comparisons and source diagnostics and makes the typed comparison
+partial. Empty is a valid historical observation: an empty previous snapshot
+can establish that a latest observation was newly observed relative to that
+pair, while an empty latest snapshot can establish only that a previous
+observation is no longer observed in that pair. It does not prove that a
+listing is new to the entire Marketplace, sold, withdrawn or expired.
+
+Missing or single-snapshot input produces a skipped result with insufficient
+history. An input whose previous capture follows the latest capture is rejected
+at construction. Equal capture times remain representable so the module can
+return a skipped result with insufficient data; different sources and
+unavailable input use the same skipped comparison outcome. Failed input
+produces a failed result. None of these outcomes fabricates change records.
+Two non-empty snapshots that supply no listing prices and no lowest or highest
+release-price facts also produce insufficient data: absence of supported
+evidence is not presented as evidence that prices were unchanged. Two explicit
+`EMPTY` observations remain a valid no-change comparison.
+
+### Listing price changes
+
+Listing identity is the established `(release_id, listing_id)` pair. Source
+order, artist, title, condition, seller region and price are never used to
+match identities. For a continuing identity, Price Changes compares the exact
+supplied listing price only:
+
+- `increased` means the latest amount is greater in the same currency;
+- `decreased` means the latest amount is lower in the same currency;
+- `newly_observed` means the identity appears only in the latest supplied
+  snapshot;
+- `no_longer_observed` means it appears only in the previous supplied snapshot;
+- `incomparable` means a continuing listing cannot be compared, including when
+  its currencies differ;
+- an exact same-currency price is unchanged.
+
+Increased, decreased, newly observed, no-longer-observed and incomparable
+records remain in the detailed typed output. Unchanged continuing listings are
+omitted from that detail and retained in the summary counts. Incomparable
+records are also counted and diagnosed rather than silently discarded.
+Shipping, condition and seller-region changes do not drive classification, and
+the module never calculates a price-plus-shipping total.
+
+### Release price changes
+
+Release observations align only by `release_id`. This first slice compares the
+two supplied monetary fields `lowest_price` and `highest_price`; it does not
+compare supply, demand, last-sold dates or status as Price Changes, and it does
+not derive release aggregates from listings. Each field independently becomes
+increased, decreased, newly available, no longer available, incomparable or
+unchanged. Missing money is absence, never zero. Presence on only one side is
+described as observation availability relative to the supplied snapshots, not
+as a claim that the release entered or left the Marketplace. Unchanged facts
+are counted rather than emitted as detailed changes.
+
+Every comparable delta is the signed exact `Decimal` calculation
+`latest - previous`. A decrease therefore has a negative delta. Calculation is
+permitted only when both values have the same currency; cross-currency records
+retain their two values, become incomparable and have no delta. The module does
+not convert currencies, use binary floating point, round implicitly or
+calculate percentages.
+
+Listing changes have the canonical order:
+
+1. relevant observation time descending, using the latest time for continuing
+   and newly observed listings and the previous time for no-longer-observed
+   listings;
+2. release identifier ascending;
+3. listing identifier ascending;
+4. stable change-kind order only if another tie remains.
+
+Release changes are ordered by release identifier ascending and then by the
+fixed metric order `lowest_price`, `highest_price`. Neither sequence is ranked
+by price, delta, desirability or display text.
+
+The module returns the standard `IntelligenceResult` with module ID
+`price_changes`, version `1.0`, and an immutable typed output containing narrow
+snapshot references, comparison completeness, ordered listing and release
+changes, summary counts and diagnostics. A valid comparison with no detailed
+changes is completed and empty, not unavailable. Price Changes remains outside
+the Version 0.2 default registry because that registry cannot supply its
+historical pair without separate application orchestration.
+
+Its presentation service consumes only an already-produced result. The sixth
+Collection Explorer destination preserves the domain order and classifications
+and performs no history query, comparison, delta calculation, currency
+conversion or sorting.
+
 ## Marketplace Intelligence foundation exclusions
 
 The Marketplace Intelligence model-and-serialization foundation itself does
 not implement data acquisition, API clients, authentication, scheduling,
-caching, price-change detection, opportunity scoring, Dashboard presentation,
-recommendations, buying or selling automation, or AI-generated summaries.
-Marketplace History is the separate repository and SQLite boundary described
-above. Weekend Listings is an additive intelligence consumer of the models
-rather than a foundation or persistence responsibility.
+caching, opportunity scoring, Dashboard presentation, recommendations, buying
+or selling automation, or AI-generated summaries. Marketplace History is the
+separate repository and SQLite boundary described above. Weekend Listings and
+Price Changes are additive intelligence consumers of the models rather than
+foundation or persistence responsibilities. Price Changes adds no Marketplace
+schema migration and does not change Marketplace serialization schema version
+1.
 
 ---
 

@@ -69,6 +69,7 @@ class CollectionExplorerModelTestCase(unittest.TestCase):
                 "Hidden Gems",
                 "Collection Trends",
                 "Weekend Listings",
+                "Price Changes",
             ),
         )
 

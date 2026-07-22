@@ -30,6 +30,12 @@ from .hidden_gems_renderer import (
     DesktopHiddenGemsRenderer,
     DesktopHiddenGemsView,
 )
+from .price_changes_renderer import (
+    DesktopListingPriceChange,
+    DesktopPriceChangesRenderer,
+    DesktopPriceChangesView,
+    DesktopReleasePriceChange,
+)
 from .weekend_listings_renderer import (
     DesktopWeekendListing,
     DesktopWeekendListingsRenderer,
@@ -69,6 +75,10 @@ __all__ = [
     "DesktopHiddenGemsController",
     "DesktopHiddenGemsRenderer",
     "DesktopHiddenGemsView",
+    "DesktopListingPriceChange",
+    "DesktopPriceChangesRenderer",
+    "DesktopPriceChangesView",
+    "DesktopReleasePriceChange",
     "DesktopWeekendListing",
     "DesktopWeekendListingsRenderer",
     "DesktopWeekendListingsView",

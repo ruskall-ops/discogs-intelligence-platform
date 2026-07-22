@@ -141,12 +141,13 @@ dependency.
 Every module result and card mapping is isolated. A failed, missing or
 malformed result changes only its own card. The Collection Explorer provides
 read-only navigation from the current historical homepage into Overview,
-Collection Health, Hidden Gems, a latest-two-execution Trends view, and a fifth
-Weekend Listings destination. Weekend Listings receives an optional,
-already-produced Marketplace Intelligence result when the Explorer opens; the
-Dashboard does not execute the module or fetch Marketplace data. With no such
-result, the destination remains visible and unavailable. Charts, filters and
-arbitrary ranges remain outside the dashboard.
+Collection Health, Hidden Gems, a latest-two-execution Trends view, Weekend
+Listings, and a sixth Price Changes destination. The Marketplace destinations
+receive optional, already-produced standard intelligence results when the
+Explorer opens; the Dashboard does not select Marketplace History, execute
+either module, compare snapshots or fetch Marketplace data. With no supplied
+result, the corresponding destination remains visible and unavailable. Charts,
+filters and arbitrary ranges remain outside the dashboard.
 
 ---
 

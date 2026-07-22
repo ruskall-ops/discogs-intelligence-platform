@@ -7,6 +7,9 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
 if TYPE_CHECKING:
+    from dip.marketplace_intelligence.price_changes import (
+        MarketplaceSnapshotComparisonInput,
+    )
     from dip.marketplace_intelligence.models import MarketplaceSnapshot
 
 
@@ -27,3 +30,4 @@ class IntelligenceContext:
     analysis_run_id: int | None = None
     captured_at: datetime | None = None
     marketplace_snapshot: MarketplaceSnapshot | None = None
+    marketplace_comparison: MarketplaceSnapshotComparisonInput | None = None

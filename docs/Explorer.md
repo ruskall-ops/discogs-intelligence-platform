@@ -6,7 +6,8 @@ The first unified Collection Explorer is the primary desktop workspace for
 detailed Collection Intelligence. It orients the user with a concise Overview,
 provides the established Collection Health and Hidden Gems details, and shows a
 neutral recent Collection Trends comparison and factual Weekend Listings from
-an explicitly supplied Marketplace Intelligence result.
+an explicitly supplied Marketplace Intelligence result. Price Changes adds a
+factual comparison of two explicitly supplied Marketplace snapshots.
 
 The Explorer displays completed intelligence. It does not calculate
 intelligence, make collection decisions, query persistence, or start a second
@@ -24,6 +25,7 @@ DashboardHomepageViewModel
           ├── HiddenGemsPresentationService
           ├── CollectionTrendsPresentationService
           ├── WeekendListingsPresentationService
+          ├── PriceChangesPresentationService
           │
           ▼
 CollectionExplorerPresentationService
@@ -41,9 +43,11 @@ Collection Explorer window
 The application service passes the exact same homepage model to the existing
 detail services and builds the Explorer once when the window opens. Trends
 performs one Intelligence History query during that construction. An optional,
-already-produced Weekend Listings result is supplied at the same presentation
-boundary. Switching tabs does not query history, execute intelligence, fetch
-Marketplace data, or rebuild the workspace.
+already-produced Weekend Listings result and an optional, already-produced
+Price Changes result are supplied at the same presentation boundary. Switching
+tabs does not query Marketplace or Intelligence History, execute intelligence,
+fetch Marketplace data, calculate a comparison, sort records, or rebuild the
+workspace.
 
 Overview, Collection Health, and Hidden Gems remain anchored to the Dashboard
 homepage execution supplied when the Explorer opens. Trends identifies its
@@ -65,7 +69,8 @@ Destinations use stable identifiers and always appear in this explicit order:
 2. Collection Health;
 3. Hidden Gems;
 4. Collection Trends;
-5. Weekend Listings.
+5. Weekend Listings;
+6. Price Changes.
 
 Overview copies existing collection size, execution status, completed-module
 count, execution timestamp and version, Collection Health score, Hidden Gems
@@ -95,6 +100,16 @@ diagnostics, and the explicit weekend window. The builder does not qualify,
 filter, rerank, or recalculate listings. If no result is supplied, the fifth
 destination remains visible with an unavailable state.
 
+Price Changes likewise consumes the typed output of an already-produced
+standard `IntelligenceResult`. Its immutable detail preserves the previous and
+latest snapshot context, exact prices, signed deltas, comparison kinds,
+canonical listing and release-change order, unchanged and incomparable counts,
+and diagnostics. Listing identities remain `(release_id, listing_id)`;
+release-level detail is limited to supplied lowest and highest price facts. The
+presentation service and builder do not select history, compare values,
+calculate deltas, convert currencies, classify or sort changes. If no result is
+supplied, the sixth destination remains visible with an unavailable state.
+
 ## States and degradation
 
 The Explorer and destinations use explicit `loading`, `available`, `partial`,
@@ -104,20 +119,25 @@ Overview with one missing detail destination is partial rather than failed.
 Empty Intelligence History produces an empty Overview and stable unavailable
 detail destinations. Unexpected consistency errors continue to the desktop
 error boundary. A missing Weekend Listings result is unavailable without
-degrading otherwise usable collection destinations. A partial Weekend source
-keeps the Explorer usable and marks the aggregate workspace partial.
+degrading otherwise usable collection destinations. The same applies to a
+missing Price Changes result. A partial Weekend source or partial Price Changes
+comparison keeps the Explorer usable and marks the aggregate workspace
+partial. Price Changes distinguishes fewer than two snapshots as
+`insufficient_history`, two supplied but non-comparable snapshots as
+`insufficient_data`, and a valid comparison with no detailed changes as
+`empty`.
 
 ## Desktop navigation
 
 The Dashboard's **Open Collection Explorer** action opens Overview in a
-five-tab, scrollable window. The window retains the homepage model that was
+six-tab, scrollable window. The window retains the homepage model that was
 current when it opened. The action is disabled while that model is loading or
 stale.
 
-Weekend Listings is the fifth tab. Opening or selecting it performs no module
-execution, Marketplace fetch, repository access, persistence write, sorting,
-filtering, or refresh; it only renders the result captured when the Explorer
-was built.
+Weekend Listings is the fifth tab and Price Changes is the sixth. Opening or
+selecting either performs no module execution, Marketplace fetch, history
+query, repository access, persistence write, comparison, sorting, filtering or
+refresh; each only renders the result captured when the Explorer was built.
 
 The existing direct **Open Collection Health** and **Open Hidden Gems** actions
 remain dedicated windows for compatibility and convenience. They share the
@@ -128,6 +148,6 @@ the Explorer, so they do not maintain separate detail implementations.
 
 Search, filtering, user sorting, charts, forecasting, arbitrary date ranges,
 per-release trends, Opportunity,
-Protected Records, Market Movers, broader Marketplace Intelligence, live
-Marketplace monitoring, background refresh, and AI summaries remain future
-work.
+Protected Records, Market Movers, broader Marketplace Intelligence, automatic
+Price Changes execution, live Marketplace monitoring, background refresh, and
+AI summaries remain future work.

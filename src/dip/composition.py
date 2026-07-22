@@ -16,6 +16,8 @@ from dip.app.marketplace_history import (
     MarketplaceHistoryCommandService,
     MarketplaceHistoryQueryService,
 )
+from dip.app.price_changes import PriceChangesExecutionService
+from dip.app.price_changes_presentation import PriceChangesPresentationService
 from dip.app.weekend_listings_presentation import WeekendListingsPresentationService
 from dip.comparison import ComparisonEngine
 from dip.config import SETTINGS
@@ -40,10 +42,16 @@ from dip.experience.desktop.hidden_gems_renderer import (
     DesktopHiddenGemsRenderer,
 )
 from dip.experience.hidden_gems import HiddenGemsDetailViewModelBuilder
+from dip.experience.price_changes import PriceChangesDetailViewModelBuilder
+from dip.experience.desktop.price_changes_renderer import (
+    DesktopPriceChangesRenderer,
+)
 from dip.experience.weekend_listings import WeekendListingsDetailViewModelBuilder
 from dip.experience.desktop.weekend_listings_renderer import (
     DesktopWeekendListingsRenderer,
 )
+from dip.intelligence import IntelligenceEngine
+from dip.marketplace_intelligence import PriceChangesModule
 from dip.persistence.sqlite import (
     Database,
     SQLiteIntelligenceHistoryRepository,
@@ -62,6 +70,7 @@ class DesktopApplicationDependencies:
     hidden_gems_controller: DesktopHiddenGemsController
     marketplace_history_commands: MarketplaceHistoryCommandService | None = None
     marketplace_history_queries: MarketplaceHistoryQueryService | None = None
+    price_changes_execution: PriceChangesExecutionService | None = None
 
 
 def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
@@ -74,6 +83,10 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
     )
     marketplace_history_queries = MarketplaceHistoryQueryService(
         marketplace_history_repository
+    )
+    price_changes_execution = PriceChangesExecutionService(
+        marketplace_history_queries,
+        IntelligenceEngine((PriceChangesModule(),)),
     )
     history_repository = SQLiteIntelligenceHistoryRepository(database)
     history_queries = IntelligenceHistoryQueryService(history_repository)
@@ -103,11 +116,16 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         WeekendListingsDetailViewModelBuilder()
     )
     weekend_listings_renderer = DesktopWeekendListingsRenderer()
+    price_changes_presentation = PriceChangesPresentationService(
+        PriceChangesDetailViewModelBuilder()
+    )
+    price_changes_renderer = DesktopPriceChangesRenderer()
 
     return DesktopApplicationDependencies(
         database=database,
         marketplace_history_commands=marketplace_history_commands,
         marketplace_history_queries=marketplace_history_queries,
+        price_changes_execution=price_changes_execution,
         dashboard_homepage=DashboardHomepageService(
             history_queries,
             comparison_presentation,
@@ -124,12 +142,14 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
                 CollectionExplorerViewModelBuilder(),
                 collection_trends=collection_trends_presentation,
                 weekend_listings=weekend_listings_presentation,
+                price_changes=price_changes_presentation,
             ),
             DesktopCollectionExplorerRenderer(
                 collection_health_renderer,
                 hidden_gems_renderer,
                 collection_trends_renderer,
                 weekend_listings_renderer,
+                price_changes_renderer,
             ),
         ),
         hidden_gems_controller=DesktopHiddenGemsController(

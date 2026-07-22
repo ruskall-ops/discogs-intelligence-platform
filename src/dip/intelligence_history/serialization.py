@@ -16,6 +16,12 @@ from dip.marketplace_intelligence.models import (
     MarketplaceDataStatus,
     MarketplaceDiagnosticSeverity,
 )
+from dip.marketplace_intelligence.price_changes import (
+    ListingPriceChangeKind,
+    PriceChangesComparisonState,
+    ReleasePriceChangeKind,
+    ReleasePriceMetric,
+)
 
 from .models import IntelligenceHistoryRecord, IntelligenceHistoryRun, _FrozenList
 from .type_registry import APPROVED_DATACLASS_TYPES, approved_dataclass_name
@@ -44,6 +50,22 @@ _ENUM_TYPES: dict[str, type[Enum]] = {
         "dip.marketplace_intelligence.models."
         "MarketplaceDiagnosticSeverity"
     ): MarketplaceDiagnosticSeverity,
+    (
+        "dip.marketplace_intelligence.price_changes."
+        "ListingPriceChangeKind"
+    ): ListingPriceChangeKind,
+    (
+        "dip.marketplace_intelligence.price_changes."
+        "PriceChangesComparisonState"
+    ): PriceChangesComparisonState,
+    (
+        "dip.marketplace_intelligence.price_changes."
+        "ReleasePriceChangeKind"
+    ): ReleasePriceChangeKind,
+    (
+        "dip.marketplace_intelligence.price_changes."
+        "ReleasePriceMetric"
+    ): ReleasePriceMetric,
 }
 
 

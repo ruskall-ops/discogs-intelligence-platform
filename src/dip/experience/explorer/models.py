@@ -21,6 +21,7 @@ from dip.experience.dashboard import (
     DashboardSectionState,
 )
 from dip.experience.hidden_gems import HiddenGemsDetailViewModel
+from dip.experience.price_changes import PriceChangesDetailViewModel
 from dip.experience.weekend_listings import WeekendListingsDetailViewModel
 from dip.intelligence import IntelligenceStatus
 
@@ -37,6 +38,7 @@ class CollectionExplorerDestination(str, Enum):
     HIDDEN_GEMS = "hidden_gems"
     COLLECTION_TRENDS = "collection_trends"
     WEEKEND_LISTINGS = "weekend_listings"
+    PRICE_CHANGES = "price_changes"
 
 
 class CollectionExplorerState(str, Enum):
@@ -136,6 +138,7 @@ _DESTINATION_LABELS = {
     CollectionExplorerDestination.HIDDEN_GEMS: "Hidden Gems",
     CollectionExplorerDestination.COLLECTION_TRENDS: "Collection Trends",
     CollectionExplorerDestination.WEEKEND_LISTINGS: "Weekend Listings",
+    CollectionExplorerDestination.PRICE_CHANGES: "Price Changes",
 }
 
 
@@ -151,6 +154,7 @@ class CollectionExplorerViewModel:
     hidden_gems: HiddenGemsDetailViewModel
     collection_trends: CollectionTrendsViewModel
     weekend_listings: WeekendListingsDetailViewModel
+    price_changes: PriceChangesDetailViewModel
     title: str = field(init=False, default="Collection Explorer")
 
     def __post_init__(self) -> None:
@@ -172,6 +176,8 @@ class CollectionExplorerViewModel:
             raise TypeError("collection_trends must be a CollectionTrendsViewModel.")
         if type(self.weekend_listings) is not WeekendListingsDetailViewModel:
             raise TypeError("weekend_listings must be a WeekendListingsDetailViewModel.")
+        if type(self.price_changes) is not PriceChangesDetailViewModel:
+            raise TypeError("price_changes must be a PriceChangesDetailViewModel.")
 
         expected_states = (
             self.overview.state,
@@ -179,6 +185,7 @@ class CollectionExplorerViewModel:
             _hidden_gems_state(self.hidden_gems),
             _collection_trends_state(self.collection_trends),
             _weekend_listings_state(self.weekend_listings),
+            _price_changes_state(self.price_changes),
         )
         if tuple(item.state for item in destinations) != expected_states:
             raise CollectionExplorerConsistencyError(
@@ -219,8 +226,9 @@ def destination_view_models(
     hidden_gems: HiddenGemsDetailViewModel,
     collection_trends: CollectionTrendsViewModel,
     weekend_listings: WeekendListingsDetailViewModel,
+    price_changes: PriceChangesDetailViewModel,
 ) -> tuple[CollectionExplorerDestinationViewModel, ...]:
-    """Create the fixed navigation sequence for five composed destinations."""
+    """Create the fixed navigation sequence for six composed destinations."""
 
     states = (
         overview.state,
@@ -228,6 +236,7 @@ def destination_view_models(
         _hidden_gems_state(hidden_gems),
         _collection_trends_state(collection_trends),
         _weekend_listings_state(weekend_listings),
+        _price_changes_state(price_changes),
     )
     return tuple(
         CollectionExplorerDestinationViewModel(
@@ -304,23 +313,19 @@ def _weekend_listings_state(
     return CollectionExplorerState(detail.state.value)
 
 
+def _price_changes_state(
+    detail: PriceChangesDetailViewModel,
+) -> CollectionExplorerState:
+    return CollectionExplorerState(detail.state.value)
+
+
 def _aggregate_state(
     states: tuple[CollectionExplorerState, ...],
 ) -> CollectionExplorerState:
-    if states == (
-        CollectionExplorerState.LOADING,
-        CollectionExplorerState.LOADING,
-        CollectionExplorerState.LOADING,
-        CollectionExplorerState.LOADING,
-        CollectionExplorerState.LOADING,
-    ):
+    if states and all(state is CollectionExplorerState.LOADING for state in states):
         return CollectionExplorerState.LOADING
-    if states == (
-        CollectionExplorerState.EMPTY,
-        CollectionExplorerState.UNAVAILABLE,
-        CollectionExplorerState.UNAVAILABLE,
-        CollectionExplorerState.UNAVAILABLE,
-        CollectionExplorerState.UNAVAILABLE,
+    if states and states[0] is CollectionExplorerState.EMPTY and all(
+        state is CollectionExplorerState.UNAVAILABLE for state in states[1:]
     ):
         return CollectionExplorerState.EMPTY
     if all(state is CollectionExplorerState.UNAVAILABLE for state in states):
@@ -331,6 +336,7 @@ def _aggregate_state(
     core_states = states[:3]
     trends_state = states[3]
     weekend_state = states[4]
+    price_changes_state = states[5]
     usable = {
         CollectionExplorerState.AVAILABLE,
         CollectionExplorerState.EMPTY,
@@ -347,6 +353,13 @@ def _aggregate_state(
         in {
             *usable,
             CollectionExplorerState.UNAVAILABLE,
+            CollectionExplorerState.INSUFFICIENT_DATA,
+        }
+        and price_changes_state
+        in {
+            *usable,
+            CollectionExplorerState.UNAVAILABLE,
+            CollectionExplorerState.INSUFFICIENT_HISTORY,
             CollectionExplorerState.INSUFFICIENT_DATA,
         }
     ):
