@@ -70,6 +70,7 @@ class CollectionExplorerModelTestCase(unittest.TestCase):
                 "Collection Trends",
                 "Weekend Listings",
                 "Price Changes",
+                "Supply Changes",
             ),
         )
 

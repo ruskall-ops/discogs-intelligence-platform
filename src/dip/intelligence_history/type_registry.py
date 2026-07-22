@@ -19,6 +19,12 @@ from dip.marketplace_intelligence.price_changes import (
     PriceChangesSummary,
     ReleasePriceChange,
 )
+from dip.marketplace_intelligence.supply_changes import (
+    ReleaseSupplyChange,
+    SupplyChangesOutput,
+    SupplyChangesSnapshotReference,
+    SupplyChangesSummary,
+)
 from dip.marketplace_intelligence.weekend_listings import (
     WeekendListingCandidate,
     WeekendListingsOutput,
@@ -42,6 +48,10 @@ APPROVED_DATACLASS_TYPES: dict[str, type[Any]] = {
         PriceChangesSnapshotReference,
         PriceChangesSummary,
         ReleasePriceChange,
+        ReleaseSupplyChange,
+        SupplyChangesOutput,
+        SupplyChangesSnapshotReference,
+        SupplyChangesSummary,
         WeekendListingCandidate,
         WeekendListingsOutput,
         WeekendWindow,

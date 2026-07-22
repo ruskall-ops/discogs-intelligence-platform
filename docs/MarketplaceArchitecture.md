@@ -97,6 +97,28 @@ Each layer has a single responsibility.
 
 # High-Level Architecture
 
+## Supply Changes Intelligence
+
+The first Supply Changes slice compares exactly two snapshots selected by the
+application layer. `SupplyChangesExecutionService` performs one bounded
+`recent_snapshots(2)` query and runs an explicitly registered
+`SupplyChangesModule`. The module never selects history, uses persistence,
+reads the clock, or derives supply from listing observations.
+
+Its authoritative input is the provider-supplied release observation
+`supply_count` domain property, a backwards-compatible name for the existing
+version-1 `num_for_sale` field. Releases align only by `release_id`. Comparable
+integer values produce the exact signed `latest - previous` delta. Missing
+facts become newly available, no longer available, or incomparable without a
+fabricated zero. Unchanged releases are counted but omitted from detail, and
+emitted records use ascending release ID order.
+
+Complete and empty snapshot pairs are valid. Partial inputs or incomparable
+records produce a partial result with preserved source diagnostics.
+Unavailable inputs are skipped and failed inputs fail. The standard
+`IntelligenceResult` contains immutable typed output under stable module ID
+`supply_changes`, version `1.0`; the default engine registry remains unchanged.
+
 ```text
                 Discogs API
                      │

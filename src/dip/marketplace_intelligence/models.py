@@ -146,6 +146,17 @@ class MarketplaceReleaseObservation:
         object.__setattr__(self, "diagnostics", diagnostics)
         _validate_release_status(self, diagnostics)
 
+    @property
+    def supply_count(self) -> int | None:
+        """Return the provider-supplied release-level supply fact.
+
+        ``num_for_sale`` remains the version-1 serialized field.  This domain
+        name makes the authoritative supply boundary explicit without changing
+        the Marketplace wire format.
+        """
+
+        return self.num_for_sale
+
 
 @dataclass(frozen=True)
 class MarketplaceSnapshot:

@@ -27,6 +27,16 @@ from .price_changes import (
     ReleasePriceChangeKind,
     ReleasePriceMetric,
 )
+from .supply_changes import (
+    ReleaseSupplyChange,
+    SupplyChangeKind,
+    SupplyChangesComparisonState,
+    SupplyChangesDomainError,
+    SupplyChangesModule,
+    SupplyChangesOutput,
+    SupplyChangesSnapshotReference,
+    SupplyChangesSummary,
+)
 from .serialization import (
     JsonValue,
     MARKETPLACE_SCHEMA_VERSION,
@@ -81,6 +91,14 @@ __all__ = [
     "WeekendListingsDomainError",
     "WeekendListingsModule",
     "WeekendListingsOutput",
+    "ReleaseSupplyChange",
+    "SupplyChangeKind",
+    "SupplyChangesComparisonState",
+    "SupplyChangesDomainError",
+    "SupplyChangesModule",
+    "SupplyChangesOutput",
+    "SupplyChangesSnapshotReference",
+    "SupplyChangesSummary",
     "WeekendWindow",
     "dumps_marketplace_module_result",
     "dumps_marketplace_snapshot",

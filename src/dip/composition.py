@@ -18,6 +18,8 @@ from dip.app.marketplace_history import (
 )
 from dip.app.price_changes import PriceChangesExecutionService
 from dip.app.price_changes_presentation import PriceChangesPresentationService
+from dip.app.supply_changes import SupplyChangesExecutionService
+from dip.app.supply_changes_presentation import SupplyChangesPresentationService
 from dip.app.weekend_listings_presentation import WeekendListingsPresentationService
 from dip.comparison import ComparisonEngine
 from dip.config import SETTINGS
@@ -43,15 +45,17 @@ from dip.experience.desktop.hidden_gems_renderer import (
 )
 from dip.experience.hidden_gems import HiddenGemsDetailViewModelBuilder
 from dip.experience.price_changes import PriceChangesDetailViewModelBuilder
+from dip.experience.supply_changes import SupplyChangesDetailViewModelBuilder
 from dip.experience.desktop.price_changes_renderer import (
     DesktopPriceChangesRenderer,
 )
+from dip.experience.desktop.supply_changes_renderer import DesktopSupplyChangesRenderer
 from dip.experience.weekend_listings import WeekendListingsDetailViewModelBuilder
 from dip.experience.desktop.weekend_listings_renderer import (
     DesktopWeekendListingsRenderer,
 )
 from dip.intelligence import IntelligenceEngine
-from dip.marketplace_intelligence import PriceChangesModule
+from dip.marketplace_intelligence import PriceChangesModule, SupplyChangesModule
 from dip.persistence.sqlite import (
     Database,
     SQLiteIntelligenceHistoryRepository,
@@ -71,6 +75,7 @@ class DesktopApplicationDependencies:
     marketplace_history_commands: MarketplaceHistoryCommandService | None = None
     marketplace_history_queries: MarketplaceHistoryQueryService | None = None
     price_changes_execution: PriceChangesExecutionService | None = None
+    supply_changes_execution: SupplyChangesExecutionService | None = None
 
 
 def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
@@ -87,6 +92,10 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
     price_changes_execution = PriceChangesExecutionService(
         marketplace_history_queries,
         IntelligenceEngine((PriceChangesModule(),)),
+    )
+    supply_changes_execution = SupplyChangesExecutionService(
+        marketplace_history_queries,
+        IntelligenceEngine((SupplyChangesModule(),)),
     )
     history_repository = SQLiteIntelligenceHistoryRepository(database)
     history_queries = IntelligenceHistoryQueryService(history_repository)
@@ -120,12 +129,17 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         PriceChangesDetailViewModelBuilder()
     )
     price_changes_renderer = DesktopPriceChangesRenderer()
+    supply_changes_presentation = SupplyChangesPresentationService(
+        SupplyChangesDetailViewModelBuilder()
+    )
+    supply_changes_renderer = DesktopSupplyChangesRenderer()
 
     return DesktopApplicationDependencies(
         database=database,
         marketplace_history_commands=marketplace_history_commands,
         marketplace_history_queries=marketplace_history_queries,
         price_changes_execution=price_changes_execution,
+        supply_changes_execution=supply_changes_execution,
         dashboard_homepage=DashboardHomepageService(
             history_queries,
             comparison_presentation,
@@ -143,6 +157,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
                 collection_trends=collection_trends_presentation,
                 weekend_listings=weekend_listings_presentation,
                 price_changes=price_changes_presentation,
+                supply_changes=supply_changes_presentation,
             ),
             DesktopCollectionExplorerRenderer(
                 collection_health_renderer,
@@ -150,6 +165,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
                 collection_trends_renderer,
                 weekend_listings_renderer,
                 price_changes_renderer,
+                supply_changes_renderer,
             ),
         ),
         hidden_gems_controller=DesktopHiddenGemsController(

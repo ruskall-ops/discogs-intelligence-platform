@@ -30,6 +30,8 @@ from .price_changes import (
     PriceChangesExecutionService,
 )
 from .price_changes_presentation import PriceChangesPresentationService
+from .supply_changes import SupplyChangesExecutionConsistencyError, SupplyChangesExecutionService
+from .supply_changes_presentation import SupplyChangesPresentationService
 from .weekend_listings_presentation import WeekendListingsPresentationService
 
 
@@ -62,6 +64,9 @@ __all__ = [
     "PriceChangesExecutionConsistencyError",
     "PriceChangesExecutionService",
     "PriceChangesPresentationService",
+    "SupplyChangesExecutionConsistencyError",
+    "SupplyChangesExecutionService",
+    "SupplyChangesPresentationService",
     "WeekendListingsPresentationService",
     "main",
 ]

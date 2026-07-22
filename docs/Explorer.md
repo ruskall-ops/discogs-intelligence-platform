@@ -70,7 +70,8 @@ Destinations use stable identifiers and always appear in this explicit order:
 3. Hidden Gems;
 4. Collection Trends;
 5. Weekend Listings;
-6. Price Changes.
+6. Price Changes;
+7. Supply Changes.
 
 Overview copies existing collection size, execution status, completed-module
 count, execution timestamp and version, Collection Health score, Hidden Gems
@@ -130,12 +131,12 @@ partial. Price Changes distinguishes fewer than two snapshots as
 ## Desktop navigation
 
 The Dashboard's **Open Collection Explorer** action opens Overview in a
-six-tab, scrollable window. The window retains the homepage model that was
+seven-tab, scrollable window. The window retains the homepage model that was
 current when it opened. The action is disabled while that model is loading or
 stale.
 
-Weekend Listings is the fifth tab and Price Changes is the sixth. Opening or
-selecting either performs no module execution, Marketplace fetch, history
+Weekend Listings is the fifth tab, Price Changes is the sixth, and Supply
+Changes is the seventh. Opening or selecting them performs no module execution, Marketplace fetch, history
 query, repository access, persistence write, comparison, sorting, filtering or
 refresh; each only renders the result captured when the Explorer was built.
 
@@ -143,6 +144,16 @@ The existing direct **Open Collection Health** and **Open Hidden Gems** actions
 remain dedicated windows for compatibility and convenience. They share the
 same presentation services, immutable detail models, and renderer instances as
 the Explorer, so they do not maintain separate detail implementations.
+
+## Supply Changes destination
+
+Supply Changes is the seventh destination. It consumes an already-produced
+standard result and preserves snapshot references, source, ascending release
+order, supplied integer values, signed deltas, factual classifications,
+summary counts, evidence, and diagnostics. It does not query history, count
+listings, compare or sort. Without a supplied result it remains visible and
+unavailable. Opening or switching to it performs no execution or persistence
+access.
 
 ## First-slice limitations
 
