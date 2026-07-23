@@ -10,6 +10,7 @@ from dip.app import (
     MarketplaceMomentumExecutionService,
     MarketplaceStabilityExecutionService,
     MarketplaceScarcityExecutionService,
+    MarketplaceOpportunityExecutionService,
     ListingLifecycleExecutionService,
     PriceChangesExecutionService,
 )
@@ -79,6 +80,7 @@ class MarketplaceHistoryCompositionTestCase(unittest.TestCase):
         self.assertIsNone(dependencies.marketplace_momentum_execution)
         self.assertIsNone(dependencies.marketplace_stability_execution)
         self.assertIsNone(dependencies.marketplace_scarcity_execution)
+        self.assertIsNone(dependencies.marketplace_opportunity_execution)
 
     def test_composition_exposes_services_without_accessing_history_on_startup(
         self,
@@ -139,6 +141,10 @@ class MarketplaceHistoryCompositionTestCase(unittest.TestCase):
         self.assertIsInstance(
             dependencies.marketplace_scarcity_execution,
             MarketplaceScarcityExecutionService,
+        )
+        self.assertIsInstance(
+            dependencies.marketplace_opportunity_execution,
+            MarketplaceOpportunityExecutionService,
         )
         self.assertEqual(repository.calls, [])
 

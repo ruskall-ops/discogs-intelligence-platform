@@ -323,6 +323,28 @@ listing sequences, infers sales or production totals, or accesses history,
 repositories, persistence, the network, or a clock. Module and rule-set
 versions are both `1.0`.
 
+## Marketplace Opportunity Decision Intelligence synthesis
+
+Marketplace Opportunity is the first synthesis module over existing Decision
+Intelligence dimensions. It requires already-produced Marketplace Momentum,
+Marketplace Stability, and Marketplace Scarcity results and accepts no
+lower-level intelligence inputs.
+
+The application service validates typed outputs, module and rule-set versions,
+release identities, diagnostics, and the strongest common evidence-window
+identity exposed by source provenance. It obtains each source once and
+explicitly executes one Opportunity module. Missing or incompatible dimensions
+produce insufficient evidence; Opportunity never recreates a source module's
+responsibility.
+
+The immutable output preserves direction, consistency, and observed
+availability assessments separately, along with each source evidence state and
+an explicit supportive, neutral, limiting, adverse, or unusable mapping.
+Canonical rules synthesize these facts into strong, developing, balanced,
+constrained, weak, or insufficient observed alignment. There is no numerical
+score, weighting, confidence probability, valuation, forecast, or
+recommendation. Module and rule-set versions are both `1.0`.
+
 ```text
                 Discogs API
                      │

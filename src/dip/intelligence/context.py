@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from dip.decision_intelligence import MarketplaceMomentumInput
     from dip.decision_intelligence import MarketplaceStabilityInput
     from dip.decision_intelligence import MarketplaceScarcityInput
+    from dip.decision_intelligence import MarketplaceOpportunityInput
     from dip.marketplace_intelligence.price_changes import (
         MarketplaceSnapshotComparisonInput,
     )
@@ -39,3 +40,4 @@ class IntelligenceContext:
     marketplace_momentum_input: MarketplaceMomentumInput | None = None
     marketplace_stability_input: MarketplaceStabilityInput | None = None
     marketplace_scarcity_input: MarketplaceScarcityInput | None = None
+    marketplace_opportunity_input: MarketplaceOpportunityInput | None = None

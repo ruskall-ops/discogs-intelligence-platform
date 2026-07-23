@@ -204,7 +204,7 @@ class MarketplaceMomentumExplorerIntegrationTestCase(unittest.TestCase):
             rendered.sections[10]
 
         self.assertEqual(momentum.calls, [result])
-        self.assertEqual(len(rendered.sections), 13)
+        self.assertEqual(len(rendered.sections), 14)
         self.assertIs(
             rendered.sections[10].destination,
             CollectionExplorerDestination.MARKETPLACE_MOMENTUM,

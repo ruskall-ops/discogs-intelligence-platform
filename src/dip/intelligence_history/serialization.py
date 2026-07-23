@@ -33,6 +33,12 @@ from dip.decision_intelligence import (
     ScarcityEvidenceCoverage,
     ScarcityListingState,
     ScarcityReasonCode,
+    MarketplaceOpportunityDiagnosticCode,
+    OpportunityAnalysisState,
+    OpportunityAssessment,
+    OpportunityDimensionCategory,
+    OpportunityEvidenceCoverage,
+    OpportunityReasonCode,
 )
 from dip.marketplace_intelligence.models import (
     MarketplaceDataStatus,
@@ -90,6 +96,12 @@ _ENUM_TYPES: dict[str, type[Enum]] = {
     "dip.decision_intelligence.marketplace_scarcity.ScarcityEvidenceCoverage": ScarcityEvidenceCoverage,
     "dip.decision_intelligence.marketplace_scarcity.ScarcityListingState": ScarcityListingState,
     "dip.decision_intelligence.marketplace_scarcity.ScarcityReasonCode": ScarcityReasonCode,
+    "dip.decision_intelligence.marketplace_opportunity.MarketplaceOpportunityDiagnosticCode": MarketplaceOpportunityDiagnosticCode,
+    "dip.decision_intelligence.marketplace_opportunity.OpportunityAnalysisState": OpportunityAnalysisState,
+    "dip.decision_intelligence.marketplace_opportunity.OpportunityAssessment": OpportunityAssessment,
+    "dip.decision_intelligence.marketplace_opportunity.OpportunityDimensionCategory": OpportunityDimensionCategory,
+    "dip.decision_intelligence.marketplace_opportunity.OpportunityEvidenceCoverage": OpportunityEvidenceCoverage,
+    "dip.decision_intelligence.marketplace_opportunity.OpportunityReasonCode": OpportunityReasonCode,
     (
         "dip.decision_intelligence.marketplace_momentum."
         "ActivityIntensity"

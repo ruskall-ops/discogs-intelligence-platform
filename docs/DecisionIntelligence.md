@@ -449,6 +449,43 @@ All labels mean observed Marketplace conditions. Scarcity does not infer why a
 listing disappeared, that it sold, total production, or availability outside
 the analyzed Marketplace evidence. It never recommends or forecasts.
 
+## Marketplace Opportunity synthesis
+
+Marketplace Opportunity is the first synthesis-oriented Decision Intelligence
+module. It consumes only already-produced Marketplace Momentum, Marketplace
+Stability, and Marketplace Scarcity results. It has no lower-level Marketplace
+Intelligence fallback and cannot access history, snapshots, prices, listings,
+repositories, persistence, or network clients.
+
+The independent dimensions retain their ownership:
+
+- Momentum describes observed direction;
+- Stability describes observed consistency;
+- Scarcity describes limited observed Marketplace availability;
+- Opportunity synthesizes those supplied dimensions.
+
+The explicit source-state mapping is: positive Momentum and stable Stability
+are supportive; mixed or neutral Momentum and mixed Stability are neutral;
+negative Momentum is adverse; volatile Stability is limiting; scarce and very
+scarce availability are supportive scarcity context; limited availability is
+neutral; and common or abundant availability is limiting. Insufficient source
+states are unusable.
+
+Version `1.0` evaluates rules in this canonical order: insufficient, strong,
+weak, constrained, developing, then balanced. Strong alignment requires
+complete evidence, positive Momentum, stable Stability, and scarce or very
+scarce observed availability. Volatility, common or abundant availability, and
+limited evidence constrain synthesis. Negative direction combined with
+limiting dimensions produces weak alignment. Usable mixed combinations are
+balanced.
+
+The output preserves every source assessment, every source evidence state,
+its mapped category, category counts, canonical reason codes, provenance,
+diagnostics, module version `1.0`, and rule-set version `1.0`. There are no
+points, percentages, weights, scores, price targets, value claims, forecasts,
+or recommendations. Opportunity means an observed Marketplace evidence
+synthesis, not financial advice.
+
 Execution services coordinate Decision Intelligence.
 
 Execution services:

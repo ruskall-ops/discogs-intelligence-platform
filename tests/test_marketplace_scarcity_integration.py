@@ -102,10 +102,9 @@ class MarketplaceScarcityIntegrationTestCase(unittest.TestCase):
         ))
         rendered = controller.open(available_homepage(), marketplace_scarcity_result=result)
         self.assertEqual(scarcity.calls, [result])
-        self.assertEqual(len(rendered.sections), 13)
+        self.assertEqual(len(rendered.sections), 14)
         self.assertIs(rendered.sections[12].destination, CollectionExplorerDestination.MARKETPLACE_SCARCITY)
 
 
 if __name__ == "__main__":
     unittest.main()
-

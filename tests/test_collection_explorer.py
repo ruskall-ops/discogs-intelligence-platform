@@ -77,6 +77,7 @@ class CollectionExplorerModelTestCase(unittest.TestCase):
                 "Marketplace Momentum",
                 "Marketplace Stability",
                 "Marketplace Scarcity",
+                "Marketplace Opportunity",
             ),
         )
 

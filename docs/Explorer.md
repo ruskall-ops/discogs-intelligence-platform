@@ -35,6 +35,7 @@ DashboardHomepageViewModel
           ├── MarketplaceMomentumPresentationService
           ├── MarketplaceStabilityPresentationService
           ├── MarketplaceScarcityPresentationService
+          ├── MarketplaceOpportunityPresentationService
           │
           ▼
 CollectionExplorerPresentationService
@@ -87,7 +88,8 @@ Destinations use stable identifiers and always appear in this explicit order:
 10. Listing Lifecycle;
 11. Marketplace Momentum;
 12. Marketplace Stability;
-13. Marketplace Scarcity.
+13. Marketplace Scarcity;
+14. Marketplace Opportunity.
 
 Overview copies existing collection size, execution status, completed-module
 count, execution timestamp and version, Collection Health score, Hidden Gems
@@ -150,7 +152,7 @@ two snapshots as
 ## Desktop navigation
 
 The Dashboard's **Open Collection Explorer** action opens Overview in a
-thirteen-tab, scrollable window. The window retains the homepage model that was
+fourteen-tab, scrollable window. The window retains the homepage model that was
 current when it opened. The action is disabled while that model is loading or
 stale.
 
@@ -158,7 +160,8 @@ Weekend Listings is the fifth tab, Price Changes is the sixth, Supply Changes
 is the seventh, Rare Appearances is the eighth, Marketplace Activity is the
 ninth, Listing Lifecycle is the tenth, and Marketplace Momentum is the
 eleventh, Marketplace Stability is the twelfth, and Marketplace Scarcity is
-the thirteenth. Opening or selecting them performs no module execution, Marketplace
+the thirteenth, and Marketplace Opportunity is the fourteenth. Opening or
+selecting them performs no module execution, Marketplace
 fetch, history
 query, repository access, persistence write, comparison, sorting, filtering or
 refresh; each only renders the result captured when the Explorer was built.
@@ -239,10 +242,22 @@ Lifecycle aggregation, threshold evaluation, assessment logic, history access,
 execution, or sorting. A missing result remains unavailable without degrading
 the other destinations.
 
+## Marketplace Opportunity destination
+
+Marketplace Opportunity is the fourteenth destination. It receives only an
+already-produced synthesis result and preserves Momentum, Stability, and
+Scarcity assessments and evidence states separately, their mapped categories,
+category counts, reason codes, provenance, diagnostics, and rule-set version.
+Explorer and desktop code perform no provider calls, synthesis, source-state
+mapping, rule evaluation, sorting, or lower-level intelligence access. An
+absent result remains unavailable without degrading the other destinations.
+The wording describes observed Marketplace alignment rather than financial
+advice, value, or predicted outcomes.
+
 ## First-slice limitations
 
 Search, filtering, user sorting, charts, forecasting, arbitrary date ranges,
-per-release trends, Opportunity,
+per-release trends,
 Protected Records, Market Movers, broader Marketplace Intelligence, automatic
-Price Changes, Marketplace Momentum, Marketplace Stability, or Marketplace Scarcity execution, live Marketplace monitoring,
+Price Changes, Marketplace Momentum, Marketplace Stability, Marketplace Scarcity, or Marketplace Opportunity execution, live Marketplace monitoring,
 background refresh, and AI summaries remain future work.

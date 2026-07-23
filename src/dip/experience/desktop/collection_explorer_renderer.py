@@ -29,6 +29,7 @@ from .listing_lifecycle_renderer import DesktopListingLifecycleRenderer
 from .marketplace_momentum_renderer import DesktopMarketplaceMomentumRenderer
 from .marketplace_stability_renderer import DesktopMarketplaceStabilityRenderer
 from .marketplace_scarcity_renderer import DesktopMarketplaceScarcityRenderer
+from .marketplace_opportunity_renderer import DesktopMarketplaceOpportunityRenderer
 from .weekend_listings_renderer import DesktopWeekendListingsRenderer
 
 
@@ -78,6 +79,7 @@ class _CollectionExplorerPresentation(Protocol):
         marketplace_momentum_result: IntelligenceResult | None = None,
         marketplace_stability_result: IntelligenceResult | None = None,
         marketplace_scarcity_result: IntelligenceResult | None = None,
+        marketplace_opportunity_result: IntelligenceResult | None = None,
     ) -> CollectionExplorerViewModel: ...
 
 
@@ -98,6 +100,7 @@ class DesktopCollectionExplorerRenderer:
         marketplace_momentum: DesktopMarketplaceMomentumRenderer | None = None,
         marketplace_stability: DesktopMarketplaceStabilityRenderer | None = None,
         marketplace_scarcity: DesktopMarketplaceScarcityRenderer | None = None,
+        marketplace_opportunity: DesktopMarketplaceOpportunityRenderer | None = None,
     ) -> None:
         self._collection_health = (
             collection_health or DesktopCollectionHealthRenderer()
@@ -117,6 +120,7 @@ class DesktopCollectionExplorerRenderer:
             marketplace_stability or DesktopMarketplaceStabilityRenderer()
         )
         self._marketplace_scarcity = marketplace_scarcity or DesktopMarketplaceScarcityRenderer()
+        self._marketplace_opportunity = marketplace_opportunity or DesktopMarketplaceOpportunityRenderer()
 
     def render(
         self,
@@ -154,6 +158,7 @@ class DesktopCollectionExplorerRenderer:
             self._momentum(explorer),
             self._stability(explorer),
             self._scarcity(explorer),
+            self._opportunity(explorer),
         )
         return DesktopCollectionExplorerView(
             title=explorer.title,
@@ -418,6 +423,24 @@ class DesktopCollectionExplorerRenderer:
             "\n".join(parts),
         )
 
+    def _opportunity(self, explorer):
+        rendered = self._marketplace_opportunity.render(explorer.marketplace_opportunity)
+        parts = [rendered.headline, rendered.summary]
+        if rendered.context:
+            parts.extend(("", "Synthesis context", rendered.context))
+        for release in rendered.releases:
+            parts.extend(("", release.heading, release.body))
+        if rendered.source_provenance:
+            parts.extend(("", "Source provenance", rendered.source_provenance))
+        if rendered.diagnostics:
+            parts.extend(("", "Diagnostics", rendered.diagnostics))
+        return DesktopCollectionExplorerSection(
+            CollectionExplorerDestination.MARKETPLACE_OPPORTUNITY,
+            rendered.title,
+            CollectionExplorerState(rendered.state.value),
+            "\n".join(parts),
+        )
+
 
 class DesktopCollectionExplorerController:
     """Open one cached Explorer model from the current homepage source."""
@@ -459,6 +482,7 @@ class DesktopCollectionExplorerController:
         marketplace_momentum_result: IntelligenceResult | None = None,
         marketplace_stability_result: IntelligenceResult | None = None,
         marketplace_scarcity_result: IntelligenceResult | None = None,
+        marketplace_opportunity_result: IntelligenceResult | None = None,
     ) -> DesktopCollectionExplorerView:
         """Build and render one Explorer; tab changes need no further service call."""
 
@@ -483,6 +507,8 @@ class DesktopCollectionExplorerController:
             result_arguments["marketplace_stability_result"] = marketplace_stability_result
         if marketplace_scarcity_result is not None:
             result_arguments["marketplace_scarcity_result"] = marketplace_scarcity_result
+        if marketplace_opportunity_result is not None:
+            result_arguments["marketplace_opportunity_result"] = marketplace_opportunity_result
         explorer = self._presentation.explorer_for_homepage(
             homepage,
             selected_destination=selected_destination,

@@ -22,6 +22,7 @@ from dip.experience.listing_lifecycle import ListingLifecycleDetailViewModel
 from dip.experience.marketplace_momentum import MarketplaceMomentumDetailViewModel
 from dip.experience.marketplace_stability import MarketplaceStabilityDetailViewModel
 from dip.experience.marketplace_scarcity import MarketplaceScarcityDetailViewModel
+from dip.experience.marketplace_opportunity import MarketplaceOpportunityDetailViewModel
 from dip.experience.weekend_listings import WeekendListingsDetailViewModel
 
 from .models import (
@@ -52,6 +53,7 @@ class CollectionExplorerViewModelBuilder:
         marketplace_momentum: MarketplaceMomentumDetailViewModel | None = None,
         marketplace_stability: MarketplaceStabilityDetailViewModel | None = None,
         marketplace_scarcity: MarketplaceScarcityDetailViewModel | None = None,
+        marketplace_opportunity: MarketplaceOpportunityDetailViewModel | None = None,
         *,
         selected_destination: CollectionExplorerDestination = (
             CollectionExplorerDestination.OVERVIEW
@@ -161,6 +163,14 @@ class CollectionExplorerViewModelBuilder:
             )
         if type(marketplace_scarcity) is not MarketplaceScarcityDetailViewModel:
             raise TypeError("marketplace_scarcity must be a MarketplaceScarcityDetailViewModel.")
+        if marketplace_opportunity is None:
+            marketplace_opportunity = (
+                MarketplaceOpportunityDetailViewModel.loading()
+                if overview.state is CollectionExplorerState.LOADING
+                else MarketplaceOpportunityDetailViewModel.unavailable()
+            )
+        if type(marketplace_opportunity) is not MarketplaceOpportunityDetailViewModel:
+            raise TypeError("marketplace_opportunity must be a MarketplaceOpportunityDetailViewModel.")
         destinations = destination_view_models(
             overview,
             collection_health,
@@ -175,6 +185,7 @@ class CollectionExplorerViewModelBuilder:
             marketplace_momentum,
             marketplace_stability,
             marketplace_scarcity,
+            marketplace_opportunity,
         )
         return CollectionExplorerViewModel(
             state=explorer_state(destinations),
@@ -193,6 +204,7 @@ class CollectionExplorerViewModelBuilder:
             marketplace_momentum=marketplace_momentum,
             marketplace_stability=marketplace_stability,
             marketplace_scarcity=marketplace_scarcity,
+            marketplace_opportunity=marketplace_opportunity,
         )
 
     @staticmethod

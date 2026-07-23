@@ -56,6 +56,12 @@ from .marketplace_scarcity import (
     build_marketplace_scarcity_input,
 )
 from .marketplace_scarcity_presentation import MarketplaceScarcityPresentationService
+from .marketplace_opportunity import (
+    MarketplaceOpportunityExecutionConsistencyError,
+    MarketplaceOpportunityExecutionService,
+    build_marketplace_opportunity_input,
+)
+from .marketplace_opportunity_presentation import MarketplaceOpportunityPresentationService
 from .weekend_listings_presentation import WeekendListingsPresentationService
 
 
@@ -109,9 +115,13 @@ __all__ = [
     "MarketplaceScarcityExecutionConsistencyError",
     "MarketplaceScarcityExecutionService",
     "MarketplaceScarcityPresentationService",
+    "MarketplaceOpportunityExecutionConsistencyError",
+    "MarketplaceOpportunityExecutionService",
+    "MarketplaceOpportunityPresentationService",
     "WeekendListingsPresentationService",
     "build_marketplace_momentum_input",
     "build_marketplace_stability_input",
     "build_marketplace_scarcity_input",
+    "build_marketplace_opportunity_input",
     "main",
 ]
