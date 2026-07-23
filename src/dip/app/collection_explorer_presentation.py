@@ -18,6 +18,7 @@ from dip.experience.explorer import (
 from dip.experience.hidden_gems import HiddenGemsDetailViewModel
 from dip.experience.price_changes import PriceChangesDetailViewModel
 from dip.experience.supply_changes import SupplyChangesDetailViewModel
+from dip.experience.rare_appearances import RareAppearancesDetailViewModel
 from dip.experience.weekend_listings import WeekendListingsDetailViewModel
 from dip.intelligence import IntelligenceResult
 
@@ -46,6 +47,7 @@ class _CollectionExplorerBuilder(Protocol):
         weekend_listings: WeekendListingsDetailViewModel,
         price_changes: PriceChangesDetailViewModel,
         supply_changes: SupplyChangesDetailViewModel,
+        rare_appearances: RareAppearancesDetailViewModel,
         *,
         selected_destination: CollectionExplorerDestination,
     ) -> CollectionExplorerViewModel: ...
@@ -64,6 +66,7 @@ class CollectionExplorerPresentationService:
         weekend_listings: "_WeekendListingsPresentation | None" = None,
         price_changes: "_PriceChangesPresentation | None" = None,
         supply_changes: "_SupplyChangesPresentation | None" = None,
+        rare_appearances: "_RareAppearancesPresentation | None" = None,
     ) -> None:
         self._collection_health = collection_health
         self._hidden_gems = hidden_gems
@@ -72,6 +75,7 @@ class CollectionExplorerPresentationService:
         self._weekend_listings = weekend_listings
         self._price_changes = price_changes
         self._supply_changes = supply_changes
+        self._rare_appearances = rare_appearances
 
     def explorer_for_homepage(
         self,
@@ -83,6 +87,7 @@ class CollectionExplorerPresentationService:
         weekend_listings_result: IntelligenceResult | None = None,
         price_changes_result: IntelligenceResult | None = None,
         supply_changes_result: IntelligenceResult | None = None,
+        rare_appearances_result: IntelligenceResult | None = None,
     ) -> CollectionExplorerViewModel:
         """Build every destination once from the exact same homepage model."""
 
@@ -131,6 +136,7 @@ class CollectionExplorerPresentationService:
             if overview_loading
             else (self._supply_changes.detail_for_result(supply_changes_result) if self._supply_changes is not None else SupplyChangesDetailViewModel.unavailable())
         )
+        rare_appearances = RareAppearancesDetailViewModel.loading() if overview_loading else (self._rare_appearances.detail_for_result(rare_appearances_result) if self._rare_appearances is not None else RareAppearancesDetailViewModel.unavailable())
         return self._builder.build(
             homepage,
             collection_health,
@@ -139,6 +145,7 @@ class CollectionExplorerPresentationService:
             weekend_listings,
             price_changes,
             supply_changes,
+            rare_appearances,
             selected_destination=selected_destination,
         )
 
@@ -163,6 +170,10 @@ class _PriceChangesPresentation(Protocol):
 
 class _SupplyChangesPresentation(Protocol):
     def detail_for_result(self, result: IntelligenceResult | None) -> SupplyChangesDetailViewModel: ...
+
+
+class _RareAppearancesPresentation(Protocol):
+    def detail_for_result(self, result: IntelligenceResult | None) -> RareAppearancesDetailViewModel: ...
 
 
 __all__ = ["CollectionExplorerPresentationService"]

@@ -31,3 +31,4 @@ class IntelligenceContext:
     captured_at: datetime | None = None
     marketplace_snapshot: MarketplaceSnapshot | None = None
     marketplace_comparison: MarketplaceSnapshotComparisonInput | None = None
+    marketplace_history: tuple[MarketplaceSnapshot, ...] = ()

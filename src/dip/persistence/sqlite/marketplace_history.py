@@ -169,6 +169,24 @@ class SQLiteMarketplaceHistoryRepository(MarketplaceHistoryRepository):
 
         return tuple(self._snapshot_from_row(row) for row in rows)
 
+    def all_snapshots(self) -> tuple[MarketplaceSnapshot, ...]:
+        """Return complete Marketplace History in deterministic chronological order."""
+
+        try:
+            with self._database.locked_connection() as connection:
+                rows = connection.execute(
+                    """
+                    SELECT *
+                    FROM marketplace_snapshots
+                    ORDER BY captured_at ASC, snapshot_id ASC
+                    """
+                ).fetchall()
+        except sqlite3.Error as exc:
+            raise MarketplaceHistoryPersistenceError(
+                "Unable to retrieve complete Marketplace snapshot history."
+            ) from exc
+        return tuple(self._snapshot_from_row(row) for row in rows)
+
     def previous_snapshot(
         self,
         snapshot_id: str,

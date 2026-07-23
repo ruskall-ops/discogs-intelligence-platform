@@ -23,6 +23,7 @@ from .collection_trends_renderer import DesktopCollectionTrendsRenderer
 from .hidden_gems_renderer import DesktopHiddenGemsRenderer
 from .price_changes_renderer import DesktopPriceChangesRenderer
 from .supply_changes_renderer import DesktopSupplyChangesRenderer
+from .rare_appearances_renderer import DesktopRareAppearancesRenderer
 from .weekend_listings_renderer import DesktopWeekendListingsRenderer
 
 
@@ -66,6 +67,7 @@ class _CollectionExplorerPresentation(Protocol):
         weekend_listings_result: IntelligenceResult | None = None,
         price_changes_result: IntelligenceResult | None = None,
         supply_changes_result: IntelligenceResult | None = None,
+        rare_appearances_result: IntelligenceResult | None = None,
     ) -> CollectionExplorerViewModel: ...
 
 
@@ -80,6 +82,7 @@ class DesktopCollectionExplorerRenderer:
         weekend_listings: DesktopWeekendListingsRenderer | None = None,
         price_changes: DesktopPriceChangesRenderer | None = None,
         supply_changes: DesktopSupplyChangesRenderer | None = None,
+        rare_appearances: DesktopRareAppearancesRenderer | None = None,
     ) -> None:
         self._collection_health = (
             collection_health or DesktopCollectionHealthRenderer()
@@ -89,6 +92,7 @@ class DesktopCollectionExplorerRenderer:
         self._weekend_listings = weekend_listings or DesktopWeekendListingsRenderer()
         self._price_changes = price_changes or DesktopPriceChangesRenderer()
         self._supply_changes = supply_changes or DesktopSupplyChangesRenderer()
+        self._rare_appearances = rare_appearances or DesktopRareAppearancesRenderer()
 
     def render(
         self,
@@ -120,6 +124,7 @@ class DesktopCollectionExplorerRenderer:
             self._weekend(explorer),
             self._price(explorer),
             self._supply(explorer),
+            self._rare(explorer),
         )
         return DesktopCollectionExplorerView(
             title=explorer.title,
@@ -289,6 +294,17 @@ class DesktopCollectionExplorerRenderer:
             "\n".join(parts),
         )
 
+    def _rare(self, explorer: CollectionExplorerViewModel) -> DesktopCollectionExplorerSection:
+        rendered = self._rare_appearances.render(explorer.rare_appearances)
+        parts = [rendered.headline, rendered.summary]
+        if rendered.context:
+            parts.extend(("", "History context", rendered.context))
+        for appearance in rendered.appearances:
+            parts.extend(("", appearance.heading, appearance.body))
+        if rendered.diagnostics:
+            parts.extend(("", "Diagnostics", rendered.diagnostics))
+        return DesktopCollectionExplorerSection(CollectionExplorerDestination.RARE_APPEARANCES, rendered.title, CollectionExplorerState(rendered.state.value), "\n".join(parts))
+
 
 class DesktopCollectionExplorerController:
     """Open one cached Explorer model from the current homepage source."""
@@ -324,6 +340,7 @@ class DesktopCollectionExplorerController:
         weekend_listings_result: IntelligenceResult | None = None,
         price_changes_result: IntelligenceResult | None = None,
         supply_changes_result: IntelligenceResult | None = None,
+        rare_appearances_result: IntelligenceResult | None = None,
     ) -> DesktopCollectionExplorerView:
         """Build and render one Explorer; tab changes need no further service call."""
 
@@ -334,6 +351,8 @@ class DesktopCollectionExplorerController:
             result_arguments["price_changes_result"] = price_changes_result
         if supply_changes_result is not None:
             result_arguments["supply_changes_result"] = supply_changes_result
+        if rare_appearances_result is not None:
+            result_arguments["rare_appearances_result"] = rare_appearances_result
         explorer = self._presentation.explorer_for_homepage(
             homepage,
             selected_destination=selected_destination,

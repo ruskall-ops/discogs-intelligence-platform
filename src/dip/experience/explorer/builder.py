@@ -16,6 +16,7 @@ from dip.experience.dashboard import (
 from dip.experience.hidden_gems import HiddenGemsDetailViewModel
 from dip.experience.price_changes import PriceChangesDetailViewModel
 from dip.experience.supply_changes import SupplyChangesDetailViewModel
+from dip.experience.rare_appearances import RareAppearancesDetailViewModel
 from dip.experience.weekend_listings import WeekendListingsDetailViewModel
 
 from .models import (
@@ -40,6 +41,7 @@ class CollectionExplorerViewModelBuilder:
         weekend_listings: WeekendListingsDetailViewModel | None = None,
         price_changes: PriceChangesDetailViewModel | None = None,
         supply_changes: SupplyChangesDetailViewModel | None = None,
+        rare_appearances: RareAppearancesDetailViewModel | None = None,
         *,
         selected_destination: CollectionExplorerDestination = (
             CollectionExplorerDestination.OVERVIEW
@@ -111,6 +113,10 @@ class CollectionExplorerViewModelBuilder:
             supply_changes = SupplyChangesDetailViewModel.loading() if overview.state is CollectionExplorerState.LOADING else SupplyChangesDetailViewModel.unavailable()
         if type(supply_changes) is not SupplyChangesDetailViewModel:
             raise TypeError("supply_changes must be a SupplyChangesDetailViewModel.")
+        if rare_appearances is None:
+            rare_appearances = RareAppearancesDetailViewModel.loading() if overview.state is CollectionExplorerState.LOADING else RareAppearancesDetailViewModel.unavailable()
+        if type(rare_appearances) is not RareAppearancesDetailViewModel:
+            raise TypeError("rare_appearances must be a RareAppearancesDetailViewModel.")
         destinations = destination_view_models(
             overview,
             collection_health,
@@ -119,6 +125,7 @@ class CollectionExplorerViewModelBuilder:
             weekend_listings,
             price_changes,
             supply_changes,
+            rare_appearances,
         )
         return CollectionExplorerViewModel(
             state=explorer_state(destinations),
@@ -131,6 +138,7 @@ class CollectionExplorerViewModelBuilder:
             weekend_listings=weekend_listings,
             price_changes=price_changes,
             supply_changes=supply_changes,
+            rare_appearances=rare_appearances,
         )
 
     @staticmethod

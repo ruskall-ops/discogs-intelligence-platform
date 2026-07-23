@@ -23,6 +23,7 @@ from dip.experience.dashboard import (
 from dip.experience.hidden_gems import HiddenGemsDetailViewModel
 from dip.experience.price_changes import PriceChangesDetailViewModel
 from dip.experience.supply_changes import SupplyChangesDetailViewModel
+from dip.experience.rare_appearances import RareAppearancesDetailViewModel
 from dip.experience.weekend_listings import WeekendListingsDetailViewModel
 from dip.intelligence import IntelligenceStatus
 
@@ -41,6 +42,7 @@ class CollectionExplorerDestination(str, Enum):
     WEEKEND_LISTINGS = "weekend_listings"
     PRICE_CHANGES = "price_changes"
     SUPPLY_CHANGES = "supply_changes"
+    RARE_APPEARANCES = "rare_appearances"
 
 
 class CollectionExplorerState(str, Enum):
@@ -142,6 +144,7 @@ _DESTINATION_LABELS = {
     CollectionExplorerDestination.WEEKEND_LISTINGS: "Weekend Listings",
     CollectionExplorerDestination.PRICE_CHANGES: "Price Changes",
     CollectionExplorerDestination.SUPPLY_CHANGES: "Supply Changes",
+    CollectionExplorerDestination.RARE_APPEARANCES: "Rare Appearances",
 }
 
 
@@ -159,6 +162,7 @@ class CollectionExplorerViewModel:
     weekend_listings: WeekendListingsDetailViewModel
     price_changes: PriceChangesDetailViewModel
     supply_changes: SupplyChangesDetailViewModel
+    rare_appearances: RareAppearancesDetailViewModel
     title: str = field(init=False, default="Collection Explorer")
 
     def __post_init__(self) -> None:
@@ -184,6 +188,8 @@ class CollectionExplorerViewModel:
             raise TypeError("price_changes must be a PriceChangesDetailViewModel.")
         if type(self.supply_changes) is not SupplyChangesDetailViewModel:
             raise TypeError("supply_changes must be a SupplyChangesDetailViewModel.")
+        if type(self.rare_appearances) is not RareAppearancesDetailViewModel:
+            raise TypeError("rare_appearances must be a RareAppearancesDetailViewModel.")
 
         expected_states = (
             self.overview.state,
@@ -193,6 +199,7 @@ class CollectionExplorerViewModel:
             _weekend_listings_state(self.weekend_listings),
             _price_changes_state(self.price_changes),
             _supply_changes_state(self.supply_changes),
+            _rare_appearances_state(self.rare_appearances),
         )
         if tuple(item.state for item in destinations) != expected_states:
             raise CollectionExplorerConsistencyError(
@@ -235,6 +242,7 @@ def destination_view_models(
     weekend_listings: WeekendListingsDetailViewModel,
     price_changes: PriceChangesDetailViewModel,
     supply_changes: SupplyChangesDetailViewModel,
+    rare_appearances: RareAppearancesDetailViewModel,
 ) -> tuple[CollectionExplorerDestinationViewModel, ...]:
     """Create the fixed navigation sequence for seven composed destinations."""
 
@@ -246,6 +254,7 @@ def destination_view_models(
         _weekend_listings_state(weekend_listings),
         _price_changes_state(price_changes),
         _supply_changes_state(supply_changes),
+        _rare_appearances_state(rare_appearances),
     )
     return tuple(
         CollectionExplorerDestinationViewModel(
@@ -332,6 +341,10 @@ def _supply_changes_state(detail: SupplyChangesDetailViewModel) -> CollectionExp
     return CollectionExplorerState(detail.state.value)
 
 
+def _rare_appearances_state(detail: RareAppearancesDetailViewModel) -> CollectionExplorerState:
+    return CollectionExplorerState(detail.state.value)
+
+
 def _aggregate_state(
     states: tuple[CollectionExplorerState, ...],
 ) -> CollectionExplorerState:
@@ -351,6 +364,7 @@ def _aggregate_state(
     weekend_state = states[4]
     price_changes_state = states[5]
     supply_changes_state = states[6]
+    rare_appearances_state = states[7]
     usable = {
         CollectionExplorerState.AVAILABLE,
         CollectionExplorerState.EMPTY,
@@ -382,6 +396,12 @@ def _aggregate_state(
             CollectionExplorerState.UNAVAILABLE,
             CollectionExplorerState.INSUFFICIENT_HISTORY,
             CollectionExplorerState.INSUFFICIENT_DATA,
+        }
+        and rare_appearances_state
+        in {
+            *usable,
+            CollectionExplorerState.UNAVAILABLE,
+            CollectionExplorerState.INSUFFICIENT_HISTORY,
         }
     ):
         return CollectionExplorerState.AVAILABLE

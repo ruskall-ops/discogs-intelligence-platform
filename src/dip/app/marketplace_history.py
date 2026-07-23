@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import timezone
 from typing import Any
 
 from dip.marketplace_history import (
@@ -75,6 +76,26 @@ class MarketplaceHistoryQueryService:
         if len(set(identifiers)) != len(identifiers):
             raise MarketplaceHistoryConsistencyError(
                 "Repository returned duplicate Marketplace snapshot identifiers."
+            )
+        return validated
+
+    def all_snapshots(self) -> tuple[MarketplaceSnapshot, ...]:
+        """Return complete immutable history in chronological order."""
+
+        snapshots = tuple(self._repository.all_snapshots())
+        validated = tuple(_repository_snapshot(value) for value in snapshots)
+        identifiers = tuple(value.snapshot_id for value in validated)
+        if len(set(identifiers)) != len(identifiers):
+            raise MarketplaceHistoryConsistencyError(
+                "Repository returned duplicate Marketplace snapshot identifiers."
+            )
+        order = tuple(
+            (value.captured_at.astimezone(timezone.utc), value.snapshot_id)
+            for value in validated
+        )
+        if order != tuple(sorted(order)):
+            raise MarketplaceHistoryConsistencyError(
+                "Repository returned complete Marketplace History outside chronological order."
             )
         return validated
 

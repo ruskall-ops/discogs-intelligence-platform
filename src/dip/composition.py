@@ -20,6 +20,8 @@ from dip.app.price_changes import PriceChangesExecutionService
 from dip.app.price_changes_presentation import PriceChangesPresentationService
 from dip.app.supply_changes import SupplyChangesExecutionService
 from dip.app.supply_changes_presentation import SupplyChangesPresentationService
+from dip.app.rare_appearances import RareAppearancesExecutionService
+from dip.app.rare_appearances_presentation import RareAppearancesPresentationService
 from dip.app.weekend_listings_presentation import WeekendListingsPresentationService
 from dip.comparison import ComparisonEngine
 from dip.config import SETTINGS
@@ -46,16 +48,18 @@ from dip.experience.desktop.hidden_gems_renderer import (
 from dip.experience.hidden_gems import HiddenGemsDetailViewModelBuilder
 from dip.experience.price_changes import PriceChangesDetailViewModelBuilder
 from dip.experience.supply_changes import SupplyChangesDetailViewModelBuilder
+from dip.experience.rare_appearances import RareAppearancesDetailViewModelBuilder
 from dip.experience.desktop.price_changes_renderer import (
     DesktopPriceChangesRenderer,
 )
 from dip.experience.desktop.supply_changes_renderer import DesktopSupplyChangesRenderer
+from dip.experience.desktop.rare_appearances_renderer import DesktopRareAppearancesRenderer
 from dip.experience.weekend_listings import WeekendListingsDetailViewModelBuilder
 from dip.experience.desktop.weekend_listings_renderer import (
     DesktopWeekendListingsRenderer,
 )
 from dip.intelligence import IntelligenceEngine
-from dip.marketplace_intelligence import PriceChangesModule, SupplyChangesModule
+from dip.marketplace_intelligence import PriceChangesModule, RareAppearancesModule, SupplyChangesModule
 from dip.persistence.sqlite import (
     Database,
     SQLiteIntelligenceHistoryRepository,
@@ -76,6 +80,7 @@ class DesktopApplicationDependencies:
     marketplace_history_queries: MarketplaceHistoryQueryService | None = None
     price_changes_execution: PriceChangesExecutionService | None = None
     supply_changes_execution: SupplyChangesExecutionService | None = None
+    rare_appearances_execution: RareAppearancesExecutionService | None = None
 
 
 def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
@@ -96,6 +101,10 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
     supply_changes_execution = SupplyChangesExecutionService(
         marketplace_history_queries,
         IntelligenceEngine((SupplyChangesModule(),)),
+    )
+    rare_appearances_execution = RareAppearancesExecutionService(
+        marketplace_history_queries,
+        IntelligenceEngine((RareAppearancesModule(),)),
     )
     history_repository = SQLiteIntelligenceHistoryRepository(database)
     history_queries = IntelligenceHistoryQueryService(history_repository)
@@ -133,6 +142,10 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         SupplyChangesDetailViewModelBuilder()
     )
     supply_changes_renderer = DesktopSupplyChangesRenderer()
+    rare_appearances_presentation = RareAppearancesPresentationService(
+        RareAppearancesDetailViewModelBuilder()
+    )
+    rare_appearances_renderer = DesktopRareAppearancesRenderer()
 
     return DesktopApplicationDependencies(
         database=database,
@@ -140,6 +153,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         marketplace_history_queries=marketplace_history_queries,
         price_changes_execution=price_changes_execution,
         supply_changes_execution=supply_changes_execution,
+        rare_appearances_execution=rare_appearances_execution,
         dashboard_homepage=DashboardHomepageService(
             history_queries,
             comparison_presentation,
@@ -158,6 +172,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
                 weekend_listings=weekend_listings_presentation,
                 price_changes=price_changes_presentation,
                 supply_changes=supply_changes_presentation,
+                rare_appearances=rare_appearances_presentation,
             ),
             DesktopCollectionExplorerRenderer(
                 collection_health_renderer,
@@ -166,6 +181,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
                 weekend_listings_renderer,
                 price_changes_renderer,
                 supply_changes_renderer,
+                rare_appearances_renderer,
             ),
         ),
         hidden_gems_controller=DesktopHiddenGemsController(

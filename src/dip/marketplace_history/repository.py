@@ -43,6 +43,10 @@ class MarketplaceHistoryRepository(Protocol):
         """Return at most ``limit`` snapshots in deterministic newest-first order."""
         ...
 
+    def all_snapshots(self) -> tuple[MarketplaceSnapshot, ...]:
+        """Return complete history in deterministic oldest-first order."""
+        ...
+
     def previous_snapshot(
         self,
         snapshot_id: str,

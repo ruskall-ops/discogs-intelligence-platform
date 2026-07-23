@@ -77,6 +77,10 @@ class _MarketplaceHistoryRepository:
         self.query_calls.append(("recent_snapshots", limit))
         return self.snapshots[:limit]
 
+    def all_snapshots(self) -> tuple[MarketplaceSnapshot, ...]:
+        self.query_calls.append(("all_snapshots", None))
+        return tuple(reversed(self.snapshots))
+
     def previous_snapshot(
         self,
         snapshot_id: str,
@@ -179,6 +183,10 @@ class MarketplaceHistoryQueryServiceTestCase(unittest.TestCase):
                 ("recent_snapshots", MAX_RECENT_SNAPSHOT_LIMIT),
             ],
         )
+
+    def test_all_snapshots_returns_complete_chronological_history(self) -> None:
+        self.assertEqual(self.service.all_snapshots(), tuple(reversed(self.snapshots)))
+        self.assertEqual(self.repository.query_calls, [("all_snapshots", None)])
 
     def test_snapshot_queries_reject_invalid_identifiers_before_repository_access(
         self,

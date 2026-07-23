@@ -37,6 +37,16 @@ from .supply_changes import (
     SupplyChangesSnapshotReference,
     SupplyChangesSummary,
 )
+from .rare_appearances import (
+    DEFAULT_APPEARANCE_THRESHOLD,
+    RareAppearance,
+    RareAppearanceSnapshotReference,
+    RareAppearancesAnalysisState,
+    RareAppearancesDomainError,
+    RareAppearancesModule,
+    RareAppearancesOutput,
+    RareAppearancesSummary,
+)
 from .serialization import (
     JsonValue,
     MARKETPLACE_SCHEMA_VERSION,
@@ -99,6 +109,14 @@ __all__ = [
     "SupplyChangesOutput",
     "SupplyChangesSnapshotReference",
     "SupplyChangesSummary",
+    "DEFAULT_APPEARANCE_THRESHOLD",
+    "RareAppearance",
+    "RareAppearanceSnapshotReference",
+    "RareAppearancesAnalysisState",
+    "RareAppearancesDomainError",
+    "RareAppearancesModule",
+    "RareAppearancesOutput",
+    "RareAppearancesSummary",
     "WeekendWindow",
     "dumps_marketplace_module_result",
     "dumps_marketplace_snapshot",

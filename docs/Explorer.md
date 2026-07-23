@@ -26,6 +26,8 @@ DashboardHomepageViewModel
           ├── CollectionTrendsPresentationService
           ├── WeekendListingsPresentationService
           ├── PriceChangesPresentationService
+          ├── SupplyChangesPresentationService
+          ├── RareAppearancesPresentationService
           │
           ▼
 CollectionExplorerPresentationService
@@ -72,6 +74,7 @@ Destinations use stable identifiers and always appear in this explicit order:
 5. Weekend Listings;
 6. Price Changes;
 7. Supply Changes.
+8. Rare Appearances.
 
 Overview copies existing collection size, execution status, completed-module
 count, execution timestamp and version, Collection Health score, Hidden Gems
@@ -130,13 +133,14 @@ partial. Price Changes distinguishes fewer than two snapshots as
 
 ## Desktop navigation
 
-The Dashboard's **Open Collection Explorer** action opens Overview in a
-seven-tab, scrollable window. The window retains the homepage model that was
+The Dashboard's **Open Collection Explorer** action opens Overview in an
+eight-tab, scrollable window. The window retains the homepage model that was
 current when it opened. The action is disabled while that model is loading or
 stale.
 
-Weekend Listings is the fifth tab, Price Changes is the sixth, and Supply
-Changes is the seventh. Opening or selecting them performs no module execution, Marketplace fetch, history
+Weekend Listings is the fifth tab, Price Changes is the sixth, Supply Changes
+is the seventh, and Rare Appearances is the eighth. Opening or selecting them
+performs no module execution, Marketplace fetch, history
 query, repository access, persistence write, comparison, sorting, filtering or
 refresh; each only renders the result captured when the Explorer was built.
 
@@ -154,6 +158,14 @@ summary counts, evidence, and diagnostics. It does not query history, count
 listings, compare or sort. Without a supplied result it remains visible and
 unavailable. Opening or switching to it performs no execution or persistence
 access.
+
+## Rare Appearances destination
+
+Rare Appearances is the eighth destination. It receives an already-produced
+result and preserves the module's frequency order, Decimal ratios, observation
+boundaries, internal absence counts, snapshot identifiers, and diagnostics.
+The presentation and desktop layers do not query history, count appearances,
+calculate ratios, filter by threshold, or sort records.
 
 ## First-slice limitations
 

@@ -51,6 +51,7 @@ class MarketplaceHistoryRepositoryTestCase(unittest.TestCase):
         self.assertIsNone(repository.get_snapshot("missing"))
         self.assertIsNone(repository.latest_snapshot())
         self.assertEqual(repository.recent_snapshots(5), ())
+        self.assertEqual(repository.all_snapshots(), ())
         self.assertIsNone(repository.previous_snapshot("missing"))
 
     def test_full_snapshot_round_trip_uses_the_canonical_payload(self) -> None:
@@ -208,6 +209,10 @@ class MarketplaceHistoryRepositoryTestCase(unittest.TestCase):
                 for snapshot in self.repository.recent_snapshots(3)
             ),
             ("snapshot-latest", "snapshot-z", "snapshot-a"),
+        )
+        self.assertEqual(
+            tuple(snapshot.snapshot_id for snapshot in self.repository.all_snapshots()),
+            ("snapshot-wall-later", "snapshot-a", "snapshot-z", "snapshot-latest"),
         )
         self.assertEqual(self.repository.previous_snapshot(latest.snapshot_id), tie_z)
         self.assertEqual(self.repository.previous_snapshot(tie_z.snapshot_id), tie_a)

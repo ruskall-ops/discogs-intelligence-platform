@@ -119,6 +119,29 @@ Unavailable inputs are skipped and failed inputs fail. The standard
 `IntelligenceResult` contains immutable typed output under stable module ID
 `supply_changes`, version `1.0`; the default engine registry remains unchanged.
 
+## Rare Appearances Intelligence
+
+Rare Appearances reports historical release-observation frequency without
+interpreting price, supply, demand, desirability, or investment quality. Its
+application execution service retrieves complete Marketplace History once
+through `all_snapshots()`, which returns deterministic chronological order by
+capture time and snapshot ID. The domain module receives the immutable tuple
+and performs no repository or persistence access.
+
+A release appears whenever its `MarketplaceReleaseObservation` exists in a
+snapshot; listings and other supplied facts are irrelevant. Unavailable and
+failed snapshots are excluded, partial snapshots contribute with diagnostics,
+and empty snapshots count as valid history. For each release the module records
+the first and latest observations, observation snapshot IDs, exact appearance
+count, analyzed history size, Decimal ratio, and longest internal absence.
+Leading and trailing absence is ignored.
+
+The constructor threshold defaults to fewer than three appearances. Included
+records are ordered by appearance count ascending, longest absence descending,
+then release ID ascending. The standard `IntelligenceResult` contains immutable
+typed output under module ID `rare_appearances`, version `1.0`. Registration is
+explicit and does not alter the default engine registry.
+
 ```text
                 Discogs API
                      │
