@@ -33,6 +33,7 @@ DashboardHomepageViewModel
           ├── MarketplaceActivityPresentationService
           ├── ListingLifecyclePresentationService
           ├── MarketplaceMomentumPresentationService
+          ├── MarketplaceStabilityPresentationService
           │
           ▼
 CollectionExplorerPresentationService
@@ -83,7 +84,8 @@ Destinations use stable identifiers and always appear in this explicit order:
 8. Rare Appearances;
 9. Marketplace Activity;
 10. Listing Lifecycle;
-11. Marketplace Momentum.
+11. Marketplace Momentum;
+12. Marketplace Stability.
 
 Overview copies existing collection size, execution status, completed-module
 count, execution timestamp and version, Collection Health score, Hidden Gems
@@ -146,14 +148,15 @@ two snapshots as
 ## Desktop navigation
 
 The Dashboard's **Open Collection Explorer** action opens Overview in a
-eleven-tab, scrollable window. The window retains the homepage model that was
+twelve-tab, scrollable window. The window retains the homepage model that was
 current when it opened. The action is disabled while that model is loading or
 stale.
 
 Weekend Listings is the fifth tab, Price Changes is the sixth, Supply Changes
 is the seventh, Rare Appearances is the eighth, Marketplace Activity is the
 ninth, Listing Lifecycle is the tenth, and Marketplace Momentum is the
-eleventh. Opening or selecting them performs no module execution, Marketplace
+eleventh, and Marketplace Stability is the twelfth. Opening or selecting them
+performs no module execution, Marketplace
 fetch, history
 query, repository access, persistence write, comparison, sorting, filtering or
 refresh; each only renders the result captured when the Explorer was built.
@@ -210,10 +213,22 @@ assessment rules, infer neutral or zero evidence, or sort records. Opening or
 selecting the destination only renders the result captured when the Explorer
 was built.
 
+## Marketplace Stability destination
+
+Marketplace Stability is the twelfth destination. It receives only an
+already-produced Decision Intelligence result and preserves the observed
+assessment, each component state, exact counts and Decimal ratios, thresholds,
+evidence coverage, reason codes, provenance, rule-set version, and diagnostics.
+Momentum describes observed direction while Stability describes observed
+consistency; neither is a recommendation or forecast. Explorer and desktop code
+do not aggregate Lifecycle facts, apply thresholds, classify stability, access
+history, execute intelligence, or sort releases. A missing result remains
+unavailable without degrading otherwise usable destinations.
+
 ## First-slice limitations
 
 Search, filtering, user sorting, charts, forecasting, arbitrary date ranges,
 per-release trends, Opportunity,
 Protected Records, Market Movers, broader Marketplace Intelligence, automatic
-Price Changes or Marketplace Momentum execution, live Marketplace monitoring,
+Price Changes, Marketplace Momentum, or Marketplace Stability execution, live Marketplace monitoring,
 background refresh, and AI summaries remain future work.

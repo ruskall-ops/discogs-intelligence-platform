@@ -276,6 +276,30 @@ ID is `marketplace_momentum`, module version is `1.0`, and rule-set version is
 registration; it does not change the default engine registry, history wire
 format, or Marketplace serializer.
 
+## Marketplace Stability Decision Intelligence
+
+Marketplace Stability is the second Decision Intelligence module. Its required
+sources are already-produced Marketplace Activity and Listing Lifecycle
+results. Optional Price Changes, Supply Changes, Rare Appearances, and
+Marketplace Momentum results contribute provenance or factual context only.
+Momentum describes observed direction; Stability describes observed
+consistency. Neither is a recommendation or forecast.
+
+Stability uses Activity's existing historical price- and supply-change counts
+and appearance facts. It aggregates supplied Lifecycle facts by release ID to
+expose listing-state counts, current-presence and persistence ratios, and
+disappearance/reappearance totals. It never compares snapshots, reconstructs
+appearance or listing sequences, or infers why a listing disappeared.
+
+Each result exposes separate price, supply, appearance, listing-persistence,
+and evidence-coverage components. Explicit immutable thresholds define the
+stable, mixed, and volatile bands. `Volatile` describes repeated or
+concentrated observed changes only and is not a financial-risk claim or
+prediction. Canonical reason codes, source provenance, diagnostics, module
+version `1.0`, and rule-set version `1.0` make every assessment reconstructable.
+The execution service owns source acquisition and compatibility validation; the
+domain has no raw-history, repository, persistence, network, or clock access.
+
 ```text
                 Discogs API
                      │

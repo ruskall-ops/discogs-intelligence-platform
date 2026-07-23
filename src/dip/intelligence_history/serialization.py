@@ -20,6 +20,12 @@ from dip.decision_intelligence import (
     MomentumAssessment,
     MomentumDirection,
     MomentumReasonCode,
+    MarketplaceStabilityDiagnosticCode,
+    StabilityAnalysisState,
+    StabilityAssessment,
+    StabilityComponentState,
+    StabilityEvidenceCoverage,
+    StabilityReasonCode,
 )
 from dip.marketplace_intelligence.models import (
     MarketplaceDataStatus,
@@ -64,6 +70,12 @@ _RECORD_TYPE = "intelligence_history_record"
 
 _ENUM_TYPES: dict[str, type[Enum]] = {
     "dip.intelligence.models.IntelligenceStatus": IntelligenceStatus,
+    "dip.decision_intelligence.marketplace_stability.MarketplaceStabilityDiagnosticCode": MarketplaceStabilityDiagnosticCode,
+    "dip.decision_intelligence.marketplace_stability.StabilityAnalysisState": StabilityAnalysisState,
+    "dip.decision_intelligence.marketplace_stability.StabilityAssessment": StabilityAssessment,
+    "dip.decision_intelligence.marketplace_stability.StabilityComponentState": StabilityComponentState,
+    "dip.decision_intelligence.marketplace_stability.StabilityEvidenceCoverage": StabilityEvidenceCoverage,
+    "dip.decision_intelligence.marketplace_stability.StabilityReasonCode": StabilityReasonCode,
     (
         "dip.decision_intelligence.marketplace_momentum."
         "ActivityIntensity"

@@ -361,6 +361,54 @@ Historical observations must not be presented as predictions.
 
 # Execution Model
 
+## Marketplace Stability
+
+Marketplace Stability is the second Decision Intelligence module. Momentum
+describes the direction of supplied observed change; Stability describes the
+consistency or changeability of supplied observed conditions. Neither dimension
+is a recommendation or forecast.
+
+Version `1.0` requires already-produced Marketplace Activity and Listing
+Lifecycle results. Price Changes, Supply Changes, Rare Appearances, and
+Marketplace Momentum are optional. Momentum is preserved only as factual
+context and cannot alter the Stability assessment.
+
+The application execution service obtains each configured result once,
+validates module versions and coherent analyzed-history provenance, constructs
+immutable release and listing facts, and explicitly executes the Stability
+module once. The domain receives no Marketplace snapshots, history services,
+repositories, persistence adapters, network clients, or engines.
+
+Four visible components determine the release-level result:
+
+- price-change stability uses Activity's historical price-change count;
+- supply-change stability uses Activity's historical supply-change count;
+- appearance continuity uses Activity's exact Decimal appearance ratio and
+  longest internal absence;
+- listing persistence aggregates supplied Lifecycle states and transition
+  counts by `release_id` without reconstructing presence sequences.
+
+The default price and supply bands classify zero changes as `stable`, one or
+two as `mixed`, and three or more as `volatile`. Appearance continuity is
+stable only for ratio one and zero internal absence; the configurable mixed
+absence maximum defaults to one. Listing persistence exposes state counts,
+transition totals, and exact Decimal ratios. Its configurable volatile
+disrupted proportion defaults to `0.5`, and its repeated-transition threshold
+defaults to two. All thresholds are immutable, validated, and preserved in the
+typed output.
+
+Evidence coverage means availability and compatibility, not confidence or
+probability. The assessment evaluates rules in the order insufficient,
+volatile, stable, then mixed. It exposes stable, mixed, volatile, and usable
+component counts plus canonical reason codes, provenance, diagnostics, module
+version `1.0`, and rule-set version `1.0`. Here `volatile` means repeated or
+concentrated observed changes only; it makes no financial-risk or future-
+behaviour claim.
+
+Marketplace Stability never recommends buying, selling, holding, bidding, or
+avoiding a release and never predicts future price, supply, demand, or listing
+behaviour.
+
 Execution services coordinate Decision Intelligence.
 
 Execution services:

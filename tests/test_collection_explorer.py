@@ -75,6 +75,7 @@ class CollectionExplorerModelTestCase(unittest.TestCase):
                 "Marketplace Activity",
                 "Listing Lifecycle",
                 "Marketplace Momentum",
+                "Marketplace Stability",
             ),
         )
 
