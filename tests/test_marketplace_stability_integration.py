@@ -124,7 +124,7 @@ class MarketplaceStabilityIntegrationTestCase(unittest.TestCase):
             available_homepage(), marketplace_stability_result=result
         )
         self.assertEqual(stability.calls, [result])
-        self.assertEqual(len(rendered.sections), 12)
+        self.assertEqual(len(rendered.sections), 13)
         self.assertIs(
             rendered.sections[11].destination,
             CollectionExplorerDestination.MARKETPLACE_STABILITY,

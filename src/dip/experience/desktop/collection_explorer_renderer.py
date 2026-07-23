@@ -28,6 +28,7 @@ from .marketplace_activity_renderer import DesktopMarketplaceActivityRenderer
 from .listing_lifecycle_renderer import DesktopListingLifecycleRenderer
 from .marketplace_momentum_renderer import DesktopMarketplaceMomentumRenderer
 from .marketplace_stability_renderer import DesktopMarketplaceStabilityRenderer
+from .marketplace_scarcity_renderer import DesktopMarketplaceScarcityRenderer
 from .weekend_listings_renderer import DesktopWeekendListingsRenderer
 
 
@@ -76,6 +77,7 @@ class _CollectionExplorerPresentation(Protocol):
         listing_lifecycle_result: IntelligenceResult | None = None,
         marketplace_momentum_result: IntelligenceResult | None = None,
         marketplace_stability_result: IntelligenceResult | None = None,
+        marketplace_scarcity_result: IntelligenceResult | None = None,
     ) -> CollectionExplorerViewModel: ...
 
 
@@ -95,6 +97,7 @@ class DesktopCollectionExplorerRenderer:
         listing_lifecycle: DesktopListingLifecycleRenderer | None = None,
         marketplace_momentum: DesktopMarketplaceMomentumRenderer | None = None,
         marketplace_stability: DesktopMarketplaceStabilityRenderer | None = None,
+        marketplace_scarcity: DesktopMarketplaceScarcityRenderer | None = None,
     ) -> None:
         self._collection_health = (
             collection_health or DesktopCollectionHealthRenderer()
@@ -113,6 +116,7 @@ class DesktopCollectionExplorerRenderer:
         self._marketplace_stability = (
             marketplace_stability or DesktopMarketplaceStabilityRenderer()
         )
+        self._marketplace_scarcity = marketplace_scarcity or DesktopMarketplaceScarcityRenderer()
 
     def render(
         self,
@@ -149,6 +153,7 @@ class DesktopCollectionExplorerRenderer:
             self._lifecycle(explorer),
             self._momentum(explorer),
             self._stability(explorer),
+            self._scarcity(explorer),
         )
         return DesktopCollectionExplorerView(
             title=explorer.title,
@@ -395,6 +400,24 @@ class DesktopCollectionExplorerRenderer:
             "\n".join(parts),
         )
 
+    def _scarcity(self, explorer):
+        rendered = self._marketplace_scarcity.render(explorer.marketplace_scarcity)
+        parts = [rendered.headline, rendered.summary]
+        if rendered.context:
+            parts.extend(("", "Assessment context", rendered.context))
+        for release in rendered.releases:
+            parts.extend(("", release.heading, release.body))
+        if rendered.source_provenance:
+            parts.extend(("", "Source provenance", rendered.source_provenance))
+        if rendered.diagnostics:
+            parts.extend(("", "Diagnostics", rendered.diagnostics))
+        return DesktopCollectionExplorerSection(
+            CollectionExplorerDestination.MARKETPLACE_SCARCITY,
+            rendered.title,
+            CollectionExplorerState(rendered.state.value),
+            "\n".join(parts),
+        )
+
 
 class DesktopCollectionExplorerController:
     """Open one cached Explorer model from the current homepage source."""
@@ -435,6 +458,7 @@ class DesktopCollectionExplorerController:
         listing_lifecycle_result: IntelligenceResult | None = None,
         marketplace_momentum_result: IntelligenceResult | None = None,
         marketplace_stability_result: IntelligenceResult | None = None,
+        marketplace_scarcity_result: IntelligenceResult | None = None,
     ) -> DesktopCollectionExplorerView:
         """Build and render one Explorer; tab changes need no further service call."""
 
@@ -457,6 +481,8 @@ class DesktopCollectionExplorerController:
             )
         if marketplace_stability_result is not None:
             result_arguments["marketplace_stability_result"] = marketplace_stability_result
+        if marketplace_scarcity_result is not None:
+            result_arguments["marketplace_scarcity_result"] = marketplace_scarcity_result
         explorer = self._presentation.explorer_for_homepage(
             homepage,
             selected_destination=selected_destination,

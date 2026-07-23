@@ -409,6 +409,46 @@ Marketplace Stability never recommends buying, selling, holding, bidding, or
 avoiding a release and never predicts future price, supply, demand, or listing
 behaviour.
 
+## Marketplace Scarcity
+
+Marketplace Scarcity is the third Decision Intelligence module. It describes
+how limited a release's observed Marketplace availability has been within the
+supplied evidence. It does not claim absolute rarity, pressing quantity,
+edition size, desirability, investment quality, or future scarcity.
+
+Version `1.0` requires already-produced Rare Appearances and Listing Lifecycle
+results. Marketplace Activity, Supply Changes, Marketplace Stability, and
+Marketplace Momentum are optional. Stability and Momentum are independent
+display context only and cannot alter Scarcity classification.
+
+The application execution service obtains each configured result once,
+validates module versions and coherent analyzed-history provenance, and
+constructs immutable release and listing facts. The domain receives no
+Marketplace snapshots, history services, repositories, persistence adapters,
+network clients, or engines.
+
+Scarcity exposes three core components:
+
+- observed availability aggregates supplied Lifecycle states and classifies
+  the currently present listing count using configurable `10`, `5`, and `2`
+  minimum boundaries;
+- appearance scarcity uses Rare Appearances' exact Decimal ratio with default
+  boundaries `0.75` and `0.50`;
+- listing-persistence scarcity exposes lifecycle-state counts, exact average
+  observation and disruption ratios, transition totals, and longest supplied
+  absence without reconstructing listing sequences.
+
+Supply context is factual and optional. It never overrides required-source
+evidence. Evidence coverage describes availability and compatibility rather
+than confidence or probability. Assessment rules evaluate insufficient, very
+scarce, scarce, abundant, common, then limited conditions. All thresholds,
+components, reason codes, provenance, diagnostics, module version `1.0`, and
+rule-set version `1.0` remain visible.
+
+All labels mean observed Marketplace conditions. Scarcity does not infer why a
+listing disappeared, that it sold, total production, or availability outside
+the analyzed Marketplace evidence. It never recommends or forecasts.
+
 Execution services coordinate Decision Intelligence.
 
 Execution services:

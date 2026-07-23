@@ -32,6 +32,8 @@ from dip.app.marketplace_momentum_presentation import (
 )
 from dip.app.marketplace_stability import MarketplaceStabilityExecutionService
 from dip.app.marketplace_stability_presentation import MarketplaceStabilityPresentationService
+from dip.app.marketplace_scarcity import MarketplaceScarcityExecutionService
+from dip.app.marketplace_scarcity_presentation import MarketplaceScarcityPresentationService
 from dip.app.weekend_listings_presentation import WeekendListingsPresentationService
 from dip.comparison import ComparisonEngine
 from dip.config import SETTINGS
@@ -65,6 +67,7 @@ from dip.experience.marketplace_momentum import (
     MarketplaceMomentumDetailViewModelBuilder,
 )
 from dip.experience.marketplace_stability import MarketplaceStabilityDetailViewModelBuilder
+from dip.experience.marketplace_scarcity import MarketplaceScarcityDetailViewModelBuilder
 from dip.experience.desktop.price_changes_renderer import (
     DesktopPriceChangesRenderer,
 )
@@ -76,12 +79,13 @@ from dip.experience.desktop.marketplace_momentum_renderer import (
     DesktopMarketplaceMomentumRenderer,
 )
 from dip.experience.desktop.marketplace_stability_renderer import DesktopMarketplaceStabilityRenderer
+from dip.experience.desktop.marketplace_scarcity_renderer import DesktopMarketplaceScarcityRenderer
 from dip.experience.weekend_listings import WeekendListingsDetailViewModelBuilder
 from dip.experience.desktop.weekend_listings_renderer import (
     DesktopWeekendListingsRenderer,
 )
 from dip.intelligence import IntelligenceEngine
-from dip.decision_intelligence import MarketplaceMomentumModule, MarketplaceStabilityModule
+from dip.decision_intelligence import MarketplaceMomentumModule, MarketplaceScarcityModule, MarketplaceStabilityModule
 from dip.marketplace_intelligence import ListingLifecycleModule, MarketplaceActivityModule, PriceChangesModule, RareAppearancesModule, SupplyChangesModule
 from dip.persistence.sqlite import (
     Database,
@@ -108,6 +112,7 @@ class DesktopApplicationDependencies:
     listing_lifecycle_execution: ListingLifecycleExecutionService | None = None
     marketplace_momentum_execution: MarketplaceMomentumExecutionService | None = None
     marketplace_stability_execution: MarketplaceStabilityExecutionService | None = None
+    marketplace_scarcity_execution: MarketplaceScarcityExecutionService | None = None
 
 
 def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
@@ -158,6 +163,15 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         price_changes=price_changes_execution,
         supply_changes=supply_changes_execution,
         rare_appearances=rare_appearances_execution,
+        marketplace_momentum=marketplace_momentum_execution,
+    )
+    marketplace_scarcity_execution = MarketplaceScarcityExecutionService(
+        rare_appearances_execution,
+        listing_lifecycle_execution,
+        IntelligenceEngine((MarketplaceScarcityModule(),)),
+        marketplace_activity=marketplace_activity_execution,
+        supply_changes=supply_changes_execution,
+        marketplace_stability=marketplace_stability_execution,
         marketplace_momentum=marketplace_momentum_execution,
     )
     history_repository = SQLiteIntelligenceHistoryRepository(database)
@@ -216,6 +230,10 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         MarketplaceStabilityDetailViewModelBuilder()
     )
     marketplace_stability_renderer = DesktopMarketplaceStabilityRenderer()
+    marketplace_scarcity_presentation = MarketplaceScarcityPresentationService(
+        MarketplaceScarcityDetailViewModelBuilder()
+    )
+    marketplace_scarcity_renderer = DesktopMarketplaceScarcityRenderer()
 
     return DesktopApplicationDependencies(
         database=database,
@@ -228,6 +246,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         listing_lifecycle_execution=listing_lifecycle_execution,
         marketplace_momentum_execution=marketplace_momentum_execution,
         marketplace_stability_execution=marketplace_stability_execution,
+        marketplace_scarcity_execution=marketplace_scarcity_execution,
         dashboard_homepage=DashboardHomepageService(
             history_queries,
             comparison_presentation,
@@ -251,6 +270,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
                 listing_lifecycle=listing_lifecycle_presentation,
                 marketplace_momentum=marketplace_momentum_presentation,
                 marketplace_stability=marketplace_stability_presentation,
+                marketplace_scarcity=marketplace_scarcity_presentation,
             ),
             DesktopCollectionExplorerRenderer(
                 collection_health_renderer,
@@ -264,6 +284,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
                 listing_lifecycle_renderer,
                 marketplace_momentum_renderer,
                 marketplace_stability_renderer,
+                marketplace_scarcity_renderer,
             ),
         ),
         hidden_gems_controller=DesktopHiddenGemsController(

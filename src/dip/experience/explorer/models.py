@@ -28,6 +28,7 @@ from dip.experience.marketplace_activity import MarketplaceActivityDetailViewMod
 from dip.experience.listing_lifecycle import ListingLifecycleDetailViewModel
 from dip.experience.marketplace_momentum import MarketplaceMomentumDetailViewModel
 from dip.experience.marketplace_stability import MarketplaceStabilityDetailViewModel
+from dip.experience.marketplace_scarcity import MarketplaceScarcityDetailViewModel
 from dip.experience.weekend_listings import WeekendListingsDetailViewModel
 from dip.intelligence import IntelligenceStatus
 
@@ -51,6 +52,7 @@ class CollectionExplorerDestination(str, Enum):
     LISTING_LIFECYCLE = "listing_lifecycle"
     MARKETPLACE_MOMENTUM = "marketplace_momentum"
     MARKETPLACE_STABILITY = "marketplace_stability"
+    MARKETPLACE_SCARCITY = "marketplace_scarcity"
 
 
 class CollectionExplorerState(str, Enum):
@@ -157,6 +159,7 @@ _DESTINATION_LABELS = {
     CollectionExplorerDestination.LISTING_LIFECYCLE: "Listing Lifecycle",
     CollectionExplorerDestination.MARKETPLACE_MOMENTUM: "Marketplace Momentum",
     CollectionExplorerDestination.MARKETPLACE_STABILITY: "Marketplace Stability",
+    CollectionExplorerDestination.MARKETPLACE_SCARCITY: "Marketplace Scarcity",
 }
 
 
@@ -179,6 +182,7 @@ class CollectionExplorerViewModel:
     listing_lifecycle: ListingLifecycleDetailViewModel
     marketplace_momentum: MarketplaceMomentumDetailViewModel
     marketplace_stability: MarketplaceStabilityDetailViewModel
+    marketplace_scarcity: MarketplaceScarcityDetailViewModel
     title: str = field(init=False, default="Collection Explorer")
 
     def __post_init__(self) -> None:
@@ -216,6 +220,8 @@ class CollectionExplorerViewModel:
             )
         if type(self.marketplace_stability) is not MarketplaceStabilityDetailViewModel:
             raise TypeError("marketplace_stability must be a MarketplaceStabilityDetailViewModel.")
+        if type(self.marketplace_scarcity) is not MarketplaceScarcityDetailViewModel:
+            raise TypeError("marketplace_scarcity must be a MarketplaceScarcityDetailViewModel.")
 
         expected_states = (
             self.overview.state,
@@ -230,6 +236,7 @@ class CollectionExplorerViewModel:
             _listing_lifecycle_state(self.listing_lifecycle),
             _marketplace_momentum_state(self.marketplace_momentum),
             _marketplace_stability_state(self.marketplace_stability),
+            _marketplace_scarcity_state(self.marketplace_scarcity),
         )
         if tuple(item.state for item in destinations) != expected_states:
             raise CollectionExplorerConsistencyError(
@@ -277,6 +284,7 @@ def destination_view_models(
     listing_lifecycle: ListingLifecycleDetailViewModel,
     marketplace_momentum: MarketplaceMomentumDetailViewModel,
     marketplace_stability: MarketplaceStabilityDetailViewModel,
+    marketplace_scarcity: MarketplaceScarcityDetailViewModel,
 ) -> tuple[CollectionExplorerDestinationViewModel, ...]:
     """Create the fixed navigation sequence for all composed destinations."""
 
@@ -293,6 +301,7 @@ def destination_view_models(
         _listing_lifecycle_state(listing_lifecycle),
         _marketplace_momentum_state(marketplace_momentum),
         _marketplace_stability_state(marketplace_stability),
+        _marketplace_scarcity_state(marketplace_scarcity),
     )
     return tuple(
         CollectionExplorerDestinationViewModel(
@@ -403,6 +412,12 @@ def _marketplace_stability_state(
     return CollectionExplorerState(detail.state.value)
 
 
+def _marketplace_scarcity_state(
+    detail: MarketplaceScarcityDetailViewModel,
+) -> CollectionExplorerState:
+    return CollectionExplorerState(detail.state.value)
+
+
 def _aggregate_state(
     states: tuple[CollectionExplorerState, ...],
 ) -> CollectionExplorerState:
@@ -427,6 +442,7 @@ def _aggregate_state(
     listing_lifecycle_state = states[9]
     marketplace_momentum_state = states[10]
     marketplace_stability_state = states[11]
+    marketplace_scarcity_state = states[12]
     usable = {
         CollectionExplorerState.AVAILABLE,
         CollectionExplorerState.EMPTY,
@@ -484,6 +500,12 @@ def _aggregate_state(
             CollectionExplorerState.INSUFFICIENT_DATA,
         }
         and marketplace_stability_state
+        in {
+            *usable,
+            CollectionExplorerState.UNAVAILABLE,
+            CollectionExplorerState.INSUFFICIENT_DATA,
+        }
+        and marketplace_scarcity_state
         in {
             *usable,
             CollectionExplorerState.UNAVAILABLE,

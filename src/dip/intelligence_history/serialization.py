@@ -26,6 +26,13 @@ from dip.decision_intelligence import (
     StabilityComponentState,
     StabilityEvidenceCoverage,
     StabilityReasonCode,
+    MarketplaceScarcityDiagnosticCode,
+    ScarcityAnalysisState,
+    ScarcityAssessment,
+    ScarcityComponentState,
+    ScarcityEvidenceCoverage,
+    ScarcityListingState,
+    ScarcityReasonCode,
 )
 from dip.marketplace_intelligence.models import (
     MarketplaceDataStatus,
@@ -76,6 +83,13 @@ _ENUM_TYPES: dict[str, type[Enum]] = {
     "dip.decision_intelligence.marketplace_stability.StabilityComponentState": StabilityComponentState,
     "dip.decision_intelligence.marketplace_stability.StabilityEvidenceCoverage": StabilityEvidenceCoverage,
     "dip.decision_intelligence.marketplace_stability.StabilityReasonCode": StabilityReasonCode,
+    "dip.decision_intelligence.marketplace_scarcity.MarketplaceScarcityDiagnosticCode": MarketplaceScarcityDiagnosticCode,
+    "dip.decision_intelligence.marketplace_scarcity.ScarcityAnalysisState": ScarcityAnalysisState,
+    "dip.decision_intelligence.marketplace_scarcity.ScarcityAssessment": ScarcityAssessment,
+    "dip.decision_intelligence.marketplace_scarcity.ScarcityComponentState": ScarcityComponentState,
+    "dip.decision_intelligence.marketplace_scarcity.ScarcityEvidenceCoverage": ScarcityEvidenceCoverage,
+    "dip.decision_intelligence.marketplace_scarcity.ScarcityListingState": ScarcityListingState,
+    "dip.decision_intelligence.marketplace_scarcity.ScarcityReasonCode": ScarcityReasonCode,
     (
         "dip.decision_intelligence.marketplace_momentum."
         "ActivityIntensity"

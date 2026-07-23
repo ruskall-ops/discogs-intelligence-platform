@@ -238,7 +238,7 @@ class PriceChangesExplorerIntegrationTestCase(unittest.TestCase):
             tuple(section.destination for section in rendered.sections),
             tuple(CollectionExplorerDestination),
         )
-        self.assertEqual(len(rendered.sections), 12)
+        self.assertEqual(len(rendered.sections), 13)
         self.assertIs(
             rendered.sections[4].destination,
             CollectionExplorerDestination.WEEKEND_LISTINGS,

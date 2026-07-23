@@ -23,6 +23,7 @@ from dip.experience.marketplace_activity import MarketplaceActivityDetailViewMod
 from dip.experience.listing_lifecycle import ListingLifecycleDetailViewModel
 from dip.experience.marketplace_momentum import MarketplaceMomentumDetailViewModel
 from dip.experience.marketplace_stability import MarketplaceStabilityDetailViewModel
+from dip.experience.marketplace_scarcity import MarketplaceScarcityDetailViewModel
 from dip.experience.weekend_listings import WeekendListingsDetailViewModel
 from dip.intelligence import IntelligenceResult
 
@@ -56,6 +57,7 @@ class _CollectionExplorerBuilder(Protocol):
         listing_lifecycle: ListingLifecycleDetailViewModel,
         marketplace_momentum: MarketplaceMomentumDetailViewModel,
         marketplace_stability: MarketplaceStabilityDetailViewModel,
+        marketplace_scarcity: MarketplaceScarcityDetailViewModel,
         *,
         selected_destination: CollectionExplorerDestination,
     ) -> CollectionExplorerViewModel: ...
@@ -79,6 +81,7 @@ class CollectionExplorerPresentationService:
         listing_lifecycle: "_ListingLifecyclePresentation | None" = None,
         marketplace_momentum: "_MarketplaceMomentumPresentation | None" = None,
         marketplace_stability: "_MarketplaceStabilityPresentation | None" = None,
+        marketplace_scarcity: "_MarketplaceScarcityPresentation | None" = None,
     ) -> None:
         self._collection_health = collection_health
         self._hidden_gems = hidden_gems
@@ -92,6 +95,7 @@ class CollectionExplorerPresentationService:
         self._listing_lifecycle = listing_lifecycle
         self._marketplace_momentum = marketplace_momentum
         self._marketplace_stability = marketplace_stability
+        self._marketplace_scarcity = marketplace_scarcity
 
     def explorer_for_homepage(
         self,
@@ -108,6 +112,7 @@ class CollectionExplorerPresentationService:
         listing_lifecycle_result: IntelligenceResult | None = None,
         marketplace_momentum_result: IntelligenceResult | None = None,
         marketplace_stability_result: IntelligenceResult | None = None,
+        marketplace_scarcity_result: IntelligenceResult | None = None,
     ) -> CollectionExplorerViewModel:
         """Build every destination once from the exact same homepage model."""
 
@@ -179,6 +184,15 @@ class CollectionExplorerPresentationService:
                 else MarketplaceStabilityDetailViewModel.unavailable()
             )
         )
+        marketplace_scarcity = (
+            MarketplaceScarcityDetailViewModel.loading()
+            if overview_loading
+            else (
+                self._marketplace_scarcity.detail_for_result(marketplace_scarcity_result)
+                if self._marketplace_scarcity is not None
+                else MarketplaceScarcityDetailViewModel.unavailable()
+            )
+        )
         return self._builder.build(
             homepage,
             collection_health,
@@ -192,6 +206,7 @@ class CollectionExplorerPresentationService:
             listing_lifecycle,
             marketplace_momentum,
             marketplace_stability,
+            marketplace_scarcity,
             selected_destination=selected_destination,
         )
 
@@ -241,6 +256,12 @@ class _MarketplaceStabilityPresentation(Protocol):
     def detail_for_result(
         self, result: IntelligenceResult | None
     ) -> MarketplaceStabilityDetailViewModel: ...
+
+
+class _MarketplaceScarcityPresentation(Protocol):
+    def detail_for_result(
+        self, result: IntelligenceResult | None
+    ) -> MarketplaceScarcityDetailViewModel: ...
 
 
 __all__ = ["CollectionExplorerPresentationService"]

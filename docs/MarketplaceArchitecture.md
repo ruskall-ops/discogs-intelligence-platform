@@ -300,6 +300,29 @@ version `1.0`, and rule-set version `1.0` make every assessment reconstructable.
 The execution service owns source acquisition and compatibility validation; the
 domain has no raw-history, repository, persistence, network, or clock access.
 
+## Marketplace Scarcity Decision Intelligence
+
+Marketplace Scarcity is the third Decision Intelligence module. Required
+already-produced sources are Rare Appearances and Listing Lifecycle. Optional
+Marketplace Activity and Supply Changes provide factual supply context, while
+Marketplace Stability and Marketplace Momentum are independent display context
+only. They cannot alter version `1.0` Scarcity classification.
+
+Scarcity means limited observed Marketplace availability within the supplied
+evidence. It is distinct from absolute rarity, pressing quantity, edition size,
+desirability, investment quality, and predicted future scarcity. Momentum
+describes direction; Stability describes consistency; Scarcity describes
+limited observed availability.
+
+The release-level result exposes currently present listing bands, exact Decimal
+appearance ratios, listing-state and persistence aggregation, optional supply
+facts, evidence coverage, canonical reason codes, provenance, and diagnostics.
+Thresholds are immutable, validated, constructor-configurable, and preserved in
+the output. The module never analyzes snapshots, reconstructs appearance or
+listing sequences, infers sales or production totals, or accesses history,
+repositories, persistence, the network, or a clock. Module and rule-set
+versions are both `1.0`.
+
 ```text
                 Discogs API
                      │
