@@ -73,6 +73,7 @@ class CollectionExplorerModelTestCase(unittest.TestCase):
                 "Supply Changes",
                 "Rare Appearances",
                 "Marketplace Activity",
+                "Listing Lifecycle",
             ),
         )
 

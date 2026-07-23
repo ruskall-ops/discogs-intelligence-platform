@@ -37,6 +37,12 @@ from dip.marketplace_intelligence.marketplace_activity import (
     MarketplaceActivitySummary,
     ReleaseActivity,
 )
+from dip.marketplace_intelligence.listing_lifecycle import (
+    ListingLifecycle,
+    ListingLifecycleOutput,
+    ListingLifecycleSnapshotReference,
+    ListingLifecycleSummary,
+)
 from dip.marketplace_intelligence.weekend_listings import (
     WeekendListingCandidate,
     WeekendListingsOutput,
@@ -72,6 +78,10 @@ APPROVED_DATACLASS_TYPES: dict[str, type[Any]] = {
         MarketplaceActivityOutput,
         MarketplaceActivitySummary,
         ReleaseActivity,
+        ListingLifecycle,
+        ListingLifecycleOutput,
+        ListingLifecycleSnapshotReference,
+        ListingLifecycleSummary,
         WeekendListingCandidate,
         WeekendListingsOutput,
         WeekendWindow,

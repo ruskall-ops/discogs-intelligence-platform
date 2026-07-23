@@ -7,6 +7,7 @@ from unittest.mock import patch
 from dip.app import (
     MarketplaceHistoryCommandService,
     MarketplaceHistoryQueryService,
+    ListingLifecycleExecutionService,
     PriceChangesExecutionService,
 )
 from dip.composition import (
@@ -50,6 +51,10 @@ class _CompositionMarketplaceHistoryRepository:
         self.calls.append(("previous_snapshot", snapshot_id))
         return None
 
+    def all_snapshots(self) -> tuple[MarketplaceSnapshot, ...]:
+        self.calls.append(("all_snapshots", None))
+        return (self.stored,)
+
 
 class MarketplaceHistoryCompositionTestCase(unittest.TestCase):
     def test_existing_dependency_constructor_remains_compatible(self) -> None:
@@ -67,6 +72,7 @@ class MarketplaceHistoryCompositionTestCase(unittest.TestCase):
         self.assertIsNone(dependencies.marketplace_history_commands)
         self.assertIsNone(dependencies.marketplace_history_queries)
         self.assertIsNone(dependencies.price_changes_execution)
+        self.assertIsNone(dependencies.listing_lifecycle_execution)
 
     def test_composition_exposes_services_without_accessing_history_on_startup(
         self,
@@ -111,6 +117,10 @@ class MarketplaceHistoryCompositionTestCase(unittest.TestCase):
         self.assertIsInstance(
             dependencies.price_changes_execution,
             PriceChangesExecutionService,
+        )
+        self.assertIsInstance(
+            dependencies.listing_lifecycle_execution,
+            ListingLifecycleExecutionService,
         )
         self.assertEqual(repository.calls, [])
 

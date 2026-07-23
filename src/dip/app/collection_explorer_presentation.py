@@ -20,6 +20,7 @@ from dip.experience.price_changes import PriceChangesDetailViewModel
 from dip.experience.supply_changes import SupplyChangesDetailViewModel
 from dip.experience.rare_appearances import RareAppearancesDetailViewModel
 from dip.experience.marketplace_activity import MarketplaceActivityDetailViewModel
+from dip.experience.listing_lifecycle import ListingLifecycleDetailViewModel
 from dip.experience.weekend_listings import WeekendListingsDetailViewModel
 from dip.intelligence import IntelligenceResult
 
@@ -50,6 +51,7 @@ class _CollectionExplorerBuilder(Protocol):
         supply_changes: SupplyChangesDetailViewModel,
         rare_appearances: RareAppearancesDetailViewModel,
         marketplace_activity: MarketplaceActivityDetailViewModel,
+        listing_lifecycle: ListingLifecycleDetailViewModel,
         *,
         selected_destination: CollectionExplorerDestination,
     ) -> CollectionExplorerViewModel: ...
@@ -70,6 +72,7 @@ class CollectionExplorerPresentationService:
         supply_changes: "_SupplyChangesPresentation | None" = None,
         rare_appearances: "_RareAppearancesPresentation | None" = None,
         marketplace_activity: "_MarketplaceActivityPresentation | None" = None,
+        listing_lifecycle: "_ListingLifecyclePresentation | None" = None,
     ) -> None:
         self._collection_health = collection_health
         self._hidden_gems = hidden_gems
@@ -80,6 +83,7 @@ class CollectionExplorerPresentationService:
         self._supply_changes = supply_changes
         self._rare_appearances = rare_appearances
         self._marketplace_activity = marketplace_activity
+        self._listing_lifecycle = listing_lifecycle
 
     def explorer_for_homepage(
         self,
@@ -93,6 +97,7 @@ class CollectionExplorerPresentationService:
         supply_changes_result: IntelligenceResult | None = None,
         rare_appearances_result: IntelligenceResult | None = None,
         marketplace_activity_result: IntelligenceResult | None = None,
+        listing_lifecycle_result: IntelligenceResult | None = None,
     ) -> CollectionExplorerViewModel:
         """Build every destination once from the exact same homepage model."""
 
@@ -143,6 +148,7 @@ class CollectionExplorerPresentationService:
         )
         rare_appearances = RareAppearancesDetailViewModel.loading() if overview_loading else (self._rare_appearances.detail_for_result(rare_appearances_result) if self._rare_appearances is not None else RareAppearancesDetailViewModel.unavailable())
         marketplace_activity = MarketplaceActivityDetailViewModel.loading() if overview_loading else (self._marketplace_activity.detail_for_result(marketplace_activity_result) if self._marketplace_activity is not None else MarketplaceActivityDetailViewModel.unavailable())
+        listing_lifecycle = ListingLifecycleDetailViewModel.loading() if overview_loading else (self._listing_lifecycle.detail_for_result(listing_lifecycle_result) if self._listing_lifecycle is not None else ListingLifecycleDetailViewModel.unavailable())
         return self._builder.build(
             homepage,
             collection_health,
@@ -153,6 +159,7 @@ class CollectionExplorerPresentationService:
             supply_changes,
             rare_appearances,
             marketplace_activity,
+            listing_lifecycle,
             selected_destination=selected_destination,
         )
 
@@ -185,6 +192,10 @@ class _RareAppearancesPresentation(Protocol):
 
 class _MarketplaceActivityPresentation(Protocol):
     def detail_for_result(self, result: IntelligenceResult | None) -> MarketplaceActivityDetailViewModel: ...
+
+
+class _ListingLifecyclePresentation(Protocol):
+    def detail_for_result(self, result: IntelligenceResult | None) -> ListingLifecycleDetailViewModel: ...
 
 
 __all__ = ["CollectionExplorerPresentationService"]

@@ -25,6 +25,7 @@ from .price_changes_renderer import DesktopPriceChangesRenderer
 from .supply_changes_renderer import DesktopSupplyChangesRenderer
 from .rare_appearances_renderer import DesktopRareAppearancesRenderer
 from .marketplace_activity_renderer import DesktopMarketplaceActivityRenderer
+from .listing_lifecycle_renderer import DesktopListingLifecycleRenderer
 from .weekend_listings_renderer import DesktopWeekendListingsRenderer
 
 
@@ -70,6 +71,7 @@ class _CollectionExplorerPresentation(Protocol):
         supply_changes_result: IntelligenceResult | None = None,
         rare_appearances_result: IntelligenceResult | None = None,
         marketplace_activity_result: IntelligenceResult | None = None,
+        listing_lifecycle_result: IntelligenceResult | None = None,
     ) -> CollectionExplorerViewModel: ...
 
 
@@ -86,6 +88,7 @@ class DesktopCollectionExplorerRenderer:
         supply_changes: DesktopSupplyChangesRenderer | None = None,
         rare_appearances: DesktopRareAppearancesRenderer | None = None,
         marketplace_activity: DesktopMarketplaceActivityRenderer | None = None,
+        listing_lifecycle: DesktopListingLifecycleRenderer | None = None,
     ) -> None:
         self._collection_health = (
             collection_health or DesktopCollectionHealthRenderer()
@@ -97,6 +100,7 @@ class DesktopCollectionExplorerRenderer:
         self._supply_changes = supply_changes or DesktopSupplyChangesRenderer()
         self._rare_appearances = rare_appearances or DesktopRareAppearancesRenderer()
         self._marketplace_activity = marketplace_activity or DesktopMarketplaceActivityRenderer()
+        self._listing_lifecycle = listing_lifecycle or DesktopListingLifecycleRenderer()
 
     def render(
         self,
@@ -130,6 +134,7 @@ class DesktopCollectionExplorerRenderer:
             self._supply(explorer),
             self._rare(explorer),
             self._activity(explorer),
+            self._lifecycle(explorer),
         )
         return DesktopCollectionExplorerView(
             title=explorer.title,
@@ -321,6 +326,17 @@ class DesktopCollectionExplorerRenderer:
             parts.extend(("", "Diagnostics", rendered.diagnostics))
         return DesktopCollectionExplorerSection(CollectionExplorerDestination.MARKETPLACE_ACTIVITY, rendered.title, CollectionExplorerState(rendered.state.value), "\n".join(parts))
 
+    def _lifecycle(self, explorer: CollectionExplorerViewModel) -> DesktopCollectionExplorerSection:
+        rendered = self._listing_lifecycle.render(explorer.listing_lifecycle)
+        parts = [rendered.headline, rendered.summary]
+        if rendered.counts:
+            parts.extend(("", "Lifecycle counts", rendered.counts))
+        for lifecycle in rendered.lifecycles:
+            parts.extend(("", lifecycle.heading, lifecycle.body))
+        if rendered.diagnostics:
+            parts.extend(("", "Diagnostics", rendered.diagnostics))
+        return DesktopCollectionExplorerSection(CollectionExplorerDestination.LISTING_LIFECYCLE, rendered.title, CollectionExplorerState(rendered.state.value), "\n".join(parts))
+
 
 class DesktopCollectionExplorerController:
     """Open one cached Explorer model from the current homepage source."""
@@ -358,6 +374,7 @@ class DesktopCollectionExplorerController:
         supply_changes_result: IntelligenceResult | None = None,
         rare_appearances_result: IntelligenceResult | None = None,
         marketplace_activity_result: IntelligenceResult | None = None,
+        listing_lifecycle_result: IntelligenceResult | None = None,
     ) -> DesktopCollectionExplorerView:
         """Build and render one Explorer; tab changes need no further service call."""
 
@@ -372,6 +389,8 @@ class DesktopCollectionExplorerController:
             result_arguments["rare_appearances_result"] = rare_appearances_result
         if marketplace_activity_result is not None:
             result_arguments["marketplace_activity_result"] = marketplace_activity_result
+        if listing_lifecycle_result is not None:
+            result_arguments["listing_lifecycle_result"] = listing_lifecycle_result
         explorer = self._presentation.explorer_for_homepage(
             homepage,
             selected_destination=selected_destination,

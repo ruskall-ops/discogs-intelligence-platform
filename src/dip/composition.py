@@ -24,6 +24,8 @@ from dip.app.rare_appearances import RareAppearancesExecutionService
 from dip.app.rare_appearances_presentation import RareAppearancesPresentationService
 from dip.app.marketplace_activity import MarketplaceActivityExecutionService
 from dip.app.marketplace_activity_presentation import MarketplaceActivityPresentationService
+from dip.app.listing_lifecycle import ListingLifecycleExecutionService
+from dip.app.listing_lifecycle_presentation import ListingLifecyclePresentationService
 from dip.app.weekend_listings_presentation import WeekendListingsPresentationService
 from dip.comparison import ComparisonEngine
 from dip.config import SETTINGS
@@ -52,18 +54,20 @@ from dip.experience.price_changes import PriceChangesDetailViewModelBuilder
 from dip.experience.supply_changes import SupplyChangesDetailViewModelBuilder
 from dip.experience.rare_appearances import RareAppearancesDetailViewModelBuilder
 from dip.experience.marketplace_activity import MarketplaceActivityDetailViewModelBuilder
+from dip.experience.listing_lifecycle import ListingLifecycleDetailViewModelBuilder
 from dip.experience.desktop.price_changes_renderer import (
     DesktopPriceChangesRenderer,
 )
 from dip.experience.desktop.supply_changes_renderer import DesktopSupplyChangesRenderer
 from dip.experience.desktop.rare_appearances_renderer import DesktopRareAppearancesRenderer
 from dip.experience.desktop.marketplace_activity_renderer import DesktopMarketplaceActivityRenderer
+from dip.experience.desktop.listing_lifecycle_renderer import DesktopListingLifecycleRenderer
 from dip.experience.weekend_listings import WeekendListingsDetailViewModelBuilder
 from dip.experience.desktop.weekend_listings_renderer import (
     DesktopWeekendListingsRenderer,
 )
 from dip.intelligence import IntelligenceEngine
-from dip.marketplace_intelligence import MarketplaceActivityModule, PriceChangesModule, RareAppearancesModule, SupplyChangesModule
+from dip.marketplace_intelligence import ListingLifecycleModule, MarketplaceActivityModule, PriceChangesModule, RareAppearancesModule, SupplyChangesModule
 from dip.persistence.sqlite import (
     Database,
     SQLiteIntelligenceHistoryRepository,
@@ -86,6 +90,7 @@ class DesktopApplicationDependencies:
     supply_changes_execution: SupplyChangesExecutionService | None = None
     rare_appearances_execution: RareAppearancesExecutionService | None = None
     marketplace_activity_execution: MarketplaceActivityExecutionService | None = None
+    listing_lifecycle_execution: ListingLifecycleExecutionService | None = None
 
 
 def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
@@ -116,6 +121,10 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         supply_changes_execution,
         rare_appearances_execution,
         IntelligenceEngine((MarketplaceActivityModule(),)),
+    )
+    listing_lifecycle_execution = ListingLifecycleExecutionService(
+        marketplace_history_queries,
+        IntelligenceEngine((ListingLifecycleModule(),)),
     )
     history_repository = SQLiteIntelligenceHistoryRepository(database)
     history_queries = IntelligenceHistoryQueryService(history_repository)
@@ -161,6 +170,10 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         MarketplaceActivityDetailViewModelBuilder()
     )
     marketplace_activity_renderer = DesktopMarketplaceActivityRenderer()
+    listing_lifecycle_presentation = ListingLifecyclePresentationService(
+        ListingLifecycleDetailViewModelBuilder()
+    )
+    listing_lifecycle_renderer = DesktopListingLifecycleRenderer()
 
     return DesktopApplicationDependencies(
         database=database,
@@ -170,6 +183,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         supply_changes_execution=supply_changes_execution,
         rare_appearances_execution=rare_appearances_execution,
         marketplace_activity_execution=marketplace_activity_execution,
+        listing_lifecycle_execution=listing_lifecycle_execution,
         dashboard_homepage=DashboardHomepageService(
             history_queries,
             comparison_presentation,
@@ -190,6 +204,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
                 supply_changes=supply_changes_presentation,
                 rare_appearances=rare_appearances_presentation,
                 marketplace_activity=marketplace_activity_presentation,
+                listing_lifecycle=listing_lifecycle_presentation,
             ),
             DesktopCollectionExplorerRenderer(
                 collection_health_renderer,
@@ -200,6 +215,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
                 supply_changes_renderer,
                 rare_appearances_renderer,
                 marketplace_activity_renderer,
+                listing_lifecycle_renderer,
             ),
         ),
         hidden_gems_controller=DesktopHiddenGemsController(

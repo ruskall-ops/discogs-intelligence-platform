@@ -18,6 +18,7 @@ from dip.experience.price_changes import PriceChangesDetailViewModel
 from dip.experience.supply_changes import SupplyChangesDetailViewModel
 from dip.experience.rare_appearances import RareAppearancesDetailViewModel
 from dip.experience.marketplace_activity import MarketplaceActivityDetailViewModel
+from dip.experience.listing_lifecycle import ListingLifecycleDetailViewModel
 from dip.experience.weekend_listings import WeekendListingsDetailViewModel
 
 from .models import (
@@ -44,6 +45,7 @@ class CollectionExplorerViewModelBuilder:
         supply_changes: SupplyChangesDetailViewModel | None = None,
         rare_appearances: RareAppearancesDetailViewModel | None = None,
         marketplace_activity: MarketplaceActivityDetailViewModel | None = None,
+        listing_lifecycle: ListingLifecycleDetailViewModel | None = None,
         *,
         selected_destination: CollectionExplorerDestination = (
             CollectionExplorerDestination.OVERVIEW
@@ -123,6 +125,10 @@ class CollectionExplorerViewModelBuilder:
             marketplace_activity = MarketplaceActivityDetailViewModel.loading() if overview.state is CollectionExplorerState.LOADING else MarketplaceActivityDetailViewModel.unavailable()
         if type(marketplace_activity) is not MarketplaceActivityDetailViewModel:
             raise TypeError("marketplace_activity must be a MarketplaceActivityDetailViewModel.")
+        if listing_lifecycle is None:
+            listing_lifecycle = ListingLifecycleDetailViewModel.loading() if overview.state is CollectionExplorerState.LOADING else ListingLifecycleDetailViewModel.unavailable()
+        if type(listing_lifecycle) is not ListingLifecycleDetailViewModel:
+            raise TypeError("listing_lifecycle must be a ListingLifecycleDetailViewModel.")
         destinations = destination_view_models(
             overview,
             collection_health,
@@ -133,6 +139,7 @@ class CollectionExplorerViewModelBuilder:
             supply_changes,
             rare_appearances,
             marketplace_activity,
+            listing_lifecycle,
         )
         return CollectionExplorerViewModel(
             state=explorer_state(destinations),
@@ -147,6 +154,7 @@ class CollectionExplorerViewModelBuilder:
             supply_changes=supply_changes,
             rare_appearances=rare_appearances,
             marketplace_activity=marketplace_activity,
+            listing_lifecycle=listing_lifecycle,
         )
 
     @staticmethod

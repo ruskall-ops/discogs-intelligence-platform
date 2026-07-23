@@ -164,6 +164,34 @@ counts. Profiles are ordered by total activity descending, appearance count
 ascending, then release ID ascending. Module ID is `marketplace_activity`,
 version `1.0`, with explicit registration only.
 
+## Listing Lifecycle Intelligence
+
+Listing Lifecycle is a primary Marketplace Intelligence module that describes
+listing-presence sequences across complete Marketplace History. Its execution
+service performs one `all_snapshots()` query and supplies the immutable
+chronological tuple to the domain module. The module has no repository, SQLite,
+network, presentation, or clock dependency.
+
+Listings use `(release_id, listing_id)` identity. Complete, partial, and empty
+snapshots are analyzable; unavailable and failed snapshots are excluded with
+factual diagnostics because they cannot establish listing absence. Therefore
+the exposed history size and latest boundary mean analyzed Marketplace
+history. Partial snapshots contribute normally and make the result partial.
+
+For each observed listing the module exposes exact first/latest observations,
+snapshot count and Decimal ratio, current presence, longest continuous observed
+run, disappearance/reappearance transition counts, and longest internal
+absence. Leading and trailing absences do not affect longest absence.
+
+States are deterministic sequence labels. `new` first appears at the latest
+analyzed snapshot; `active` remains continuously observed through it;
+`reappeared` is currently present after one return; `intermittent` is currently
+present after repeated returns; `disappeared` has one trailing non-observation;
+and `ended` has at least two. `Ended` does not infer sale, withdrawal, expiry,
+or any other cause. Ordering uses this state order, then observation ratio
+descending, release ID, and listing ID. Module ID is `listing_lifecycle`,
+version `1.0`, and registration remains explicit.
+
 ```text
                 Discogs API
                      │

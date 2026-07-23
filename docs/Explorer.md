@@ -29,6 +29,7 @@ DashboardHomepageViewModel
           ├── SupplyChangesPresentationService
           ├── RareAppearancesPresentationService
           ├── MarketplaceActivityPresentationService
+          ├── ListingLifecyclePresentationService
           │
           ▼
 CollectionExplorerPresentationService
@@ -74,9 +75,10 @@ Destinations use stable identifiers and always appear in this explicit order:
 4. Collection Trends;
 5. Weekend Listings;
 6. Price Changes;
-7. Supply Changes.
-8. Rare Appearances.
-9. Marketplace Activity.
+7. Supply Changes;
+8. Rare Appearances;
+9. Marketplace Activity;
+10. Listing Lifecycle.
 
 Overview copies existing collection size, execution status, completed-module
 count, execution timestamp and version, Collection Health score, Hidden Gems
@@ -135,14 +137,14 @@ partial. Price Changes distinguishes fewer than two snapshots as
 
 ## Desktop navigation
 
-The Dashboard's **Open Collection Explorer** action opens Overview in an
-nine-tab, scrollable window. The window retains the homepage model that was
+The Dashboard's **Open Collection Explorer** action opens Overview in a
+ten-tab, scrollable window. The window retains the homepage model that was
 current when it opened. The action is disabled while that model is loading or
 stale.
 
 Weekend Listings is the fifth tab, Price Changes is the sixth, Supply Changes
-is the seventh, Rare Appearances is the eighth, and Marketplace Activity is the
-ninth. Opening or selecting them
+is the seventh, Rare Appearances is the eighth, Marketplace Activity is the
+ninth, and Listing Lifecycle is the tenth. Opening or selecting them
 performs no module execution, Marketplace fetch, history
 query, repository access, persistence write, comparison, sorting, filtering or
 refresh; each only renders the result captured when the Explorer was built.
@@ -176,6 +178,14 @@ Marketplace Activity is the ninth destination. It receives an already-produced
 composite result and preserves its factual event counts, appearance facts,
 observation boundaries, canonical order, and diagnostics. Explorer and desktop
 code perform no source execution, aggregation, calculation, or sorting.
+
+## Listing Lifecycle destination
+
+Listing Lifecycle is the tenth destination. It receives an already-produced
+result and preserves listing identity, lifecycle state, exact observation
+facts, transition counts, canonical order, and diagnostics. Explorer and
+desktop code do not query history, analyze presence, classify states,
+calculate ratios, or sort records.
 
 ## First-slice limitations
 
