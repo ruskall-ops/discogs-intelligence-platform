@@ -24,6 +24,7 @@ from .hidden_gems_renderer import DesktopHiddenGemsRenderer
 from .price_changes_renderer import DesktopPriceChangesRenderer
 from .supply_changes_renderer import DesktopSupplyChangesRenderer
 from .rare_appearances_renderer import DesktopRareAppearancesRenderer
+from .marketplace_activity_renderer import DesktopMarketplaceActivityRenderer
 from .weekend_listings_renderer import DesktopWeekendListingsRenderer
 
 
@@ -68,6 +69,7 @@ class _CollectionExplorerPresentation(Protocol):
         price_changes_result: IntelligenceResult | None = None,
         supply_changes_result: IntelligenceResult | None = None,
         rare_appearances_result: IntelligenceResult | None = None,
+        marketplace_activity_result: IntelligenceResult | None = None,
     ) -> CollectionExplorerViewModel: ...
 
 
@@ -83,6 +85,7 @@ class DesktopCollectionExplorerRenderer:
         price_changes: DesktopPriceChangesRenderer | None = None,
         supply_changes: DesktopSupplyChangesRenderer | None = None,
         rare_appearances: DesktopRareAppearancesRenderer | None = None,
+        marketplace_activity: DesktopMarketplaceActivityRenderer | None = None,
     ) -> None:
         self._collection_health = (
             collection_health or DesktopCollectionHealthRenderer()
@@ -93,6 +96,7 @@ class DesktopCollectionExplorerRenderer:
         self._price_changes = price_changes or DesktopPriceChangesRenderer()
         self._supply_changes = supply_changes or DesktopSupplyChangesRenderer()
         self._rare_appearances = rare_appearances or DesktopRareAppearancesRenderer()
+        self._marketplace_activity = marketplace_activity or DesktopMarketplaceActivityRenderer()
 
     def render(
         self,
@@ -125,6 +129,7 @@ class DesktopCollectionExplorerRenderer:
             self._price(explorer),
             self._supply(explorer),
             self._rare(explorer),
+            self._activity(explorer),
         )
         return DesktopCollectionExplorerView(
             title=explorer.title,
@@ -305,6 +310,17 @@ class DesktopCollectionExplorerRenderer:
             parts.extend(("", "Diagnostics", rendered.diagnostics))
         return DesktopCollectionExplorerSection(CollectionExplorerDestination.RARE_APPEARANCES, rendered.title, CollectionExplorerState(rendered.state.value), "\n".join(parts))
 
+    def _activity(self, explorer: CollectionExplorerViewModel) -> DesktopCollectionExplorerSection:
+        rendered = self._marketplace_activity.render(explorer.marketplace_activity)
+        parts = [rendered.headline, rendered.summary]
+        if rendered.counts:
+            parts.extend(("", "Activity counts", rendered.counts))
+        for activity in rendered.activities:
+            parts.extend(("", activity.heading, activity.body))
+        if rendered.diagnostics:
+            parts.extend(("", "Diagnostics", rendered.diagnostics))
+        return DesktopCollectionExplorerSection(CollectionExplorerDestination.MARKETPLACE_ACTIVITY, rendered.title, CollectionExplorerState(rendered.state.value), "\n".join(parts))
+
 
 class DesktopCollectionExplorerController:
     """Open one cached Explorer model from the current homepage source."""
@@ -341,6 +357,7 @@ class DesktopCollectionExplorerController:
         price_changes_result: IntelligenceResult | None = None,
         supply_changes_result: IntelligenceResult | None = None,
         rare_appearances_result: IntelligenceResult | None = None,
+        marketplace_activity_result: IntelligenceResult | None = None,
     ) -> DesktopCollectionExplorerView:
         """Build and render one Explorer; tab changes need no further service call."""
 
@@ -353,6 +370,8 @@ class DesktopCollectionExplorerController:
             result_arguments["supply_changes_result"] = supply_changes_result
         if rare_appearances_result is not None:
             result_arguments["rare_appearances_result"] = rare_appearances_result
+        if marketplace_activity_result is not None:
+            result_arguments["marketplace_activity_result"] = marketplace_activity_result
         explorer = self._presentation.explorer_for_homepage(
             homepage,
             selected_destination=selected_destination,

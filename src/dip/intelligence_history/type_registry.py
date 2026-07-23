@@ -31,6 +31,12 @@ from dip.marketplace_intelligence.rare_appearances import (
     RareAppearancesOutput,
     RareAppearancesSummary,
 )
+from dip.marketplace_intelligence.marketplace_activity import (
+    MarketplaceActivityObservationReference,
+    MarketplaceActivityOutput,
+    MarketplaceActivitySummary,
+    ReleaseActivity,
+)
 from dip.marketplace_intelligence.weekend_listings import (
     WeekendListingCandidate,
     WeekendListingsOutput,
@@ -62,6 +68,10 @@ APPROVED_DATACLASS_TYPES: dict[str, type[Any]] = {
         RareAppearanceSnapshotReference,
         RareAppearancesOutput,
         RareAppearancesSummary,
+        MarketplaceActivityObservationReference,
+        MarketplaceActivityOutput,
+        MarketplaceActivitySummary,
+        ReleaseActivity,
         WeekendListingCandidate,
         WeekendListingsOutput,
         WeekendWindow,

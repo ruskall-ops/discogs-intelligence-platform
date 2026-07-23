@@ -32,3 +32,4 @@ class IntelligenceContext:
     marketplace_snapshot: MarketplaceSnapshot | None = None
     marketplace_comparison: MarketplaceSnapshotComparisonInput | None = None
     marketplace_history: tuple[MarketplaceSnapshot, ...] = ()
+    marketplace_activity_sources: tuple["IntelligenceResult", ...] = ()

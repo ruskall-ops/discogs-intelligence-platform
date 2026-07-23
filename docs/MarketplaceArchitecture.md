@@ -142,6 +142,28 @@ then release ID ascending. The standard `IntelligenceResult` contains immutable
 typed output under module ID `rare_appearances`, version `1.0`. Registration is
 explicit and does not alter the default engine registry.
 
+## Marketplace Activity Intelligence
+
+Marketplace Activity is the first composite Marketplace Intelligence module.
+Its execution service coordinates already-produced Price Changes, Supply
+Changes, and Rare Appearances results, validates their snapshot identities, and
+then executes Marketplace Activity once. Weekend Listings may be supplied but
+is not required. The composite module never receives or analyzes Marketplace
+snapshots and never executes its source modules.
+
+Release profiles are anchored to the threshold-qualified typed appearances
+exposed by Rare Appearances. Price and supply event counts are aggregated from
+their existing typed change records by `release_id`; no comparison, delta, or
+appearance logic is repeated. Source change records without corresponding
+appearance detail are reported diagnostically rather than reconstructed.
+
+Each immutable profile preserves appearance count and Decimal ratio, price and
+supply change counts, longest internal absence, and first/latest observation
+references. Total activity is the transparent sum of those factual event
+counts. Profiles are ordered by total activity descending, appearance count
+ascending, then release ID ascending. Module ID is `marketplace_activity`,
+version `1.0`, with explicit registration only.
+
 ```text
                 Discogs API
                      │

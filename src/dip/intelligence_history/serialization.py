@@ -27,6 +27,7 @@ from dip.marketplace_intelligence.supply_changes import (
     SupplyChangesComparisonState,
 )
 from dip.marketplace_intelligence.rare_appearances import RareAppearancesAnalysisState
+from dip.marketplace_intelligence.marketplace_activity import MarketplaceActivityState
 
 from .models import IntelligenceHistoryRecord, IntelligenceHistoryRun, _FrozenList
 from .type_registry import APPROVED_DATACLASS_TYPES, approved_dataclass_name
@@ -80,6 +81,10 @@ _ENUM_TYPES: dict[str, type[Enum]] = {
         "dip.marketplace_intelligence.rare_appearances."
         "RareAppearancesAnalysisState"
     ): RareAppearancesAnalysisState,
+    (
+        "dip.marketplace_intelligence.marketplace_activity."
+        "MarketplaceActivityState"
+    ): MarketplaceActivityState,
 }
 
 

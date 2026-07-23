@@ -34,6 +34,8 @@ from .supply_changes import SupplyChangesExecutionConsistencyError, SupplyChange
 from .supply_changes_presentation import SupplyChangesPresentationService
 from .rare_appearances import RareAppearancesExecutionConsistencyError, RareAppearancesExecutionService
 from .rare_appearances_presentation import RareAppearancesPresentationService
+from .marketplace_activity import MarketplaceActivityExecutionConsistencyError, MarketplaceActivityExecutionService
+from .marketplace_activity_presentation import MarketplaceActivityPresentationService
 from .weekend_listings_presentation import WeekendListingsPresentationService
 
 
@@ -72,6 +74,9 @@ __all__ = [
     "RareAppearancesExecutionConsistencyError",
     "RareAppearancesExecutionService",
     "RareAppearancesPresentationService",
+    "MarketplaceActivityExecutionConsistencyError",
+    "MarketplaceActivityExecutionService",
+    "MarketplaceActivityPresentationService",
     "WeekendListingsPresentationService",
     "main",
 ]

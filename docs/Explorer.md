@@ -28,6 +28,7 @@ DashboardHomepageViewModel
           ├── PriceChangesPresentationService
           ├── SupplyChangesPresentationService
           ├── RareAppearancesPresentationService
+          ├── MarketplaceActivityPresentationService
           │
           ▼
 CollectionExplorerPresentationService
@@ -75,6 +76,7 @@ Destinations use stable identifiers and always appear in this explicit order:
 6. Price Changes;
 7. Supply Changes.
 8. Rare Appearances.
+9. Marketplace Activity.
 
 Overview copies existing collection size, execution status, completed-module
 count, execution timestamp and version, Collection Health score, Hidden Gems
@@ -134,12 +136,13 @@ partial. Price Changes distinguishes fewer than two snapshots as
 ## Desktop navigation
 
 The Dashboard's **Open Collection Explorer** action opens Overview in an
-eight-tab, scrollable window. The window retains the homepage model that was
+nine-tab, scrollable window. The window retains the homepage model that was
 current when it opened. The action is disabled while that model is loading or
 stale.
 
 Weekend Listings is the fifth tab, Price Changes is the sixth, Supply Changes
-is the seventh, and Rare Appearances is the eighth. Opening or selecting them
+is the seventh, Rare Appearances is the eighth, and Marketplace Activity is the
+ninth. Opening or selecting them
 performs no module execution, Marketplace fetch, history
 query, repository access, persistence write, comparison, sorting, filtering or
 refresh; each only renders the result captured when the Explorer was built.
@@ -166,6 +169,13 @@ result and preserves the module's frequency order, Decimal ratios, observation
 boundaries, internal absence counts, snapshot identifiers, and diagnostics.
 The presentation and desktop layers do not query history, count appearances,
 calculate ratios, filter by threshold, or sort records.
+
+## Marketplace Activity destination
+
+Marketplace Activity is the ninth destination. It receives an already-produced
+composite result and preserves its factual event counts, appearance facts,
+observation boundaries, canonical order, and diagnostics. Explorer and desktop
+code perform no source execution, aggregation, calculation, or sorting.
 
 ## First-slice limitations
 

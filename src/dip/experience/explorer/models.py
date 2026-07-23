@@ -24,6 +24,7 @@ from dip.experience.hidden_gems import HiddenGemsDetailViewModel
 from dip.experience.price_changes import PriceChangesDetailViewModel
 from dip.experience.supply_changes import SupplyChangesDetailViewModel
 from dip.experience.rare_appearances import RareAppearancesDetailViewModel
+from dip.experience.marketplace_activity import MarketplaceActivityDetailViewModel
 from dip.experience.weekend_listings import WeekendListingsDetailViewModel
 from dip.intelligence import IntelligenceStatus
 
@@ -43,6 +44,7 @@ class CollectionExplorerDestination(str, Enum):
     PRICE_CHANGES = "price_changes"
     SUPPLY_CHANGES = "supply_changes"
     RARE_APPEARANCES = "rare_appearances"
+    MARKETPLACE_ACTIVITY = "marketplace_activity"
 
 
 class CollectionExplorerState(str, Enum):
@@ -145,6 +147,7 @@ _DESTINATION_LABELS = {
     CollectionExplorerDestination.PRICE_CHANGES: "Price Changes",
     CollectionExplorerDestination.SUPPLY_CHANGES: "Supply Changes",
     CollectionExplorerDestination.RARE_APPEARANCES: "Rare Appearances",
+    CollectionExplorerDestination.MARKETPLACE_ACTIVITY: "Marketplace Activity",
 }
 
 
@@ -163,6 +166,7 @@ class CollectionExplorerViewModel:
     price_changes: PriceChangesDetailViewModel
     supply_changes: SupplyChangesDetailViewModel
     rare_appearances: RareAppearancesDetailViewModel
+    marketplace_activity: MarketplaceActivityDetailViewModel
     title: str = field(init=False, default="Collection Explorer")
 
     def __post_init__(self) -> None:
@@ -190,6 +194,8 @@ class CollectionExplorerViewModel:
             raise TypeError("supply_changes must be a SupplyChangesDetailViewModel.")
         if type(self.rare_appearances) is not RareAppearancesDetailViewModel:
             raise TypeError("rare_appearances must be a RareAppearancesDetailViewModel.")
+        if type(self.marketplace_activity) is not MarketplaceActivityDetailViewModel:
+            raise TypeError("marketplace_activity must be a MarketplaceActivityDetailViewModel.")
 
         expected_states = (
             self.overview.state,
@@ -200,6 +206,7 @@ class CollectionExplorerViewModel:
             _price_changes_state(self.price_changes),
             _supply_changes_state(self.supply_changes),
             _rare_appearances_state(self.rare_appearances),
+            _marketplace_activity_state(self.marketplace_activity),
         )
         if tuple(item.state for item in destinations) != expected_states:
             raise CollectionExplorerConsistencyError(
@@ -243,6 +250,7 @@ def destination_view_models(
     price_changes: PriceChangesDetailViewModel,
     supply_changes: SupplyChangesDetailViewModel,
     rare_appearances: RareAppearancesDetailViewModel,
+    marketplace_activity: MarketplaceActivityDetailViewModel,
 ) -> tuple[CollectionExplorerDestinationViewModel, ...]:
     """Create the fixed navigation sequence for seven composed destinations."""
 
@@ -255,6 +263,7 @@ def destination_view_models(
         _price_changes_state(price_changes),
         _supply_changes_state(supply_changes),
         _rare_appearances_state(rare_appearances),
+        _marketplace_activity_state(marketplace_activity),
     )
     return tuple(
         CollectionExplorerDestinationViewModel(
@@ -345,6 +354,10 @@ def _rare_appearances_state(detail: RareAppearancesDetailViewModel) -> Collectio
     return CollectionExplorerState(detail.state.value)
 
 
+def _marketplace_activity_state(detail: MarketplaceActivityDetailViewModel) -> CollectionExplorerState:
+    return CollectionExplorerState(detail.state.value)
+
+
 def _aggregate_state(
     states: tuple[CollectionExplorerState, ...],
 ) -> CollectionExplorerState:
@@ -365,6 +378,7 @@ def _aggregate_state(
     price_changes_state = states[5]
     supply_changes_state = states[6]
     rare_appearances_state = states[7]
+    marketplace_activity_state = states[8]
     usable = {
         CollectionExplorerState.AVAILABLE,
         CollectionExplorerState.EMPTY,
@@ -402,6 +416,12 @@ def _aggregate_state(
             *usable,
             CollectionExplorerState.UNAVAILABLE,
             CollectionExplorerState.INSUFFICIENT_HISTORY,
+        }
+        and marketplace_activity_state
+        in {
+            *usable,
+            CollectionExplorerState.UNAVAILABLE,
+            CollectionExplorerState.INSUFFICIENT_DATA,
         }
     ):
         return CollectionExplorerState.AVAILABLE

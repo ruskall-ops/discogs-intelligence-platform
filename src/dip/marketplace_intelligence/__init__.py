@@ -47,6 +47,15 @@ from .rare_appearances import (
     RareAppearancesOutput,
     RareAppearancesSummary,
 )
+from .marketplace_activity import (
+    MarketplaceActivityDomainError,
+    MarketplaceActivityModule,
+    MarketplaceActivityObservationReference,
+    MarketplaceActivityOutput,
+    MarketplaceActivityState,
+    MarketplaceActivitySummary,
+    ReleaseActivity,
+)
 from .serialization import (
     JsonValue,
     MARKETPLACE_SCHEMA_VERSION,
@@ -117,6 +126,13 @@ __all__ = [
     "RareAppearancesModule",
     "RareAppearancesOutput",
     "RareAppearancesSummary",
+    "MarketplaceActivityDomainError",
+    "MarketplaceActivityModule",
+    "MarketplaceActivityObservationReference",
+    "MarketplaceActivityOutput",
+    "MarketplaceActivityState",
+    "MarketplaceActivitySummary",
+    "ReleaseActivity",
     "WeekendWindow",
     "dumps_marketplace_module_result",
     "dumps_marketplace_snapshot",

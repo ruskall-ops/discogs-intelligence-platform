@@ -17,6 +17,7 @@ from dip.experience.hidden_gems import HiddenGemsDetailViewModel
 from dip.experience.price_changes import PriceChangesDetailViewModel
 from dip.experience.supply_changes import SupplyChangesDetailViewModel
 from dip.experience.rare_appearances import RareAppearancesDetailViewModel
+from dip.experience.marketplace_activity import MarketplaceActivityDetailViewModel
 from dip.experience.weekend_listings import WeekendListingsDetailViewModel
 
 from .models import (
@@ -42,6 +43,7 @@ class CollectionExplorerViewModelBuilder:
         price_changes: PriceChangesDetailViewModel | None = None,
         supply_changes: SupplyChangesDetailViewModel | None = None,
         rare_appearances: RareAppearancesDetailViewModel | None = None,
+        marketplace_activity: MarketplaceActivityDetailViewModel | None = None,
         *,
         selected_destination: CollectionExplorerDestination = (
             CollectionExplorerDestination.OVERVIEW
@@ -117,6 +119,10 @@ class CollectionExplorerViewModelBuilder:
             rare_appearances = RareAppearancesDetailViewModel.loading() if overview.state is CollectionExplorerState.LOADING else RareAppearancesDetailViewModel.unavailable()
         if type(rare_appearances) is not RareAppearancesDetailViewModel:
             raise TypeError("rare_appearances must be a RareAppearancesDetailViewModel.")
+        if marketplace_activity is None:
+            marketplace_activity = MarketplaceActivityDetailViewModel.loading() if overview.state is CollectionExplorerState.LOADING else MarketplaceActivityDetailViewModel.unavailable()
+        if type(marketplace_activity) is not MarketplaceActivityDetailViewModel:
+            raise TypeError("marketplace_activity must be a MarketplaceActivityDetailViewModel.")
         destinations = destination_view_models(
             overview,
             collection_health,
@@ -126,6 +132,7 @@ class CollectionExplorerViewModelBuilder:
             price_changes,
             supply_changes,
             rare_appearances,
+            marketplace_activity,
         )
         return CollectionExplorerViewModel(
             state=explorer_state(destinations),
@@ -139,6 +146,7 @@ class CollectionExplorerViewModelBuilder:
             price_changes=price_changes,
             supply_changes=supply_changes,
             rare_appearances=rare_appearances,
+            marketplace_activity=marketplace_activity,
         )
 
     @staticmethod
