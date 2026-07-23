@@ -8,6 +8,8 @@ provides the established Collection Health and Hidden Gems details, and shows a
 neutral recent Collection Trends comparison and factual Weekend Listings from
 an explicitly supplied Marketplace Intelligence result. Price Changes adds a
 factual comparison of two explicitly supplied Marketplace snapshots.
+Marketplace Momentum adds transparent, qualified Decision Intelligence from an
+already-produced result.
 
 The Explorer displays completed intelligence. It does not calculate
 intelligence, make collection decisions, query persistence, or start a second
@@ -30,6 +32,7 @@ DashboardHomepageViewModel
           ├── RareAppearancesPresentationService
           ├── MarketplaceActivityPresentationService
           ├── ListingLifecyclePresentationService
+          ├── MarketplaceMomentumPresentationService
           │
           ▼
 CollectionExplorerPresentationService
@@ -48,10 +51,11 @@ The application service passes the exact same homepage model to the existing
 detail services and builds the Explorer once when the window opens. Trends
 performs one Intelligence History query during that construction. An optional,
 already-produced Weekend Listings result and an optional, already-produced
-Price Changes result are supplied at the same presentation boundary. Switching
-tabs does not query Marketplace or Intelligence History, execute intelligence,
-fetch Marketplace data, calculate a comparison, sort records, or rebuild the
-workspace.
+Price Changes result are supplied at the same presentation boundary. Marketplace
+Momentum is also supplied only as an already-produced result. Switching tabs
+does not query Marketplace or Intelligence History, execute intelligence, fetch
+Marketplace data, calculate a comparison or assessment, sort records, or
+rebuild the workspace.
 
 Overview, Collection Health, and Hidden Gems remain anchored to the Dashboard
 homepage execution supplied when the Explorer opens. Trends identifies its
@@ -78,7 +82,8 @@ Destinations use stable identifiers and always appear in this explicit order:
 7. Supply Changes;
 8. Rare Appearances;
 9. Marketplace Activity;
-10. Listing Lifecycle.
+10. Listing Lifecycle;
+11. Marketplace Momentum.
 
 Overview copies existing collection size, execution status, completed-module
 count, execution timestamp and version, Collection Health score, Hidden Gems
@@ -130,7 +135,10 @@ error boundary. A missing Weekend Listings result is unavailable without
 degrading otherwise usable collection destinations. The same applies to a
 missing Price Changes result. A partial Weekend source or partial Price Changes
 comparison keeps the Explorer usable and marks the aggregate workspace
-partial. Price Changes distinguishes fewer than two snapshots as
+partial. A missing Marketplace Momentum result is likewise unavailable without
+degrading the other destinations; a partial supplied result remains usable and
+makes the aggregate workspace partial. Price Changes distinguishes fewer than
+two snapshots as
 `insufficient_history`, two supplied but non-comparable snapshots as
 `insufficient_data`, and a valid comparison with no detailed changes as
 `empty`.
@@ -138,14 +146,15 @@ partial. Price Changes distinguishes fewer than two snapshots as
 ## Desktop navigation
 
 The Dashboard's **Open Collection Explorer** action opens Overview in a
-ten-tab, scrollable window. The window retains the homepage model that was
+eleven-tab, scrollable window. The window retains the homepage model that was
 current when it opened. The action is disabled while that model is loading or
 stale.
 
 Weekend Listings is the fifth tab, Price Changes is the sixth, Supply Changes
 is the seventh, Rare Appearances is the eighth, Marketplace Activity is the
-ninth, and Listing Lifecycle is the tenth. Opening or selecting them
-performs no module execution, Marketplace fetch, history
+ninth, Listing Lifecycle is the tenth, and Marketplace Momentum is the
+eleventh. Opening or selecting them performs no module execution, Marketplace
+fetch, history
 query, repository access, persistence write, comparison, sorting, filtering or
 refresh; each only renders the result captured when the Explorer was built.
 
@@ -187,10 +196,24 @@ facts, transition counts, canonical order, and diagnostics. Explorer and
 desktop code do not query history, analyze presence, classify states,
 calculate ratios, or sort records.
 
+## Marketplace Momentum destination
+
+Marketplace Momentum is the eleventh destination. It receives an
+already-produced Decision Intelligence result and preserves source provenance,
+rule-set version, price direction, supply pressure, Activity level, evidence
+coverage, assessment, stable reason codes, canonical release order, and
+diagnostics. Its language remains qualified and non-prescriptive: it explains
+the supplied evidence without forecasting or recommending buying, selling, or
+trading. Explorer and desktop code do not query snapshots or history, invoke
+source providers, execute Decision Intelligence, derive components, apply
+assessment rules, infer neutral or zero evidence, or sort records. Opening or
+selecting the destination only renders the result captured when the Explorer
+was built.
+
 ## First-slice limitations
 
 Search, filtering, user sorting, charts, forecasting, arbitrary date ranges,
 per-release trends, Opportunity,
 Protected Records, Market Movers, broader Marketplace Intelligence, automatic
-Price Changes execution, live Marketplace monitoring, background refresh, and
-AI summaries remain future work.
+Price Changes or Marketplace Momentum execution, live Marketplace monitoring,
+background refresh, and AI summaries remain future work.

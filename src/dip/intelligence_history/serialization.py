@@ -12,6 +12,15 @@ from enum import Enum
 from typing import Any, NoReturn, TypeAlias
 
 from dip.intelligence.models import IntelligenceStatus
+from dip.decision_intelligence import (
+    ActivityIntensity,
+    EvidenceCoverage,
+    MarketplaceMomentumDiagnosticCode,
+    MomentumAnalysisState,
+    MomentumAssessment,
+    MomentumDirection,
+    MomentumReasonCode,
+)
 from dip.marketplace_intelligence.models import (
     MarketplaceDataStatus,
     MarketplaceDiagnosticSeverity,
@@ -55,6 +64,34 @@ _RECORD_TYPE = "intelligence_history_record"
 
 _ENUM_TYPES: dict[str, type[Enum]] = {
     "dip.intelligence.models.IntelligenceStatus": IntelligenceStatus,
+    (
+        "dip.decision_intelligence.marketplace_momentum."
+        "ActivityIntensity"
+    ): ActivityIntensity,
+    (
+        "dip.decision_intelligence.marketplace_momentum."
+        "EvidenceCoverage"
+    ): EvidenceCoverage,
+    (
+        "dip.decision_intelligence.marketplace_momentum."
+        "MarketplaceMomentumDiagnosticCode"
+    ): MarketplaceMomentumDiagnosticCode,
+    (
+        "dip.decision_intelligence.marketplace_momentum."
+        "MomentumAnalysisState"
+    ): MomentumAnalysisState,
+    (
+        "dip.decision_intelligence.marketplace_momentum."
+        "MomentumAssessment"
+    ): MomentumAssessment,
+    (
+        "dip.decision_intelligence.marketplace_momentum."
+        "MomentumDirection"
+    ): MomentumDirection,
+    (
+        "dip.decision_intelligence.marketplace_momentum."
+        "MomentumReasonCode"
+    ): MomentumReasonCode,
     "dip.marketplace_intelligence.models.MarketplaceDataStatus": MarketplaceDataStatus,
     (
         "dip.marketplace_intelligence.models."

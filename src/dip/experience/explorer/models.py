@@ -26,6 +26,7 @@ from dip.experience.supply_changes import SupplyChangesDetailViewModel
 from dip.experience.rare_appearances import RareAppearancesDetailViewModel
 from dip.experience.marketplace_activity import MarketplaceActivityDetailViewModel
 from dip.experience.listing_lifecycle import ListingLifecycleDetailViewModel
+from dip.experience.marketplace_momentum import MarketplaceMomentumDetailViewModel
 from dip.experience.weekend_listings import WeekendListingsDetailViewModel
 from dip.intelligence import IntelligenceStatus
 
@@ -47,6 +48,7 @@ class CollectionExplorerDestination(str, Enum):
     RARE_APPEARANCES = "rare_appearances"
     MARKETPLACE_ACTIVITY = "marketplace_activity"
     LISTING_LIFECYCLE = "listing_lifecycle"
+    MARKETPLACE_MOMENTUM = "marketplace_momentum"
 
 
 class CollectionExplorerState(str, Enum):
@@ -151,6 +153,7 @@ _DESTINATION_LABELS = {
     CollectionExplorerDestination.RARE_APPEARANCES: "Rare Appearances",
     CollectionExplorerDestination.MARKETPLACE_ACTIVITY: "Marketplace Activity",
     CollectionExplorerDestination.LISTING_LIFECYCLE: "Listing Lifecycle",
+    CollectionExplorerDestination.MARKETPLACE_MOMENTUM: "Marketplace Momentum",
 }
 
 
@@ -171,6 +174,7 @@ class CollectionExplorerViewModel:
     rare_appearances: RareAppearancesDetailViewModel
     marketplace_activity: MarketplaceActivityDetailViewModel
     listing_lifecycle: ListingLifecycleDetailViewModel
+    marketplace_momentum: MarketplaceMomentumDetailViewModel
     title: str = field(init=False, default="Collection Explorer")
 
     def __post_init__(self) -> None:
@@ -202,6 +206,10 @@ class CollectionExplorerViewModel:
             raise TypeError("marketplace_activity must be a MarketplaceActivityDetailViewModel.")
         if type(self.listing_lifecycle) is not ListingLifecycleDetailViewModel:
             raise TypeError("listing_lifecycle must be a ListingLifecycleDetailViewModel.")
+        if type(self.marketplace_momentum) is not MarketplaceMomentumDetailViewModel:
+            raise TypeError(
+                "marketplace_momentum must be a MarketplaceMomentumDetailViewModel."
+            )
 
         expected_states = (
             self.overview.state,
@@ -214,6 +222,7 @@ class CollectionExplorerViewModel:
             _rare_appearances_state(self.rare_appearances),
             _marketplace_activity_state(self.marketplace_activity),
             _listing_lifecycle_state(self.listing_lifecycle),
+            _marketplace_momentum_state(self.marketplace_momentum),
         )
         if tuple(item.state for item in destinations) != expected_states:
             raise CollectionExplorerConsistencyError(
@@ -259,8 +268,9 @@ def destination_view_models(
     rare_appearances: RareAppearancesDetailViewModel,
     marketplace_activity: MarketplaceActivityDetailViewModel,
     listing_lifecycle: ListingLifecycleDetailViewModel,
+    marketplace_momentum: MarketplaceMomentumDetailViewModel,
 ) -> tuple[CollectionExplorerDestinationViewModel, ...]:
-    """Create the fixed navigation sequence for seven composed destinations."""
+    """Create the fixed navigation sequence for all composed destinations."""
 
     states = (
         overview.state,
@@ -273,6 +283,7 @@ def destination_view_models(
         _rare_appearances_state(rare_appearances),
         _marketplace_activity_state(marketplace_activity),
         _listing_lifecycle_state(listing_lifecycle),
+        _marketplace_momentum_state(marketplace_momentum),
     )
     return tuple(
         CollectionExplorerDestinationViewModel(
@@ -371,6 +382,12 @@ def _listing_lifecycle_state(detail: ListingLifecycleDetailViewModel) -> Collect
     return CollectionExplorerState(detail.state.value)
 
 
+def _marketplace_momentum_state(
+    detail: MarketplaceMomentumDetailViewModel,
+) -> CollectionExplorerState:
+    return CollectionExplorerState(detail.state.value)
+
+
 def _aggregate_state(
     states: tuple[CollectionExplorerState, ...],
 ) -> CollectionExplorerState:
@@ -393,6 +410,7 @@ def _aggregate_state(
     rare_appearances_state = states[7]
     marketplace_activity_state = states[8]
     listing_lifecycle_state = states[9]
+    marketplace_momentum_state = states[10]
     usable = {
         CollectionExplorerState.AVAILABLE,
         CollectionExplorerState.EMPTY,
@@ -442,6 +460,12 @@ def _aggregate_state(
             *usable,
             CollectionExplorerState.UNAVAILABLE,
             CollectionExplorerState.INSUFFICIENT_HISTORY,
+        }
+        and marketplace_momentum_state
+        in {
+            *usable,
+            CollectionExplorerState.UNAVAILABLE,
+            CollectionExplorerState.INSUFFICIENT_DATA,
         }
     ):
         return CollectionExplorerState.AVAILABLE

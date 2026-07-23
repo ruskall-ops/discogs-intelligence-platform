@@ -7,6 +7,7 @@ from unittest.mock import patch
 from dip.app import (
     MarketplaceHistoryCommandService,
     MarketplaceHistoryQueryService,
+    MarketplaceMomentumExecutionService,
     ListingLifecycleExecutionService,
     PriceChangesExecutionService,
 )
@@ -73,6 +74,7 @@ class MarketplaceHistoryCompositionTestCase(unittest.TestCase):
         self.assertIsNone(dependencies.marketplace_history_queries)
         self.assertIsNone(dependencies.price_changes_execution)
         self.assertIsNone(dependencies.listing_lifecycle_execution)
+        self.assertIsNone(dependencies.marketplace_momentum_execution)
 
     def test_composition_exposes_services_without_accessing_history_on_startup(
         self,
@@ -121,6 +123,10 @@ class MarketplaceHistoryCompositionTestCase(unittest.TestCase):
         self.assertIsInstance(
             dependencies.listing_lifecycle_execution,
             ListingLifecycleExecutionService,
+        )
+        self.assertIsInstance(
+            dependencies.marketplace_momentum_execution,
+            MarketplaceMomentumExecutionService,
         )
         self.assertEqual(repository.calls, [])
 

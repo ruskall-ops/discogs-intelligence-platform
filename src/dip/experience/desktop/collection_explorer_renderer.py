@@ -26,6 +26,7 @@ from .supply_changes_renderer import DesktopSupplyChangesRenderer
 from .rare_appearances_renderer import DesktopRareAppearancesRenderer
 from .marketplace_activity_renderer import DesktopMarketplaceActivityRenderer
 from .listing_lifecycle_renderer import DesktopListingLifecycleRenderer
+from .marketplace_momentum_renderer import DesktopMarketplaceMomentumRenderer
 from .weekend_listings_renderer import DesktopWeekendListingsRenderer
 
 
@@ -72,6 +73,7 @@ class _CollectionExplorerPresentation(Protocol):
         rare_appearances_result: IntelligenceResult | None = None,
         marketplace_activity_result: IntelligenceResult | None = None,
         listing_lifecycle_result: IntelligenceResult | None = None,
+        marketplace_momentum_result: IntelligenceResult | None = None,
     ) -> CollectionExplorerViewModel: ...
 
 
@@ -89,6 +91,7 @@ class DesktopCollectionExplorerRenderer:
         rare_appearances: DesktopRareAppearancesRenderer | None = None,
         marketplace_activity: DesktopMarketplaceActivityRenderer | None = None,
         listing_lifecycle: DesktopListingLifecycleRenderer | None = None,
+        marketplace_momentum: DesktopMarketplaceMomentumRenderer | None = None,
     ) -> None:
         self._collection_health = (
             collection_health or DesktopCollectionHealthRenderer()
@@ -101,12 +104,15 @@ class DesktopCollectionExplorerRenderer:
         self._rare_appearances = rare_appearances or DesktopRareAppearancesRenderer()
         self._marketplace_activity = marketplace_activity or DesktopMarketplaceActivityRenderer()
         self._listing_lifecycle = listing_lifecycle or DesktopListingLifecycleRenderer()
+        self._marketplace_momentum = (
+            marketplace_momentum or DesktopMarketplaceMomentumRenderer()
+        )
 
     def render(
         self,
         explorer: CollectionExplorerViewModel,
     ) -> DesktopCollectionExplorerView:
-        """Render all six destinations once in their validated order."""
+        """Render all destinations once in their validated order."""
 
         if type(explorer) is not CollectionExplorerViewModel:
             raise TypeError("explorer must be a CollectionExplorerViewModel.")
@@ -135,6 +141,7 @@ class DesktopCollectionExplorerRenderer:
             self._rare(explorer),
             self._activity(explorer),
             self._lifecycle(explorer),
+            self._momentum(explorer),
         )
         return DesktopCollectionExplorerView(
             title=explorer.title,
@@ -337,6 +344,29 @@ class DesktopCollectionExplorerRenderer:
             parts.extend(("", "Diagnostics", rendered.diagnostics))
         return DesktopCollectionExplorerSection(CollectionExplorerDestination.LISTING_LIFECYCLE, rendered.title, CollectionExplorerState(rendered.state.value), "\n".join(parts))
 
+    def _momentum(
+        self,
+        explorer: CollectionExplorerViewModel,
+    ) -> DesktopCollectionExplorerSection:
+        rendered = self._marketplace_momentum.render(
+            explorer.marketplace_momentum
+        )
+        parts = [rendered.headline, rendered.summary]
+        if rendered.context:
+            parts.extend(("", "Assessment context", rendered.context))
+        for release in rendered.releases:
+            parts.extend(("", release.heading, release.body))
+        if rendered.source_provenance:
+            parts.extend(("", "Source provenance", rendered.source_provenance))
+        if rendered.diagnostics:
+            parts.extend(("", "Diagnostics", rendered.diagnostics))
+        return DesktopCollectionExplorerSection(
+            CollectionExplorerDestination.MARKETPLACE_MOMENTUM,
+            rendered.title,
+            CollectionExplorerState(rendered.state.value),
+            "\n".join(parts),
+        )
+
 
 class DesktopCollectionExplorerController:
     """Open one cached Explorer model from the current homepage source."""
@@ -375,6 +405,7 @@ class DesktopCollectionExplorerController:
         rare_appearances_result: IntelligenceResult | None = None,
         marketplace_activity_result: IntelligenceResult | None = None,
         listing_lifecycle_result: IntelligenceResult | None = None,
+        marketplace_momentum_result: IntelligenceResult | None = None,
     ) -> DesktopCollectionExplorerView:
         """Build and render one Explorer; tab changes need no further service call."""
 
@@ -391,6 +422,10 @@ class DesktopCollectionExplorerController:
             result_arguments["marketplace_activity_result"] = marketplace_activity_result
         if listing_lifecycle_result is not None:
             result_arguments["listing_lifecycle_result"] = listing_lifecycle_result
+        if marketplace_momentum_result is not None:
+            result_arguments["marketplace_momentum_result"] = (
+                marketplace_momentum_result
+            )
         explorer = self._presentation.explorer_for_homepage(
             homepage,
             selected_destination=selected_destination,

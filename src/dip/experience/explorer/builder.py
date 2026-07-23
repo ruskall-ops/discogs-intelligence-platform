@@ -19,6 +19,7 @@ from dip.experience.supply_changes import SupplyChangesDetailViewModel
 from dip.experience.rare_appearances import RareAppearancesDetailViewModel
 from dip.experience.marketplace_activity import MarketplaceActivityDetailViewModel
 from dip.experience.listing_lifecycle import ListingLifecycleDetailViewModel
+from dip.experience.marketplace_momentum import MarketplaceMomentumDetailViewModel
 from dip.experience.weekend_listings import WeekendListingsDetailViewModel
 
 from .models import (
@@ -46,6 +47,7 @@ class CollectionExplorerViewModelBuilder:
         rare_appearances: RareAppearancesDetailViewModel | None = None,
         marketplace_activity: MarketplaceActivityDetailViewModel | None = None,
         listing_lifecycle: ListingLifecycleDetailViewModel | None = None,
+        marketplace_momentum: MarketplaceMomentumDetailViewModel | None = None,
         *,
         selected_destination: CollectionExplorerDestination = (
             CollectionExplorerDestination.OVERVIEW
@@ -129,6 +131,16 @@ class CollectionExplorerViewModelBuilder:
             listing_lifecycle = ListingLifecycleDetailViewModel.loading() if overview.state is CollectionExplorerState.LOADING else ListingLifecycleDetailViewModel.unavailable()
         if type(listing_lifecycle) is not ListingLifecycleDetailViewModel:
             raise TypeError("listing_lifecycle must be a ListingLifecycleDetailViewModel.")
+        if marketplace_momentum is None:
+            marketplace_momentum = (
+                MarketplaceMomentumDetailViewModel.loading()
+                if overview.state is CollectionExplorerState.LOADING
+                else MarketplaceMomentumDetailViewModel.unavailable()
+            )
+        if type(marketplace_momentum) is not MarketplaceMomentumDetailViewModel:
+            raise TypeError(
+                "marketplace_momentum must be a MarketplaceMomentumDetailViewModel."
+            )
         destinations = destination_view_models(
             overview,
             collection_health,
@@ -140,6 +152,7 @@ class CollectionExplorerViewModelBuilder:
             rare_appearances,
             marketplace_activity,
             listing_lifecycle,
+            marketplace_momentum,
         )
         return CollectionExplorerViewModel(
             state=explorer_state(destinations),
@@ -155,6 +168,7 @@ class CollectionExplorerViewModelBuilder:
             rare_appearances=rare_appearances,
             marketplace_activity=marketplace_activity,
             listing_lifecycle=listing_lifecycle,
+            marketplace_momentum=marketplace_momentum,
         )
 
     @staticmethod

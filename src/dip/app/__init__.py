@@ -38,6 +38,12 @@ from .marketplace_activity import MarketplaceActivityExecutionConsistencyError, 
 from .marketplace_activity_presentation import MarketplaceActivityPresentationService
 from .listing_lifecycle import ListingLifecycleExecutionConsistencyError, ListingLifecycleExecutionService
 from .listing_lifecycle_presentation import ListingLifecyclePresentationService
+from .marketplace_momentum import (
+    MarketplaceMomentumExecutionConsistencyError,
+    MarketplaceMomentumExecutionService,
+    build_marketplace_momentum_input,
+)
+from .marketplace_momentum_presentation import MarketplaceMomentumPresentationService
 from .weekend_listings_presentation import WeekendListingsPresentationService
 
 
@@ -82,6 +88,10 @@ __all__ = [
     "ListingLifecycleExecutionConsistencyError",
     "ListingLifecycleExecutionService",
     "ListingLifecyclePresentationService",
+    "MarketplaceMomentumExecutionConsistencyError",
+    "MarketplaceMomentumExecutionService",
+    "MarketplaceMomentumPresentationService",
     "WeekendListingsPresentationService",
+    "build_marketplace_momentum_input",
     "main",
 ]

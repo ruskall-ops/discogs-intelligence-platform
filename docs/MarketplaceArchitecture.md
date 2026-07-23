@@ -97,6 +97,26 @@ Each layer has a single responsibility.
 
 # High-Level Architecture
 
+## Intelligence category boundaries
+
+Marketplace intelligence uses three explicit categories:
+
+- **Primary Intelligence** derives typed observations directly from the
+  application-supplied Marketplace snapshot or history context. Price Changes,
+  Supply Changes, Rare Appearances, and Listing Lifecycle are primary modules.
+- **Composite Intelligence** combines already-produced intelligence into a new
+  factual view without repeating the source calculations. Marketplace Activity
+  is composite intelligence.
+- **Decision Intelligence** synthesizes already-produced intelligence through
+  explicit, versioned rules to support a human decision. It exposes its
+  components, coverage, provenance, and reasons rather than hiding them in an
+  opaque score.
+
+Decision Intelligence does not receive raw Marketplace snapshots, select or
+query history, access repositories, or execute its source modules. It remains
+non-prescriptive: it may describe evidence and a qualified assessment, but must
+not forecast outcomes or recommend buying, selling, or trading.
+
 ## Supply Changes Intelligence
 
 The first Supply Changes slice compares exactly two snapshots selected by the
@@ -191,6 +211,70 @@ and `ended` has at least two. `Ended` does not infer sale, withdrawal, expiry,
 or any other cause. Ordering uses this state order, then observation ratio
 descending, release ID, and listing ID. Module ID is `listing_lifecycle`,
 version `1.0`, and registration remains explicit.
+
+## Marketplace Momentum Decision Intelligence
+
+Marketplace Momentum is the first Decision Intelligence module. Its required
+sources are already-produced Price Changes, Supply Changes, and Marketplace
+Activity results. Rare Appearances and Listing Lifecycle results are optional
+supporting sources. The application-owned
+`MarketplaceMomentumExecutionService` invokes each direct source provider once,
+validates and normalizes the returned results, and executes the dedicated
+Marketplace Momentum engine once. The decision module receives only immutable
+normalized facts; it never receives snapshots, queries history, accesses a
+repository, or executes a source module.
+
+The result keeps its reasoning transparent. For every release it exposes the
+price-direction component, supply-pressure component, Marketplace Activity
+level, evidence coverage, assessment, stable reason codes, and source
+provenance. Price direction uses the signed balance of comparable price
+increases and decreases. Supply pressure reverses the supply balance: decreases
+are positive pressure and increases are negative pressure. Availability and
+incomparability events remain visible counts but are not treated as directional
+evidence. Activity levels use explicit thresholds: zero is `none`, one or two
+events are `low`, three through five are `moderate`, and more than five are
+`high`. An absent Activity profile is `insufficient`, not a factual zero.
+
+Coverage is deterministic. No comparable price or supply evidence is
+`insufficient`; exactly one comparable dimension, or no Activity profile, is
+`limited`; partial required source evidence or diagnostics is `partial`; and
+otherwise coverage is `complete`. Assessment is likewise rule based: aligned
+positive price evidence and positive or neutral supply pressure is `positive`;
+aligned negative price evidence and negative or neutral supply pressure is
+`negative`; opposing directions, one directional component without its
+counterpart, or neutral-versus-directional evidence is `mixed`; two neutral
+components, or one neutral component with the other unavailable, is `neutral`;
+and the absence of comparable evidence in both directional dimensions is
+`insufficient`. These labels describe the supplied evidence and are not
+predictions or recommendations.
+
+Required source provenance must identify one coherent comparison. Price and
+Supply must refer to the same exact previous/latest snapshot pair and compatible
+capture times, source, status, and source version. Marketplace Activity must
+have been built from that same pair, its Price and Supply counts must agree with
+the direct results, and the pair must be the latest pair in Activity's analyzed
+history. Optional Rare Appearances and Listing Lifecycle histories must match
+that Activity history; overlapping Rare appearance facts must also agree.
+Incompatible required evidence yields an insufficient result without release
+assessments. Incompatible optional evidence is excluded diagnostically and
+keeps otherwise usable core analysis partial.
+
+The release population is the union of identity-bearing Price, Supply, and
+Marketplace Activity facts. Optional evidence cannot introduce a release.
+Source shapes impose deliberate limits: Price and Supply omit unchanged
+per-release details, so absence of a change record is not neutral evidence;
+Supply exposes at most one change record per release, so neutral supply pressure
+cannot be inferred; and an absent Activity profile is not equivalent to zero
+activity. `none` is reserved for an explicitly supplied factual zero.
+
+Release order is canonical: assessment order `positive`, `mixed`, `neutral`,
+`negative`, `insufficient`; then coverage order `complete`, `partial`, `limited`,
+`insufficient`; then Activity order `high`, `moderate`, `low`, `none`,
+`insufficient`; then total Activity descending and release ID ascending. Module
+ID is `marketplace_momentum`, module version is `1.0`, and rule-set version is
+`1.0`. Intelligence History support is an additive explicit type and enum
+registration; it does not change the default engine registry, history wire
+format, or Marketplace serializer.
 
 ```text
                 Discogs API

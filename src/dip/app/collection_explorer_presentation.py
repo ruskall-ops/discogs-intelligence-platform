@@ -21,6 +21,7 @@ from dip.experience.supply_changes import SupplyChangesDetailViewModel
 from dip.experience.rare_appearances import RareAppearancesDetailViewModel
 from dip.experience.marketplace_activity import MarketplaceActivityDetailViewModel
 from dip.experience.listing_lifecycle import ListingLifecycleDetailViewModel
+from dip.experience.marketplace_momentum import MarketplaceMomentumDetailViewModel
 from dip.experience.weekend_listings import WeekendListingsDetailViewModel
 from dip.intelligence import IntelligenceResult
 
@@ -52,6 +53,7 @@ class _CollectionExplorerBuilder(Protocol):
         rare_appearances: RareAppearancesDetailViewModel,
         marketplace_activity: MarketplaceActivityDetailViewModel,
         listing_lifecycle: ListingLifecycleDetailViewModel,
+        marketplace_momentum: MarketplaceMomentumDetailViewModel,
         *,
         selected_destination: CollectionExplorerDestination,
     ) -> CollectionExplorerViewModel: ...
@@ -73,6 +75,7 @@ class CollectionExplorerPresentationService:
         rare_appearances: "_RareAppearancesPresentation | None" = None,
         marketplace_activity: "_MarketplaceActivityPresentation | None" = None,
         listing_lifecycle: "_ListingLifecyclePresentation | None" = None,
+        marketplace_momentum: "_MarketplaceMomentumPresentation | None" = None,
     ) -> None:
         self._collection_health = collection_health
         self._hidden_gems = hidden_gems
@@ -84,6 +87,7 @@ class CollectionExplorerPresentationService:
         self._rare_appearances = rare_appearances
         self._marketplace_activity = marketplace_activity
         self._listing_lifecycle = listing_lifecycle
+        self._marketplace_momentum = marketplace_momentum
 
     def explorer_for_homepage(
         self,
@@ -98,6 +102,7 @@ class CollectionExplorerPresentationService:
         rare_appearances_result: IntelligenceResult | None = None,
         marketplace_activity_result: IntelligenceResult | None = None,
         listing_lifecycle_result: IntelligenceResult | None = None,
+        marketplace_momentum_result: IntelligenceResult | None = None,
     ) -> CollectionExplorerViewModel:
         """Build every destination once from the exact same homepage model."""
 
@@ -149,6 +154,17 @@ class CollectionExplorerPresentationService:
         rare_appearances = RareAppearancesDetailViewModel.loading() if overview_loading else (self._rare_appearances.detail_for_result(rare_appearances_result) if self._rare_appearances is not None else RareAppearancesDetailViewModel.unavailable())
         marketplace_activity = MarketplaceActivityDetailViewModel.loading() if overview_loading else (self._marketplace_activity.detail_for_result(marketplace_activity_result) if self._marketplace_activity is not None else MarketplaceActivityDetailViewModel.unavailable())
         listing_lifecycle = ListingLifecycleDetailViewModel.loading() if overview_loading else (self._listing_lifecycle.detail_for_result(listing_lifecycle_result) if self._listing_lifecycle is not None else ListingLifecycleDetailViewModel.unavailable())
+        marketplace_momentum = (
+            MarketplaceMomentumDetailViewModel.loading()
+            if overview_loading
+            else (
+                self._marketplace_momentum.detail_for_result(
+                    marketplace_momentum_result
+                )
+                if self._marketplace_momentum is not None
+                else MarketplaceMomentumDetailViewModel.unavailable()
+            )
+        )
         return self._builder.build(
             homepage,
             collection_health,
@@ -160,6 +176,7 @@ class CollectionExplorerPresentationService:
             rare_appearances,
             marketplace_activity,
             listing_lifecycle,
+            marketplace_momentum,
             selected_destination=selected_destination,
         )
 
@@ -196,6 +213,13 @@ class _MarketplaceActivityPresentation(Protocol):
 
 class _ListingLifecyclePresentation(Protocol):
     def detail_for_result(self, result: IntelligenceResult | None) -> ListingLifecycleDetailViewModel: ...
+
+
+class _MarketplaceMomentumPresentation(Protocol):
+    def detail_for_result(
+        self,
+        result: IntelligenceResult | None,
+    ) -> MarketplaceMomentumDetailViewModel: ...
 
 
 __all__ = ["CollectionExplorerPresentationService"]
