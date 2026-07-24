@@ -1339,3 +1339,8 @@ or Marketplace Intelligence results.
 History Explorer has no Marketplace boundary. It consumes presentation
 ViewModels only and cannot query Marketplace History, snapshots, repositories,
 or network services.
+## Intelligence Insights isolation
+
+Intelligence Insights has no Marketplace data boundary. It consumes immutable
+presentation ViewModels and cannot access Marketplace History, repositories,
+SQLite, networking, providers, or clocks.

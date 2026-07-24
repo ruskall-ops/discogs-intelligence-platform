@@ -47,6 +47,7 @@ from dip.app.portfolio_opportunity_alignment_presentation import PortfolioOpport
 from dip.app.intelligence_change_analysis_presentation import IntelligenceChangeAnalysisPresentationService
 from dip.app.intelligence_trend_analysis_presentation import IntelligenceTrendAnalysisPresentationService
 from dip.app.history_explorer_presentation import HistoryExplorerPresentationService
+from dip.app.intelligence_insights_presentation import IntelligenceInsightsPresentationService
 from dip.app.weekend_listings_presentation import WeekendListingsPresentationService
 from dip.comparison import ComparisonEngine
 from dip.config import SETTINGS
@@ -89,6 +90,11 @@ from dip.experience.portfolio_opportunity_alignment import PortfolioOpportunityA
 from dip.experience.intelligence_change_analysis import IntelligenceChangeAnalysisViewModelBuilder
 from dip.experience.intelligence_trend_analysis import IntelligenceTrendAnalysisViewModelBuilder
 from dip.experience.history_explorer import HistoryExplorerStateBuilder
+from dip.experience.intelligence_insights import (
+    ChangeInsightGenerator,
+    SnapshotInsightGenerator,
+    TrendInsightGenerator,
+)
 from dip.experience.desktop.price_changes_renderer import (
     DesktopPriceChangesRenderer,
 )
@@ -130,6 +136,10 @@ from dip.experience.desktop.intelligence_trend_analysis_renderer import (
 from dip.experience.desktop.history_explorer_renderer import (
     DesktopHistoryExplorerController,
     DesktopHistoryExplorerRenderer,
+)
+from dip.experience.desktop.intelligence_insights_renderer import (
+    DesktopIntelligenceInsightsController,
+    DesktopIntelligenceInsightsRenderer,
 )
 from dip.experience.weekend_listings import WeekendListingsDetailViewModelBuilder
 from dip.experience.desktop.weekend_listings_renderer import (
@@ -185,6 +195,8 @@ class DesktopApplicationDependencies:
     intelligence_change_analysis_controller: DesktopIntelligenceChangeAnalysisController | None = None
     intelligence_trend_analysis_controller: DesktopIntelligenceTrendAnalysisController | None = None
     history_explorer_controller: DesktopHistoryExplorerController | None = None
+    intelligence_insights_presentation: IntelligenceInsightsPresentationService | None = None
+    intelligence_insights_controller: DesktopIntelligenceInsightsController | None = None
 
 
 def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
@@ -372,6 +384,12 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         HistoryExplorerPresentationService(HistoryExplorerStateBuilder()),
         DesktopHistoryExplorerRenderer(),
     )
+    intelligence_insights_presentation = IntelligenceInsightsPresentationService(
+        SnapshotInsightGenerator(), ChangeInsightGenerator(), TrendInsightGenerator(),
+    )
+    intelligence_insights_controller = DesktopIntelligenceInsightsController(
+        DesktopIntelligenceInsightsRenderer()
+    )
 
     return DesktopApplicationDependencies(
         database=database,
@@ -398,6 +416,8 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         intelligence_change_analysis_controller=intelligence_change_analysis_controller,
         intelligence_trend_analysis_controller=intelligence_trend_analysis_controller,
         history_explorer_controller=history_explorer_controller,
+        intelligence_insights_presentation=intelligence_insights_presentation,
+        intelligence_insights_controller=intelligence_insights_controller,
         dashboard_homepage=DashboardHomepageService(
             history_queries,
             comparison_presentation,

@@ -1833,3 +1833,10 @@ belong to the Historical Intelligence calculation layer and has no repository
 or automatic-loading dependency. Immutable Explorer state preserves supplied
 Snapshot, Change, and Trend ViewModel ordering, current pane, identity-only
 filters, and selected observation, transition, and trend.
+## Intelligence Insights explainability
+
+Historical Snapshot, Change, and Trend ViewModels may be passed explicitly to
+their corresponding Insight generators. Generators consume ViewModels only and
+do not retrieve history, execute intelligence, recalculate changes, or
+regenerate trends. Evidence-first insights preserve the supplied reasons,
+diagnostics, and provenance on every output.

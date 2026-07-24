@@ -630,3 +630,17 @@ modification are descriptive historical patterns, not forecasts or decisions.
 History Explorer can display completed Change and Trend presentation models,
 but it does not reinterpret Decision Intelligence or Historical Intelligence.
 It provides navigation and inspection only.
+## Intelligence Insights 1.0
+
+Intelligence Insights is an explainability subsystem downstream from
+Presentation Services. It converts immutable Snapshot, Change Analysis, and
+Trend Analysis ViewModels into deterministic immutable insight collections.
+Each insight answers what evidence should be noticed, never what action should
+be taken.
+
+Insights preserve structured evidence, source identity, reason codes,
+diagnostics, provenance, category, type, and an explicit display priority.
+Priority is ordering metadata, not severity, confidence, or a score. Wording
+selection is rule-based and deterministic; no language model, randomness,
+probability, hidden heuristic, recommendation, valuation, prediction, or
+forecast is involved.

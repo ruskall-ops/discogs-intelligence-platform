@@ -309,3 +309,15 @@ no history retrieval, repository query, persistence, comparison, analysis,
 trend calculation, aggregation, provider execution, clock access, forecast, or
 recommendation. Evolution, Metric, Reason, Diagnostic, and Alert Explorers,
 automatic retrieval, charts, and arbitrary search remain deferred.
+## Intelligence Insights desktop
+
+Historical Intelligence navigation now includes Intelligence Insights beside
+Change Analysis, Trend Analysis, and History Explorer. The desktop receives
+already-produced insight collections and performs rendering only. Canonical
+display order is overall, assessment, evidence, numeric metrics, dimensions,
+reasons, diagnostics, configuration, and provenance.
+
+Version 1 supports Snapshot, Change, and Trend insights only. AI-generated
+explanations, Evolution Insights, Dashboard Insights, cross-module insights,
+alerts, recommendations, predictions, scores, and confidence estimates remain
+deferred.

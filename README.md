@@ -298,3 +298,10 @@ to the Historical Intelligence desktop experience. It browses explicitly
 supplied immutable presentation models without loading history, executing
 intelligence, comparing results, calculating trends, forecasting, or
 recommending action.
+### Intelligence Insights
+
+Intelligence Insights 1.0 provides deterministic evidence-first observations
+for historical Snapshot, Change, and Trend ViewModels. Insights expose their
+evidence, reasons, diagnostics, source, provenance, category, type, and display
+priority without scoring, confidence estimation, prediction, recommendation,
+or generated prose.

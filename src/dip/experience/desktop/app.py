@@ -50,6 +50,9 @@ class App(tk.Tk):
         self.history_explorer_controller = getattr(
             dependencies, "history_explorer_controller", None
         )
+        self.intelligence_insights_controller = getattr(
+            dependencies, "intelligence_insights_controller", None
+        )
         self.current_portfolio_overview_result = None
         self.current_portfolio_distribution_result = None
         self.current_portfolio_concentration_result = None
@@ -59,6 +62,7 @@ class App(tk.Tk):
         self.current_history_snapshot_view_models = ()
         self.current_history_change_view_models = ()
         self.current_history_trend_view_models = ()
+        self.current_intelligence_insight_collections = ()
         self.desktop_homepage_renderer = DesktopDashboardHomepageRenderer()
         self.current_dashboard_homepage = DashboardHomepageViewModel.loading()
         self.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -670,6 +674,13 @@ class App(tk.Tk):
                 if self.history_explorer_controller is not None
                 else None
             )
+            insights_rendered = (
+                self.intelligence_insights_controller.open(
+                    self.current_intelligence_insight_collections
+                )
+                if self.intelligence_insights_controller is not None
+                else None
+            )
         except Exception as exc:
             messagebox.showerror(
                 "Historical Intelligence unavailable",
@@ -687,6 +698,7 @@ class App(tk.Tk):
             ("Change Analysis", change_rendered),
             ("Trend Analysis", trend_rendered),
             ("History Explorer", explorer_rendered),
+            ("Intelligence Insights", insights_rendered),
         )
         for title, rendered in destinations:
             frame = ttk.Frame(notebook, padding=12)
