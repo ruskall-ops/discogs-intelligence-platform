@@ -345,6 +345,22 @@ constrained, weak, or insufficient observed alignment. There is no numerical
 score, weighting, confidence probability, valuation, forecast, or
 recommendation. Module and rule-set versions are both `1.0`.
 
+Marketplace Opportunity may feed the separate Portfolio Intelligence layer.
+Portfolio Overview combines that already-produced result with owned-release
+facts. It does not reach through Opportunity into Marketplace History,
+snapshots, listings, or lower-level Marketplace Intelligence and does not
+recalculate any Decision Intelligence dimension.
+
+```text
+Marketplace Decision Intelligence
+        │
+        ▼
+Marketplace Opportunity
+        │
+        ▼
+Portfolio Intelligence
+```
+
 ```text
                 Discogs API
                      │

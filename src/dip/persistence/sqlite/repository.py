@@ -204,6 +204,20 @@ class Database:
             ).fetchall()
 
         return [int(row["release_id"]) for row in rows]
+
+    def owned_portfolio_rows(self) -> list[sqlite3.Row]:
+        """Return canonical ownership facts in deterministic release order."""
+
+        with self._lock:
+            return self.conn.execute(
+                """
+                SELECT
+                    release_id,
+                    quantity
+                FROM collection_ownership
+                ORDER BY release_id
+                """
+            ).fetchall()
         
     def start_analysis_run(
         self,

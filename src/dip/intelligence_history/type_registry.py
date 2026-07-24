@@ -98,6 +98,18 @@ from dip.marketplace_intelligence.weekend_listings import (
     WeekendListingsOutput,
     WeekendWindow,
 )
+from dip.portfolio_intelligence import (
+    PortfolioConcentrationFacts,
+    PortfolioDistribution,
+    PortfolioDistributionEntry,
+    PortfolioOverviewDiagnostic,
+    PortfolioOverviewOutput,
+    PortfolioOverviewRuleConfiguration,
+    PortfolioOverviewSummary,
+    PortfolioOwnershipSummary,
+    PortfolioReleaseOverview,
+    PortfolioSourceProvenance,
+)
 
 
 APPROVED_DATACLASS_TYPES: dict[str, type[Any]] = {
@@ -183,6 +195,16 @@ APPROVED_DATACLASS_TYPES: dict[str, type[Any]] = {
         WeekendListingCandidate,
         WeekendListingsOutput,
         WeekendWindow,
+        PortfolioConcentrationFacts,
+        PortfolioDistribution,
+        PortfolioDistributionEntry,
+        PortfolioOverviewDiagnostic,
+        PortfolioOverviewOutput,
+        PortfolioOverviewRuleConfiguration,
+        PortfolioOverviewSummary,
+        PortfolioOwnershipSummary,
+        PortfolioReleaseOverview,
+        PortfolioSourceProvenance,
     )
 }
 

@@ -36,6 +36,8 @@ from dip.app.marketplace_scarcity import MarketplaceScarcityExecutionService
 from dip.app.marketplace_scarcity_presentation import MarketplaceScarcityPresentationService
 from dip.app.marketplace_opportunity import MarketplaceOpportunityExecutionService
 from dip.app.marketplace_opportunity_presentation import MarketplaceOpportunityPresentationService
+from dip.app.portfolio_overview import PortfolioOverviewExecutionService
+from dip.app.portfolio_overview_presentation import PortfolioOverviewPresentationService
 from dip.app.weekend_listings_presentation import WeekendListingsPresentationService
 from dip.comparison import ComparisonEngine
 from dip.config import SETTINGS
@@ -71,6 +73,7 @@ from dip.experience.marketplace_momentum import (
 from dip.experience.marketplace_stability import MarketplaceStabilityDetailViewModelBuilder
 from dip.experience.marketplace_scarcity import MarketplaceScarcityDetailViewModelBuilder
 from dip.experience.marketplace_opportunity import MarketplaceOpportunityDetailViewModelBuilder
+from dip.experience.portfolio_overview import PortfolioOverviewViewModelBuilder
 from dip.experience.desktop.price_changes_renderer import (
     DesktopPriceChangesRenderer,
 )
@@ -84,12 +87,17 @@ from dip.experience.desktop.marketplace_momentum_renderer import (
 from dip.experience.desktop.marketplace_stability_renderer import DesktopMarketplaceStabilityRenderer
 from dip.experience.desktop.marketplace_scarcity_renderer import DesktopMarketplaceScarcityRenderer
 from dip.experience.desktop.marketplace_opportunity_renderer import DesktopMarketplaceOpportunityRenderer
+from dip.experience.desktop.portfolio_overview_renderer import (
+    DesktopPortfolioOverviewController,
+    DesktopPortfolioOverviewRenderer,
+)
 from dip.experience.weekend_listings import WeekendListingsDetailViewModelBuilder
 from dip.experience.desktop.weekend_listings_renderer import (
     DesktopWeekendListingsRenderer,
 )
 from dip.intelligence import IntelligenceEngine
 from dip.decision_intelligence import MarketplaceMomentumModule, MarketplaceOpportunityModule, MarketplaceScarcityModule, MarketplaceStabilityModule
+from dip.portfolio_intelligence import PortfolioOverviewModule
 from dip.marketplace_intelligence import ListingLifecycleModule, MarketplaceActivityModule, PriceChangesModule, RareAppearancesModule, SupplyChangesModule
 from dip.persistence.sqlite import (
     Database,
@@ -118,6 +126,8 @@ class DesktopApplicationDependencies:
     marketplace_stability_execution: MarketplaceStabilityExecutionService | None = None
     marketplace_scarcity_execution: MarketplaceScarcityExecutionService | None = None
     marketplace_opportunity_execution: MarketplaceOpportunityExecutionService | None = None
+    portfolio_overview_execution: PortfolioOverviewExecutionService | None = None
+    portfolio_overview_controller: DesktopPortfolioOverviewController | None = None
 
 
 def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
@@ -185,6 +195,11 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         marketplace_scarcity_execution,
         IntelligenceEngine((MarketplaceOpportunityModule(),)),
     )
+    portfolio_overview_execution = PortfolioOverviewExecutionService(
+        database,
+        marketplace_opportunity_execution,
+        IntelligenceEngine((PortfolioOverviewModule(),)),
+    )
     history_repository = SQLiteIntelligenceHistoryRepository(database)
     history_queries = IntelligenceHistoryQueryService(history_repository)
     comparison_service = IntelligenceComparisonService(
@@ -249,6 +264,10 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         MarketplaceOpportunityDetailViewModelBuilder()
     )
     marketplace_opportunity_renderer = DesktopMarketplaceOpportunityRenderer()
+    portfolio_overview_controller = DesktopPortfolioOverviewController(
+        PortfolioOverviewPresentationService(PortfolioOverviewViewModelBuilder()),
+        DesktopPortfolioOverviewRenderer(),
+    )
 
     return DesktopApplicationDependencies(
         database=database,
@@ -263,6 +282,8 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         marketplace_stability_execution=marketplace_stability_execution,
         marketplace_scarcity_execution=marketplace_scarcity_execution,
         marketplace_opportunity_execution=marketplace_opportunity_execution,
+        portfolio_overview_execution=portfolio_overview_execution,
+        portfolio_overview_controller=portfolio_overview_controller,
         dashboard_homepage=DashboardHomepageService(
             history_queries,
             comparison_presentation,

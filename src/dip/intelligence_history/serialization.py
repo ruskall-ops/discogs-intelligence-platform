@@ -39,6 +39,16 @@ from dip.decision_intelligence import (
     OpportunityDimensionCategory,
     OpportunityEvidenceCoverage,
     OpportunityReasonCode,
+    OpportunityMomentumAssessment,
+    OpportunityScarcityAssessment,
+    OpportunityStabilityAssessment,
+)
+from dip.portfolio_intelligence import (
+    PortfolioAnalysisState,
+    PortfolioEvidenceCoverage,
+    PortfolioOverviewDiagnosticCode,
+    PortfolioOverviewReasonCode,
+    PortfolioReleaseMatchState,
 )
 from dip.marketplace_intelligence.models import (
     MarketplaceDataStatus,
@@ -102,6 +112,14 @@ _ENUM_TYPES: dict[str, type[Enum]] = {
     "dip.decision_intelligence.marketplace_opportunity.OpportunityDimensionCategory": OpportunityDimensionCategory,
     "dip.decision_intelligence.marketplace_opportunity.OpportunityEvidenceCoverage": OpportunityEvidenceCoverage,
     "dip.decision_intelligence.marketplace_opportunity.OpportunityReasonCode": OpportunityReasonCode,
+    "dip.decision_intelligence.marketplace_opportunity.OpportunityMomentumAssessment": OpportunityMomentumAssessment,
+    "dip.decision_intelligence.marketplace_opportunity.OpportunityScarcityAssessment": OpportunityScarcityAssessment,
+    "dip.decision_intelligence.marketplace_opportunity.OpportunityStabilityAssessment": OpportunityStabilityAssessment,
+    "dip.portfolio_intelligence.portfolio_overview.PortfolioAnalysisState": PortfolioAnalysisState,
+    "dip.portfolio_intelligence.portfolio_overview.PortfolioEvidenceCoverage": PortfolioEvidenceCoverage,
+    "dip.portfolio_intelligence.portfolio_overview.PortfolioOverviewDiagnosticCode": PortfolioOverviewDiagnosticCode,
+    "dip.portfolio_intelligence.portfolio_overview.PortfolioOverviewReasonCode": PortfolioOverviewReasonCode,
+    "dip.portfolio_intelligence.portfolio_overview.PortfolioReleaseMatchState": PortfolioReleaseMatchState,
     (
         "dip.decision_intelligence.marketplace_momentum."
         "ActivityIntensity"

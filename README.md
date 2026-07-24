@@ -189,6 +189,7 @@ discogs-intelligence-platform/
 │   ├── marketplace/          # marketplace capability boundary
 │   ├── snapshots/            # historical comparisons
 │   ├── intelligence/         # engine, context, results and modules
+│   ├── portfolio_intelligence/  # owned-portfolio aggregation
 │   ├── decisions/            # user decisions and notes
 │   ├── experience/           # desktop, dashboard, explorer, reporting
 │   ├── exports/              # file export adapters

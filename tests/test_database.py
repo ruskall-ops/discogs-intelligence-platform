@@ -77,6 +77,23 @@ class DatabaseTestCase(unittest.TestCase):
 
         self.assertEqual(rows_before, rows_after)
 
+    def test_owned_portfolio_rows_are_complete_and_release_ordered(self) -> None:
+        self.database.conn.executemany(
+            "INSERT INTO releases (release_id, artist, title) VALUES (?, ?, ?)",
+            ((20, "Artist", "Twenty"), (3, "Artist", "Three")),
+        )
+        self.database.conn.executemany(
+            "INSERT INTO collection_ownership (release_id, quantity) VALUES (?, ?)",
+            ((20, 2), (3, 1)),
+        )
+
+        rows = self.database.owned_portfolio_rows()
+
+        self.assertEqual(
+            tuple((row["release_id"], row["quantity"]) for row in rows),
+            ((3, 1), (20, 2)),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

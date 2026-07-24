@@ -166,6 +166,13 @@ fetch, history
 query, repository access, persistence write, comparison, sorting, filtering or
 refresh; each only renders the result captured when the Explorer was built.
 
+Portfolio Overview is intentionally not a fifteenth Collection Explorer
+destination. It is a separate top-level Portfolio destination because it
+aggregates ownership across release-level Marketplace Decision Intelligence.
+Its controller receives an already-produced Portfolio Overview result; opening
+the destination performs no collection query, provider call, intelligence
+execution, matching, aggregation, ratio calculation, or sorting.
+
 The existing direct **Open Collection Health** and **Open Hidden Gems** actions
 remain dedicated windows for compatibility and convenience. They share the
 same presentation services, immutable detail models, and renderer instances as

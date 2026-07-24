@@ -124,6 +124,13 @@ It never duplicates Composite Intelligence.
 
 Decision Intelligence transforms factual intelligence into structured assessments.
 
+Its release-level Marketplace outputs may feed Portfolio Intelligence.
+Portfolio Intelligence is a distinct aggregation layer: it combines ownership
+facts with already-produced Decision Intelligence and does not reinterpret
+Marketplace History. Portfolio Overview 1.0 consumes Marketplace Opportunity
+only. Portfolio Decision Intelligence, which would interpret portfolio-level
+facts, is deferred. See `PortfolioIntelligence.md`.
+
 ---
 
 # Design Principles
