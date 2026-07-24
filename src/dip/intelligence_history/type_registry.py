@@ -119,6 +119,16 @@ from dip.portfolio_intelligence import (
     PortfolioDistributionRuleConfiguration,
     PortfolioDistributionSummary,
     PortfolioReleaseDistributionDetail,
+    PortfolioCategoryContribution,
+    PortfolioConcentrationDiagnostic,
+    PortfolioConcentrationDifference,
+    PortfolioConcentrationMetricSet,
+    PortfolioConcentrationOutput,
+    PortfolioConcentrationProvenance,
+    PortfolioConcentrationRuleConfiguration,
+    PortfolioConcentrationSummary,
+    PortfolioDimensionConcentration,
+    PortfolioTopNConcentration,
 )
 
 
@@ -225,6 +235,16 @@ APPROVED_DATACLASS_TYPES: dict[str, type[Any]] = {
         PortfolioDistributionRuleConfiguration,
         PortfolioDistributionSummary,
         PortfolioReleaseDistributionDetail,
+        PortfolioCategoryContribution,
+        PortfolioConcentrationDiagnostic,
+        PortfolioConcentrationDifference,
+        PortfolioConcentrationMetricSet,
+        PortfolioConcentrationOutput,
+        PortfolioConcentrationProvenance,
+        PortfolioConcentrationRuleConfiguration,
+        PortfolioConcentrationSummary,
+        PortfolioDimensionConcentration,
+        PortfolioTopNConcentration,
     )
 }
 

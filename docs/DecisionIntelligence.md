@@ -131,6 +131,10 @@ Marketplace History. Portfolio Overview 1.0 consumes Marketplace Opportunity
 only. Portfolio Decision Intelligence, which would interpret portfolio-level
 facts, is deferred. See `PortfolioIntelligence.md`.
 
+Portfolio Concentration's per-dimension mathematical states remain descriptive
+Portfolio Intelligence. They measure normalized category clustering and are not
+Decision Intelligence, investment-risk assessments, or recommendations.
+
 ---
 
 # Design Principles

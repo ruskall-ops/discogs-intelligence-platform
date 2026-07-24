@@ -46,6 +46,27 @@ from .portfolio_distribution import (
     PortfolioReleaseDistributionDetail,
     PortfolioReleaseMetadataFact,
 )
+from .portfolio_concentration import (
+    PortfolioCategoryContribution,
+    PortfolioConcentrationAnalysisState,
+    PortfolioConcentrationBasis,
+    PortfolioConcentrationDiagnostic,
+    PortfolioConcentrationDiagnosticCode,
+    PortfolioConcentrationDifference,
+    PortfolioConcentrationDomainError,
+    PortfolioConcentrationEvidenceCoverage,
+    PortfolioConcentrationInput,
+    PortfolioConcentrationMetricSet,
+    PortfolioConcentrationModule,
+    PortfolioConcentrationOutput,
+    PortfolioConcentrationProvenance,
+    PortfolioConcentrationReasonCode,
+    PortfolioConcentrationRuleConfiguration,
+    PortfolioConcentrationState,
+    PortfolioConcentrationSummary,
+    PortfolioDimensionConcentration,
+    PortfolioTopNConcentration,
+)
 
 __all__ = [
     "MODULE_ID", "MODULE_VERSION", "RULE_SET_VERSION", "OwnedReleaseFact",
@@ -68,4 +89,14 @@ __all__ = [
     "PortfolioDistributionReasonCode", "PortfolioDistributionRuleConfiguration",
     "PortfolioDistributionSummary", "PortfolioReleaseDistributionDetail",
     "PortfolioReleaseMetadataFact",
+    "PortfolioCategoryContribution", "PortfolioConcentrationAnalysisState",
+    "PortfolioConcentrationBasis", "PortfolioConcentrationDiagnostic",
+    "PortfolioConcentrationDiagnosticCode", "PortfolioConcentrationDifference",
+    "PortfolioConcentrationDomainError", "PortfolioConcentrationEvidenceCoverage",
+    "PortfolioConcentrationInput", "PortfolioConcentrationMetricSet",
+    "PortfolioConcentrationModule", "PortfolioConcentrationOutput",
+    "PortfolioConcentrationProvenance", "PortfolioConcentrationReasonCode",
+    "PortfolioConcentrationRuleConfiguration", "PortfolioConcentrationState",
+    "PortfolioConcentrationSummary", "PortfolioDimensionConcentration",
+    "PortfolioTopNConcentration",
 ]

@@ -203,13 +203,20 @@ class PortfolioDistributionTestCase(unittest.TestCase):
         })()
         overview_controller = ExistingController(overview)
         distribution_controller = ExistingController(distribution)
-        workspace = DesktopPortfolioController(overview_controller, distribution_controller)
-        rendered = workspace.open("overview-result", result)
+        concentration_controller = ExistingController(distribution)
+        workspace = DesktopPortfolioController(
+            overview_controller, distribution_controller, concentration_controller
+        )
+        rendered = workspace.open("overview-result", result, "concentration-result")
         self.assertEqual(overview_controller.calls, ["overview-result"])
         self.assertEqual(distribution_controller.calls, [result])
         self.assertEqual(
             tuple(value.destination for value in rendered.sections),
-            (DesktopPortfolioDestination.OVERVIEW, DesktopPortfolioDestination.DISTRIBUTION),
+            (
+                DesktopPortfolioDestination.OVERVIEW,
+                DesktopPortfolioDestination.DISTRIBUTION,
+                DesktopPortfolioDestination.CONCENTRATION,
+            ),
         )
 
 

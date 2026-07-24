@@ -191,3 +191,98 @@ Portfolio Distribution contains no score, valuation, recommendation,
 diversification assessment, risk statement, prediction, or target allocation.
 Portfolio Concentration Intelligence and Portfolio Decision Intelligence remain
 deferred.
+
+## Portfolio Concentration 1.0
+
+Portfolio Concentration is the third descriptive Portfolio Intelligence
+module. It consumes exactly one already-produced, validated Portfolio
+Distribution `IntelligenceResult` with module and rule-set version `1.0`. It
+does not query ownership, normalize metadata, recreate categories, or consume
+Portfolio Overview or Marketplace Intelligence.
+
+Portfolio Distribution owns category identity, ordering, membership counts,
+denominators, missing metadata, and provenance. Portfolio Concentration
+preserves those facts and measures mathematical clustering within each supplied
+dimension. Module ID, module version, and rule-set version are
+`portfolio_concentration`, `1.0`, and `1.0`.
+
+### Membership and metrics
+
+Release and copy memberships are analysed independently. Each basis exposes:
+
+- membership total and represented-category count;
+- largest-category numerator, denominator, share, and all tied categories;
+- top-three and top-five membership totals, denominators, shares, and source
+  categories;
+- raw HHI;
+- normalized HHI; and
+- inverse-HHI effective category count.
+
+Top-N contributors are the first N categories in Portfolio Distribution's
+canonical source order. When fewer categories exist, every represented
+category contributes and the share may equal one.
+
+```text
+HHI = sum((category membership / total membership)²)
+effective category count = 1 / HHI
+```
+
+For more than one category:
+
+```text
+normalized HHI = (HHI - 1/N) / (1 - 1/N)
+```
+
+One category has raw HHI `1`, normalized HHI `1`, and effective category count
+`1`. A dimension without represented categories has unavailable concentration
+metrics; zero is not fabricated.
+
+Release/copy differences expose copy-minus-release deltas for largest-category
+share, top-three and top-five share, HHI, normalized HHI, and effective category
+count. Their direction is factual and is not interpreted as better or worse.
+
+### States and evidence
+
+Each counting basis receives a mathematical concentration state based only on
+normalized HHI. Version 1.0 defaults are:
+
+- `dispersed`: below `0.20`;
+- `moderate`: at least `0.20` and below `0.40`;
+- `concentrated`: at least `0.40` and below `0.65`;
+- `highly_concentrated`: at least `0.65`; and
+- `insufficient`: metrics cannot be calculated.
+
+A single represented category is `highly_concentrated`. These labels describe
+the observed mathematical category distribution. They are not investment risk,
+portfolio quality, or diversification advice.
+
+Concentration evidence is:
+
+- `complete` when every supported source dimension is usable and has complete
+  release and copy metadata;
+- `partial` when every supported dimension is usable but some metadata is
+  missing;
+- `limited` when at least one dimension is unusable and another is usable; and
+- `insufficient` for an invalid source, empty portfolio, or no usable
+  dimensions.
+
+Portfolio Distribution's evidence state and all per-dimension missing metadata
+facts remain separately visible. Missing values are never categories.
+
+### Provenance, ordering, and lifecycle
+
+Concentration preserves the Distribution module and rule-set versions,
+Distribution provenance, collection snapshot identity where supplied, source
+evidence state, supported dimensions, analysed dimensions, unusable dimensions,
+source diagnostics, and source category order. No timestamp or identity is
+invented.
+
+The Portfolio desktop workspace contains Overview, Distribution, and
+Concentration tabs. Each tab receives an already-produced result. Opening the
+workspace or changing tabs performs no provider call, repository query,
+calculation, classification, aggregation, or sorting.
+
+Portfolio Concentration creates no overall portfolio score, risk rating,
+valuation, recommendation, target allocation, or rebalancing guidance.
+Portfolio Decision Intelligence remains deferred and may later interpret
+multiple portfolio-level intelligence results.

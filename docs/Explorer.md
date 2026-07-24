@@ -167,10 +167,12 @@ query, repository access, persistence write, comparison, sorting, filtering or
 refresh; each only renders the result captured when the Explorer was built.
 
 Portfolio Intelligence is intentionally outside Collection Explorer. The
-separate top-level Portfolio workspace contains Overview and Distribution.
+separate top-level Portfolio workspace contains Overview, Distribution, and
+Concentration.
 Overview aggregates Marketplace Decision Intelligence coverage while
-Distribution describes canonical collection metadata. Both controllers receive
-already-produced results; opening Portfolio or switching tabs performs no
+Distribution describes canonical collection metadata. Concentration measures
+mathematical clustering within Distribution's already-produced categories.
+All controllers receive already-produced results; opening Portfolio or switching tabs performs no
 collection query, provider call, intelligence execution, normalization,
 matching, aggregation, ratio calculation, concentration calculation, or
 sorting.

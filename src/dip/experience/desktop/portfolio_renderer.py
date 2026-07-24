@@ -8,11 +8,13 @@ from dip.intelligence import IntelligenceResult
 
 from .portfolio_distribution_renderer import DesktopPortfolioDistributionView
 from .portfolio_overview_renderer import DesktopPortfolioOverviewView
+from .portfolio_concentration_renderer import DesktopPortfolioConcentrationView
 
 
 class DesktopPortfolioDestination(str, Enum):
     OVERVIEW = "overview"
     DISTRIBUTION = "distribution"
+    CONCENTRATION = "concentration"
 
 
 @dataclass(frozen=True)
@@ -36,16 +38,27 @@ class _DistributionController(Protocol):
     def open(self, result: IntelligenceResult | None) -> DesktopPortfolioDistributionView: ...
 
 
+class _ConcentrationController(Protocol):
+    def open(self, result: IntelligenceResult | None) -> DesktopPortfolioConcentrationView: ...
+
+
 class DesktopPortfolioController:
     """Build both tabs once from already-produced results."""
 
-    def __init__(self, overview: _OverviewController, distribution: _DistributionController):
+    def __init__(
+        self,
+        overview: _OverviewController,
+        distribution: _DistributionController,
+        concentration: _ConcentrationController,
+    ):
         self._overview = overview
         self._distribution = distribution
+        self._concentration = concentration
 
-    def open(self, overview_result=None, distribution_result=None):
+    def open(self, overview_result=None, distribution_result=None, concentration_result=None):
         overview = self._overview.open(overview_result)
         distribution = self._distribution.open(distribution_result)
+        concentration = self._concentration.open(concentration_result)
         return DesktopPortfolioView(
             "Portfolio",
             (
@@ -58,6 +71,11 @@ class DesktopPortfolioController:
                     DesktopPortfolioDestination.DISTRIBUTION,
                     "Distribution",
                     _body(distribution.headline, distribution.summary, distribution.sections),
+                ),
+                DesktopPortfolioSection(
+                    DesktopPortfolioDestination.CONCENTRATION,
+                    "Concentration",
+                    _body(concentration.headline, concentration.summary, concentration.sections),
                 ),
             ),
         )

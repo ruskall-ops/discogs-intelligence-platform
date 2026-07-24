@@ -55,6 +55,12 @@ from dip.portfolio_intelligence import (
     PortfolioDistributionDimension,
     PortfolioDistributionEvidenceCoverage,
     PortfolioDistributionReasonCode,
+    PortfolioConcentrationAnalysisState,
+    PortfolioConcentrationBasis,
+    PortfolioConcentrationDiagnosticCode,
+    PortfolioConcentrationEvidenceCoverage,
+    PortfolioConcentrationReasonCode,
+    PortfolioConcentrationState,
 )
 from dip.marketplace_intelligence.models import (
     MarketplaceDataStatus,
@@ -132,6 +138,12 @@ _ENUM_TYPES: dict[str, type[Enum]] = {
     "dip.portfolio_intelligence.portfolio_distribution.PortfolioDistributionDimension": PortfolioDistributionDimension,
     "dip.portfolio_intelligence.portfolio_distribution.PortfolioDistributionEvidenceCoverage": PortfolioDistributionEvidenceCoverage,
     "dip.portfolio_intelligence.portfolio_distribution.PortfolioDistributionReasonCode": PortfolioDistributionReasonCode,
+    "dip.portfolio_intelligence.portfolio_concentration.PortfolioConcentrationAnalysisState": PortfolioConcentrationAnalysisState,
+    "dip.portfolio_intelligence.portfolio_concentration.PortfolioConcentrationBasis": PortfolioConcentrationBasis,
+    "dip.portfolio_intelligence.portfolio_concentration.PortfolioConcentrationDiagnosticCode": PortfolioConcentrationDiagnosticCode,
+    "dip.portfolio_intelligence.portfolio_concentration.PortfolioConcentrationEvidenceCoverage": PortfolioConcentrationEvidenceCoverage,
+    "dip.portfolio_intelligence.portfolio_concentration.PortfolioConcentrationReasonCode": PortfolioConcentrationReasonCode,
+    "dip.portfolio_intelligence.portfolio_concentration.PortfolioConcentrationState": PortfolioConcentrationState,
     (
         "dip.decision_intelligence.marketplace_momentum."
         "ActivityIntensity"

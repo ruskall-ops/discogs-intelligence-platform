@@ -219,9 +219,11 @@ presentation models into read-only desktop drill-down sections. It does not
 query persistence or providers and does not calculate intelligence.
 
 [Portfolio Intelligence](docs/PortfolioIntelligence.md) provides separate
-Overview and Distribution views over owned holdings. Portfolio Distribution
-describes canonical artist, label, format, release-year, and decade membership
-without valuation, scoring, or diversification interpretation.
+Overview, Distribution, and Concentration views over owned holdings.
+Distribution describes canonical artist, label, format, release-year, and
+decade membership; Concentration transparently measures mathematical clustering
+within those categories. Neither adds valuation, investment-risk interpretation,
+recommendations, or an overall portfolio score.
 
 ---
 

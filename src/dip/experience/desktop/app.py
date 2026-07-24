@@ -43,6 +43,7 @@ class App(tk.Tk):
         self.portfolio_controller = dependencies.portfolio_controller
         self.current_portfolio_overview_result = None
         self.current_portfolio_distribution_result = None
+        self.current_portfolio_concentration_result = None
         self.desktop_homepage_renderer = DesktopDashboardHomepageRenderer()
         self.current_dashboard_homepage = DashboardHomepageViewModel.loading()
         self.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -597,6 +598,7 @@ class App(tk.Tk):
             rendered = self.portfolio_controller.open(
                 self.current_portfolio_overview_result,
                 self.current_portfolio_distribution_result,
+                self.current_portfolio_concentration_result,
             )
         except Exception as exc:
             messagebox.showerror(
