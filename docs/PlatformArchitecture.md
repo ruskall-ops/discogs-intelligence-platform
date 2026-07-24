@@ -2,214 +2,98 @@
 
 ## Purpose
 
-This document describes the high-level architecture of the Discogs Intelligence Platform (DIP).
+This document provides the product-level view of how the Discogs Intelligence
+Platform turns observations into explainable decision support. The canonical
+implementation and dependency reference is [Architecture](Architecture.md);
+this document does not define a competing software architecture.
 
-Unlike the software architecture documentation, which focuses on implementation details, this document explains how the major platform components interact to transform collection data into meaningful, explainable intelligence.
+## Platform principle
 
-It is intended to provide a stable architectural vision that remains valid regardless of programming language, framework or user interface technology.
+> **Automate the research, not the decision.**
 
----
+DIP separates source evidence, preserved history, intelligence, presentation,
+and user-owned workflow state. A calculated assessment never becomes an
+automatic buying, selling, or collection action.
 
-# Architectural Philosophy
+## Conceptual flow
 
-The Discogs Intelligence Platform is designed around a simple principle:
-
-> Transform collection data into explainable intelligence that helps collectors make better decisions.
-
-The platform deliberately separates:
-
-- Data acquisition
-- Data storage
-- Intelligence generation
-- Presentation
-- User decisions
-
-This separation keeps the platform modular, testable and extensible.
-
----
-
-# Platform Layers
-
-The platform is organised into a series of logical layers.
-
-```
-                User Interface
-                       │
-                       ▼
-             Presentation Layer
-                       │
-                       ▼
-           Collection Intelligence
-                       │
-                       ▼
-          Historical Snapshot Engine
-                       │
-                       ▼
-             Marketplace Intelligence
-                       │
-                       ▼
-                Data Management
-                       │
-                       ▼
-                  Data Sources
+```text
+Discogs CSV and Marketplace observations
+                    ↓
+         Normalisation and persistence
+                    ↓
+ Collection, Marketplace, and Intelligence History
+                    ↓
+       Deterministic intelligence layers
+                    ↓
+           Presentation Services
+                    ↓
+ Dashboard, Explorers, and Workspaces
+                    ↓
+          Collector investigation
 ```
 
-Each layer has a single responsibility.
+The implementation expresses this through Desktop UI, Workspaces, Presentation
+Services, Application Services, Repository Interfaces, Persistence, and
+External Providers.
 
----
+## Evidence layers
 
-# Data Sources
+### Collection evidence
 
-The platform is intentionally independent of any single data provider.
+Collection import and SQLite storage preserve what the collector owns and the
+legacy collection-oriented market observations used by the core desktop
+workflow.
 
-Current data sources include:
+### Marketplace evidence
 
-- Discogs Collection Export
-- Discogs Marketplace
+Immutable Marketplace snapshots preserve release and listing observations.
+Marketplace History is separate from Intelligence History so raw observations
+are not confused with conclusions.
 
-Future data sources may include:
+### Intelligence
 
-- MusicBrainz
-- Bandcamp
-- Popsike
-- eBay
-- Whatnot
-- Barcode Scanners
-- User spreadsheets
-- Public APIs
+Collection and Marketplace Primary Intelligence calculate factual results.
+Composite Intelligence organises already-produced facts. Decision Intelligence
+uses explicit versioned rules to describe observed alignment without opaque
+scores, recommendations, or forecasts. Portfolio Intelligence aggregates owned
+holdings, and Historical Intelligence compares already-calculated results.
 
-New data sources should integrate without requiring changes to the intelligence layer.
+### Presentation and workspaces
 
----
+Presentation Services project completed results into immutable view models.
+The Dashboard, Collection Explorer, Portfolio Workspace, Marketplace Workspace,
+History Explorer, and Project Workspace compose those models for research and
+navigation. They do not calculate intelligence or query persistence.
 
-# Data Management
+### User-owned state
 
-The Data Management layer is responsible for:
+Personal collection decisions, notes, and Marketplace Research Status remain
+distinct from objective intelligence. Research labels describe the collector's
+workflow and never alter an assessment.
 
-- importing collection data
-- validating data
-- normalising records
-- storing historical snapshots
-- managing configuration
-- maintaining data integrity
+## Implemented entry and navigation
 
-This layer does not perform intelligence or recommendations.
+Project Workspace is the desktop entry point. Project Management supplies its
+active and recent Projects through a storage-independent repository contract.
+Normal desktop execution persists those Projects, last-opened order, and active
+identity through SQLite. From there, the collector can open the Dashboard
+command centre or Portfolio Workspace.
 
-Its purpose is to provide reliable, consistent data for higher platform layers.
+The Dashboard summarises existing Portfolio, Collection, Marketplace, and
+Historical presentation state and opens their established desktop
+destinations. Portfolio Workspace currently implements Overview only; its
+other navigation destinations are visible placeholders. Marketplace Workspace
+implements its six research panes.
 
----
+## Extensibility
 
-# Marketplace Intelligence
+Future data providers and durable research workflows should enter through the
+existing provider, application-service, and repository boundaries. Project
+creation UI, collection refresh, and session or workspace restoration should
+extend the implemented Project boundary. Alternative interfaces should consume
+the same presentation or application boundaries rather than reproducing
+intelligence.
 
-Marketplace Intelligence enriches collection data using external market information.
-
-Examples include:
-
-- estimated values
-- sales history
-- marketplace activity
-- demand indicators
-- supply indicators
-
-This layer describes the market.
-
-It does not analyse the user's collection.
-
----
-
-# Historical Snapshot Engine
-
-Historical snapshots are a core architectural component.
-
-Every intelligence run preserves a snapshot of:
-
-- collection composition
-- marketplace information
-- calculated intelligence
-- user decisions (where appropriate)
-
-Historical snapshots allow the platform to answer questions such as:
-
-- What changed?
-- What is changing?
-- What trends are emerging?
-
-Rather than only displaying current information.
-
----
-
-# Collection Intelligence
-
-Collection Intelligence is the heart of the platform.
-
-It transforms raw data into meaningful, explainable insights.
-
-Examples include:
-
-- Collection Health
-- Hidden Gems
-- Market Movers
-- Collection Trends
-- Weekly Intelligence Reports
-- Future Recommendation Engines
-
-Each intelligence module is independent and reusable.
-
-Modules should explain their conclusions rather than simply producing scores.
-
----
-
-# Experience Layer
-
-The Experience Layer makes intelligence accessible to users.
-
-Examples include:
-
-- Dashboard
-- Collection Explorer
-- Weekly Reports
-- Release Intelligence
-- Future Mobile Companion
-- Future AI Collection Assistant
-
-Presentation components consume intelligence.
-
-They do not calculate it.
-
-This ensures consistent behaviour throughout the platform.
-
----
-
-# Project Foundation
-
-Project Workspace is the application entry point. Project Management coordinates
-Project workflows through a storage-independent repository contract. The
-current SQLite adapter preserves Projects, last-opened order, and active-project
-state across application restarts.
-
-This is a persistence foundation only. It does not restore open windows,
-workspace state, collection refresh state, or a previous desktop session.
-
----
-
-# User Decisions
-
-A key design principle of DIP is:
-
-> Automate the research, not the decision.
-
-The platform provides intelligence.
-
-Users retain complete control over:
-
-- purchases
-- sales
-- collection management
-- recommendations
-
-The platform never executes decisions automatically.
-
----
-
-# Extensibility
-```
+Platform Intelligence based on anonymised community data remains a long-term
+vision. It is not part of the current single-user desktop architecture.

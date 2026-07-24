@@ -10,9 +10,10 @@ it does not make collection decisions.
 Collection data describes what the user owns. Collection Intelligence analyses
 collection characteristics. Marketplace Decision Intelligence describes
 observed conditions for individual releases. Portfolio Intelligence aggregates
-owned holdings across those release-level conditions. A future Portfolio
-Decision Intelligence layer may interpret portfolio-level facts, but is not
-part of this foundation.
+owned holdings across those release-level conditions. Portfolio Opportunity
+Alignment is the implemented first Portfolio Decision Intelligence module; it
+interprets compatible Overview, Distribution, and Concentration outputs
+without reading lower-level sources.
 
 ```text
 Owned collection facts ──────────────┐
@@ -110,7 +111,8 @@ provider call, or intelligence execution.
 
 Portfolio Overview contains no valuation, cost basis, gain or loss, forecast,
 confidence probability, recommendation, ranking, target allocation,
-optimization, or rebalancing. Portfolio Decision Intelligence remains deferred.
+optimization, or rebalancing. Portfolio Decision Intelligence remains a
+separate downstream layer.
 No schema, migration, Marketplace serializer, Marketplace History, or
 Intelligence History wire-format change is introduced.
 
@@ -189,8 +191,8 @@ ratio calculation, concentration calculation, or sorting.
 
 Portfolio Distribution contains no score, valuation, recommendation,
 diversification assessment, risk statement, prediction, or target allocation.
-Portfolio Concentration Intelligence and Portfolio Decision Intelligence remain
-deferred.
+Implemented downstream Portfolio Concentration and Portfolio Opportunity
+Alignment consume its completed output through separate modules.
 
 ## Portfolio Concentration 1.0
 

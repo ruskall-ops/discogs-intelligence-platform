@@ -1,358 +1,120 @@
 # Database Design
 
-> **The database is the historical memory of the Discogs Intelligence Platform.**
+> **The database is the historical memory of the Discogs Intelligence
+> Platform.**
 
----
+## Purpose
 
-# Purpose
+DIP uses SQLite for implemented collection, legacy Marketplace, Intelligence
+History, and aggregate Marketplace History persistence. This document is a
+schema overview. Transaction, locking, reconstruction, and migration rules are
+defined by [Persistence Architecture](PersistenceArchitecture.md).
 
-The purpose of the database is to provide a reliable, explainable and historically accurate record of collection data, marketplace intelligence and user decisions.
+Projects use the same SQLite boundary through a dedicated repository adapter.
 
-Rather than acting purely as storage, the database preserves the evolution of both the collection and the market over time.
+## Implemented schema
 
-Historical information is considered a core feature of the platform.
+The current schema in `src/dip/persistence/sqlite/schema.sql` contains:
 
----
+| Table | Responsibility |
+|---|---|
+| `schema_migrations` | Applied schema version records |
+| `releases` | Canonical imported Discogs release metadata |
+| `collection_ownership` | Quantity and ownership-specific collection facts |
+| `analysis_runs` | Legacy collection/Marketplace refresh lifecycle |
+| `market_snapshots` | Legacy per-release Marketplace observations |
+| `scores` | Current legacy collection-review scores |
+| `decisions` | User-owned decision, notes, miss rating, and protection state |
+| `app_settings` | Key/value application settings |
+| `intelligence_runs` | Immutable Intelligence History run metadata |
+| `intelligence_results` | Immutable, versioned module result records |
+| `marketplace_snapshots` | Canonically serialized aggregate Marketplace snapshots |
+| `projects` | Normalized immutable Project application fields and deterministic order |
+| `project_state` | Singleton active-project identity |
 
-# Design Philosophy
+`market_snapshots` and `marketplace_snapshots` are intentionally different
+contracts. The former supports the original per-release refresh workflow; the
+latter stores the exact aggregate Marketplace model used by Marketplace
+History.
 
-The database should:
+## Ownership model
 
-- Preserve historical information.
-- Never overwrite valuable observations.
-- Remain lightweight and easy to understand.
-- Support future expansion.
-- Favour clarity over unnecessary optimisation.
-- Be fully explainable.
+`releases` identifies a Discogs release. `collection_ownership` stores one row
+per release with a non-negative quantity and ownership facts. Multiple owned
+copies are represented by quantity rather than duplicated release rows.
 
-The database should always support the platform philosophy:
+Collection import updates current release and ownership facts. These current
+facts are distinct from append-only historical observations.
 
-> **Automate the research, not the collecting decision.**
+## Historical storage
 
----
+### Legacy collection and market history
 
-# Technology
+`analysis_runs` records refresh status and counts. `market_snapshots` stores
+per-release observations linked to releases and optionally to an analysis run.
+Queries use explicit ordering.
 
-Current database engine:
+### Intelligence History
 
-**SQLite**
+`intelligence_runs` and `intelligence_results` store one complete run and one
+record per module result. The repository saves a completed execution
+atomically, preserves engine and module versions, and reconstructs typed values
+through the approved deterministic serializer. Stored corruption is rejected,
+not silently repaired.
 
-SQLite has been selected because it provides:
+### Marketplace History
 
-- Zero configuration
-- Excellent reliability
-- Cross-platform compatibility
-- Strong performance for desktop applications
-- Easy backup and portability
+`marketplace_snapshots` stores stable snapshot metadata plus the exact canonical
+JSON payload. Capture times have a normalized ordering representation while
+the original datetime semantics remain in the payload. Newest-first ordering is
+completed by `snapshot_id` as a stable tie-break.
 
-Should future requirements exceed SQLite's capabilities, the architecture should allow migration with minimal disruption.
+## User-owned state
 
----
+`decisions` stores mutable user choices separately from Marketplace evidence
+and intelligence. A personal decision or note must not modify an objective
+observation or calculated historical result.
 
-# Core Principles
+Marketplace Workspace Research Status is currently presentation state and is
+not persisted.
 
-## Historical First
+## Project persistence
 
-Historical information should be preserved wherever practical.
+`projects` stores `project_id`, `name`, `description`, nullable positive
+`last_opened_order`, and a unique positive `insertion_order`. Repository reads
+reconstruct `ManagedProject` values and list them by insertion order.
 
-Snapshots should be appended rather than overwritten.
+`project_state` contains exactly one row with `singleton_id = 1`. Its nullable
+`active_project_id` references `projects.project_id` with restricted deletion.
+Opening a Project updates active identity and last-opened order atomically.
 
-The platform should be able to answer questions such as:
+Migration version 4 creates both tables and the singleton state row. Fresh and
+migrated schemas are equivalent. First desktop startup creates
+`Current Collection` only when absent and makes it active only when no active
+Project exists.
 
-- What changed?
-- When did it change?
-- Why did it change?
+## Connection and transaction boundary
 
----
+The shared `Database` boundary owns the SQLite connection and lock. Repository
+writes participate in its transaction policy. Nested repository operations use
+savepoints so a failure rolls back the nested unit without corrupting an active
+outer transaction.
 
-## Immutable Market Data
-
-Marketplace observations represent historical facts.
-
-Once captured they should not normally be modified.
-
----
-
-## Explainable Intelligence
-
-Every score should be traceable back to the underlying market data used to generate it.
-
----
-
-## Separation of Responsibilities
-
-Each table should have one clearly defined responsibility.
-
-Avoid mixing:
-
-- marketplace data
-- user decisions
-- calculated intelligence
-- application configuration
-
-within the same table.
-
----
-
-# Database Structure
-
-## schema_migrations
-
-Tracks database schema versions.
-
-Purpose:
-
-Allow controlled evolution of the database structure.
-
----
-
-## analysis_runs
-
-Represents one complete intelligence refresh.
-
-Example information:
-
-- Started
-- Completed
-- Duration
-- Success
-- Source
-
-This allows every snapshot and score to be linked back to a specific analysis run.
-
----
-
-## releases
-
-Represents the Discogs release.
-
-Contains information that identifies the release itself.
-
-Examples:
-
-- Artist
-- Title
-- Label
-- Catalogue Number
-- Format
-- Release Date
-
-One release may exist many times within a collection.
-
----
-
-## collection_items
-
-Represents an owned copy of a release.
-
-Future examples include:
-
-- Purchase date
-- Purchase price
-- Media condition
-- Sleeve condition
-- Collection folder
-- Personal notes
-
-Multiple owned copies may reference the same release.
-
----
-
-## market_snapshots
-
-Historical marketplace observations.
-
-Examples:
-
-- Wants
-- Haves
-- Lowest Price
-- Copies For Sale
-- Currency
-
-Snapshots should never replace previous observations.
-
----
-
-## score_snapshots
-
-Historical calculated intelligence.
-
-Examples:
-
-- Value Score
-- Demand Score
-- Liquidity Score
-- Momentum Score
-- Opportunity Score
-
-Historical scores allow trends to be analysed over time.
-
----
-
-## decisions
-
-Stores user decisions independently of marketplace data.
-
-Examples:
-
-- Keep
-- Sell
-- Review
-
-Also includes:
-
-- Personal notes
-- Protected status
-- Miss rating
-
----
-
-## app_settings
-
-Stores application configuration.
-
-Examples:
-
-- User preferences
-- Refresh frequency
-- Interface options
-
----
-
-## projects
-
-Stores normalized Project application state:
-
-- `project_id` — stable text primary key;
-- `name` — required display name;
-- `description` — required presentation-ready description;
-- `last_opened_order` — nullable positive application-controlled sequence;
-- `insertion_order` — required unique positive sequence used for deterministic
-  listing.
-
-## project_state
-
-Stores exactly one row with `singleton_id = 1`. Its nullable
-`active_project_id` is a foreign key to `projects.project_id` with restricted
-deletion. Active state is separate from Project content.
-
-Migration version 4 adds both tables. A fresh database includes the same schema.
-The first desktop composition creates `Current Collection` only when absent and
-does not replace an existing Project or active selection.
-
----
-
-# Entity Relationships
-
-```text
-analysis_runs
-      │
-      ├──────────────┐
-      │              │
-market_snapshots   score_snapshots
-      │              │
-      └──────┬───────┘
-             │
-         releases
-             │
-             │
-      collection_items
-             │
-        decisions
-```
-
----
-
-# Historical Strategy
-
-The platform should favour preserving information rather than replacing it.
-
-Examples:
-
-Market snapshots
-
-✔ Append
-
-Scores
-
-✔ Append
-
-User decisions
-
-✔ Update
-
-Configuration
-
-✔ Update
-
----
-
-# Future Expansion
-
-The current database is designed to support future modules including:
-
-- Collection Intelligence
-- Market Intelligence
-- Release Intelligence
-- Personal Intelligence
-- Dealer Toolkit
-- AI Collection Assistant
-
-Future functionality should be implemented through new tables where appropriate rather than overloading existing structures.
-
----
-
-# Success
-
-A successful database should:
-
-- Preserve history.
-- Remain understandable.
-- Be easy to extend.
-- Provide reliable performance.
-- Support explainable intelligence.
-
-## Design Principle
-
-The database distinguishes between two categories of information.
-
-### Imported Facts
-
-Information obtained directly from Discogs or other external systems.
-
-These records always reflect the capabilities and limitations of their source.
-
-### User Knowledge
-
-Information created and maintained by the user.
-
-Examples include:
-
-- Purchase history
-- Manual valuations
-- Personal notes
-- Cleaning records
-- Storage locations
-- Insurance information
-- Custom tags
-
-User Knowledge should never be overwritten by future imports.
-
-Project persistence does not include collection refresh state, open-window
-state, workspace navigation, or session restoration.
-
-This separation allows DIP to safely refresh imported data while preserving all user-generated information.
-
-
-The database is considered the foundation upon which every other platform capability is built.
-
----
-
-## Document Information
-
-Version: 1.0
-
-Status: Active
-
-Owner: Russell Friend
+Fresh databases are built from the current schema. Existing databases advance
+through ordered, atomic migrations. Both paths must remain schema-equivalent.
+
+## Integrity rules
+
+- foreign keys are enabled;
+- historical repository writes are atomic;
+- ordered queries define deterministic secondary keys;
+- serialized domain values use explicit allow-lists;
+- malformed or inconsistent persisted history raises an error;
+- API tokens and personal databases must not be committed.
+
+## Extension rule
+
+New persistence belongs behind a narrow domain-oriented Repository. Workspaces,
+renderers, intelligence modules, and provider adapters must not issue SQL.
+Project persistence follows this rule through `SQLiteProjectRepository`;
+Project Workspace and Project Management remain SQLite-independent.

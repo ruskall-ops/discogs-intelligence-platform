@@ -2,315 +2,258 @@
 
 > **Transforming collections into intelligence.**
 
----
-
 ## Overview
 
-The **Discogs Intelligence Platform (DIP)** is a desktop decision-support platform for serious vinyl collectors, DJs and music enthusiasts.
+The Discogs Intelligence Platform is a local desktop decision-support platform
+for vinyl collectors, DJs, and music enthusiasts. It combines collection facts,
+Marketplace observations, historical records, and deterministic intelligence
+to reduce manual research and explain what deserves attention.
 
-Its purpose is to transform a static Discogs collection into an intelligent, continuously analysed asset by combining collection data, market activity, pricing, scarcity, demand and historical trends.
-
-DIP is **not** a replacement for Discogs.
-
-Instead, it enhances Discogs by providing explainable insights, evidence and
-historical context that help collectors make better-informed decisions.
-
-The collector always remains in control.
-
----
-
-# Mission
-
-To build the world's best intelligence platform for vinyl collectors by **automating research rather than automating decisions.**
-
----
-
-# Current Status
-
-🚧 **Active Development**
-
-Current release:
-
-**Version 0.3.0 – Marketplace Intelligence and Decision Support Foundation**
-
-Version 0.3.0 extends the released Core Platform and Collection Intelligence
-foundations with Marketplace Intelligence, Portfolio Intelligence, Historical
-Intelligence, explainability, and the first research-oriented Marketplace
-Workspace.
-
----
-
-# Completed Capabilities
-
-Current functionality includes:
-
-- Core platform
-  - Discogs collection CSV import
-  - Discogs Marketplace integration
-  - SQLite persistence and ordered migrations
-  - collection and Marketplace snapshots
-  - configuration, reporting, search, filtering, and Excel export
-- Collection Intelligence
-  - deterministic, versioned Intelligence Engine
-  - Collection Health
-  - Hidden Gems
-  - Historical Intelligence
-  - Dashboard and Collection Intelligence Explorer presentation
-- Marketplace Intelligence
-  - Weekend Listings
-  - Price Changes
-  - Supply Changes
-  - Rare Appearances
-  - Marketplace Activity
-  - Listing Lifecycle
-- Marketplace Decision Intelligence
-  - Marketplace Momentum
-  - Marketplace Stability
-  - Marketplace Scarcity
-  - Marketplace Opportunity synthesis
-- Portfolio Intelligence
-  - Portfolio Overview
-  - Portfolio Distribution
-  - Portfolio Concentration
-  - Portfolio Opportunity Alignment
-- Historical and explainability experiences
-  - immutable Intelligence History
-  - Intelligence Change Analysis
-  - Intelligence Trend Analysis
-  - History Explorer
-  - Intelligence Insights
-- Marketplace Workspace
-  - caller-ordered Attention Queue
-  - Opportunity Detail and grouped Evidence
-  - Marketplace History and Portfolio Context
-  - user-owned Research Status
-- Project foundation
-  - Project Workspace application entry point
-  - Project Management application service
-  - storage-independent Project repository contract
-  - SQLite-backed Project and active-project persistence
-  - deterministic first-run `Current Collection` bootstrap
-
-All intelligence remains deterministic, evidence-led, versioned, and
-presentation-independent. The platform explains observed conditions and
-uncertainty; it does not automate purchasing or selling decisions.
-
----
-
-# Release Roadmap
-
-## Version 0.1 – Core Platform
-
-**Status: Released**
-
-Established the database, import, snapshot, reporting, configuration,
-migration, and modular architecture foundations.
-
----
-
-## Version 0.2 – Collection Intelligence
-
-**Status: Released**
-
-Introduced the versioned Intelligence Engine, Collection Health, Hidden Gems,
-Historical Intelligence, Dashboard, and Collection Intelligence Explorer.
-
----
-
-## Version 0.3.0 – Marketplace Intelligence and Decision Support Foundation
-
-**Status: Current**
-
-Delivers Marketplace History and Intelligence, Marketplace Decision
-Intelligence, Portfolio Intelligence, Intelligence History, Change and Trend
-Analysis, History Explorer, Intelligence Insights, and Marketplace Workspace
-1.0.
-
-The release establishes decision-support and research workflows without
-opportunity ranking, recommendations, predictions, alerts, or automated
-decisions.
-
----
-
-## Beyond Version 0.3.0
-
-Candidate future work includes:
-
-- richer Marketplace and Portfolio history exploration
-- broader cross-module insights
-- user-managed watchlists, notes, tags, and saved searches
-- alerts and notifications built on explicit evidence
-- dashboards, charts, and scheduled research workflows
-- personalisation that remains transparent and user-controlled
-
-These capabilities are not part of Version 0.3.0. Roadmap priorities remain
-subject to architectural review and must preserve the platform’s
-decision-support boundary.
-
-Project identity, last-opened order, and active-project state now persist in
-the existing SQLite database. This persistence does not implement session or
-workspace restoration, project file selection, collection refresh, or project
-creation UI.
-
----
-
-# Product Philosophy
-
-DIP follows one guiding principle:
+DIP enhances Discogs; it does not replace it. The collector remains responsible
+for every buying, selling, pricing, and collection decision.
 
 > **Automate the research, not the decision.**
 
-The platform never tells the user what they should buy or sell.
+## Current release
 
-Instead, it identifies opportunities, explains the evidence and allows the collector to make the final decision.
+**Version 0.3.0 — Marketplace Intelligence and Decision Support**
 
-Every surfaced assessment or insight should be:
+Versions 0.1, 0.2, and 0.3 are released. The current release includes the
+Marketplace, Portfolio, Historical, Workspace, Dashboard, and Project
+Management foundations described below. Version 0.4, the Collector Workflow
+Foundation, is planned.
 
-- Transparent
-- Explainable
-- Evidence-based
-- Reviewable over time
+## Implemented capabilities
 
----
+### Core platform
 
-# Documentation
+- Discogs collection CSV import;
+- Discogs Marketplace API integration;
+- SQLite collection and historical storage;
+- ordered, atomic schema migrations;
+- configuration, collection search and filtering;
+- personal decision and note fields in the collection review;
+- Markdown reporting and Excel export.
 
-Detailed documentation is available in the **docs** folder.
+### Collection Intelligence
 
-Current documentation includes:
+- deterministic, versioned Intelligence Engine;
+- Collection Health;
+- Hidden Gems;
+- Historical Intelligence over collection snapshots;
+- Collection Intelligence Dashboard and Explorer presentations.
+
+### Marketplace Intelligence
+
+- immutable Marketplace snapshots and deterministic serialization;
+- Marketplace History repository and SQLite adapter;
+- Weekend Listings;
+- Price Changes;
+- Supply Changes;
+- Rare Appearances;
+- Listing Lifecycle;
+- Marketplace Activity.
+
+### Decision Intelligence
+
+- Marketplace Momentum;
+- Marketplace Stability;
+- Marketplace Scarcity;
+- Marketplace Opportunity synthesis.
+
+These modules expose separate components, evidence, diagnostics, provenance,
+and rule-set versions. They do not forecast or recommend actions.
+
+### Portfolio Intelligence
+
+- Portfolio Overview;
+- Portfolio Distribution;
+- Portfolio Concentration;
+- Portfolio Opportunity Alignment.
+
+Portfolio outputs preserve owned-release and owned-copy denominators and do not
+introduce valuation, investment-risk, or rebalancing advice.
+
+### History and explainability
+
+- immutable Intelligence History;
+- deterministic comparison;
+- Intelligence Change Analysis;
+- Intelligence Trend Analysis;
+- History Explorer;
+- Intelligence Insights.
+
+Historical analysis consumes previously calculated intelligence. It does not
+recalculate the original modules or predict a future state.
+
+### Desktop workspaces
+
+- **Project Workspace** is the application entry point. It presents one
+  persisted active Project, recent-project state, a summary, and navigation to
+  Dashboard and Portfolio Workspace.
+- **Dashboard** is the command centre. Eight summary cards answer what changed,
+  what deserves attention, and where to investigate next.
+- **Portfolio Workspace** provides an implemented Overview that composes
+  Portfolio Overview, Distribution, Concentration, and Opportunity Alignment.
+  Distribution, Concentration, Opportunity Alignment, History, and Research
+  remain visible placeholder destinations in the workspace navigation.
+- **Marketplace Workspace** provides Attention Queue, Opportunity Detail,
+  Evidence, Marketplace History, Portfolio Context, and Research Status.
+- **Collection Explorer** and the Historical Intelligence desktop provide
+  detailed collection, Marketplace, change, trend, history, and insight views.
+
+Workspace builders compose immutable presentation models. They do not execute
+intelligence, query persistence, or duplicate application and presentation
+services.
+
+### Project Management
+
+The Project Management application layer provides:
+
+- immutable `ManagedProject` application models;
+- a storage-independent `ProjectRepository` protocol;
+- deterministic `InMemoryProjectRepository`;
+- SQLite-backed `SQLiteProjectRepository`;
+- list, create, open, active, last-opened, and recent-project workflows through
+  `ProjectManagementService`.
+
+Normal desktop execution persists Project identity, deterministic insertion and
+last-opened order, and active-project state in the existing SQLite database.
+The composition root creates `Current Collection` once on a new database and
+reuses it thereafter. Project creation UI, file selection, collection refresh,
+and session or workspace restoration remain planned work.
+
+## Architecture
+
+```text
+Desktop UI
+    ↓
+Workspaces
+    ↓
+Presentation Services
+    ↓
+Application Services
+    ↓
+Repository Interfaces
+    ↓
+Persistence
+    ↓
+External Providers
+```
+
+Intelligence and domain services remain independent of presentation and
+persistence. Application Services prepare inputs and coordinate repositories
+or engines. The composition root constructs concrete SQLite and in-memory
+adapters and injects them into the desktop application.
+
+The main architectural rules are:
+
+- identical inputs and versions produce identical outputs;
+- intelligence is immutable, versioned, explainable, and
+  presentation-independent;
+- historical records are append-only through their repository boundaries;
+- Presentation Services map completed results without recalculation;
+- Workspaces compose presentation models and navigation only;
+- repositories reconstruct domain models and contain no business logic;
+- external provider details do not leak into intelligence or UI code.
+
+See [Architecture](docs/Architecture.md) for the complete implemented
+architecture.
+
+## Package structure
+
+```text
+src/dip/
+├── app/                              application and presentation services
+├── collection/                       collection import
+├── comparison/                       historical comparison
+├── config/                           typed settings
+├── core/                             shared errors and primitives
+├── data_sources/discogs/             Discogs adapter
+├── decision_intelligence/            Marketplace Decision Intelligence
+├── experience/                       view models, builders, workspaces, desktop
+├── exports/                          Excel export
+├── historical_intelligence/          change and trend analysis
+├── intelligence/                     engine, context, registry, modules
+├── intelligence_history/             history models and serialization
+├── marketplace_history/              Marketplace repository contract
+├── marketplace_intelligence/         Marketplace intelligence modules
+├── persistence/sqlite/               database, schema, migrations, adapters
+├── portfolio_decision_intelligence/  Opportunity Alignment
+├── portfolio_intelligence/           portfolio modules
+├── projects/                          Project models and repository contract
+└── composition.py                    desktop dependency composition
+```
+
+## Roadmap summary
+
+- **0.1 — Core Platform:** released.
+- **0.2 — Collection Intelligence:** released.
+- **0.3 — Marketplace Intelligence and Decision Support:** released; current
+  package version is 0.3.0.
+- **0.4 — Collector Workflow Foundation:** planned, including completion of the
+  Portfolio Workspace, durable Project workflows, and user-owned research
+  workflow.
+
+See the [Roadmap](docs/Roadmap.md) for release scope and future direction.
+
+## Documentation
 
 - [Vision](docs/Vision.md)
 - [Architecture](docs/Architecture.md)
+- [Roadmap](docs/Roadmap.md)
+- [Project Workspace](docs/ProjectWorkspace.md)
 - [Marketplace Architecture](docs/MarketplaceArchitecture.md)
 - [Portfolio Intelligence](docs/PortfolioIntelligence.md)
 - [Decision Intelligence](docs/DecisionIntelligence.md)
 - [Intelligence History](docs/IntelligenceHistory.md)
-- [Explorer](docs/Explorer.md)
 - [Dashboard](docs/Dashboard.md)
-- [Roadmap](docs/Roadmap.md)
+- [Collection Explorer](docs/Explorer.md)
 - [Development Standard](docs/Development/DevelopmentStandard.md)
 - [AI Development Playbook](docs/Development/AI_Development_Playbook.md)
 
----
+Additional module and future-design documents live under `docs/`. A document
+describing a proposed module is not evidence that the module is implemented;
+the release list above and the source tree are authoritative for current
+capability.
 
-# Technology Stack
+## Technology
 
-Current technologies include:
+- Python;
+- Tkinter;
+- SQLite;
+- Discogs API;
+- XlsxWriter;
+- pytest;
+- Git and GitHub.
 
-- Python
-- SQLite
-- Tkinter
-- Discogs API
-- XlsxWriter
-- Git
-- GitHub
-- Visual Studio Code
+## Development
 
----
+The repository follows an architecture-first, vertical-slice workflow. Read the
+[Development Standard](docs/Development/DevelopmentStandard.md) and
+[AI Development Playbook](docs/Development/AI_Development_Playbook.md) before
+changing implementation. New work must preserve deterministic behaviour,
+immutable boundaries, explicit ordering, focused tests, and the separation
+between intelligence, application, persistence, presentation, and workspace
+responsibilities.
 
-# Project Structure
+## Long-term direction
 
-DIP uses a `src`-layout Python package with capability-first boundaries:
+DIP aims to become the first application a serious collector opens before
+visiting Discogs by answering:
 
-```
-discogs-intelligence-platform/
-├── pyproject.toml
-├── src/dip/
-│   ├── app/                  # bootstrap and orchestration entry points
-│   ├── config/               # typed configuration
-│   ├── core/                 # provider-independent primitives
-│   ├── data_sources/discogs/ # Discogs adapters
-│   ├── collection/           # collection ownership and import
-│   ├── marketplace/          # marketplace capability boundary
-│   ├── snapshots/            # historical comparisons
-│   ├── intelligence/         # engine, context, results and modules
-│   ├── portfolio_intelligence/  # owned-portfolio aggregation
-│   ├── decisions/            # user decisions and notes
-│   ├── experience/           # desktop, dashboard, explorer, reporting
-│   ├── exports/              # file export adapters
-│   ├── persistence/sqlite/   # SQLite repository and migrations
-│   ├── observability/        # logging and diagnostics boundary
-│   └── shared/               # small cross-cutting utilities
-├── tests/
-└── docs/
-```
+- What changed?
+- What deserves my attention?
+- What evidence supports that assessment?
+- Where should I investigate next?
 
-The package boundaries mirror the platform architecture: external providers and presentation remain replaceable, while intelligence stays deterministic, explainable and reusable.
+Long-term possibilities include broader history, additional replaceable data
+providers, evidence-based alerts, and privacy-preserving platform intelligence.
+They must remain transparent, user-controlled, and consistent with the product
+principle.
 
-The Collection Intelligence foundation includes Collection Health, Hidden Gems,
-and a presentation-independent Historical Intelligence comparison. Historical
-Intelligence compares prepared snapshots, separates collection additions and
-removals from valuation movements, and reports evidence coverage without
-inventing missing values. See
-[`docs/IntelligenceModules/HistoricalIntelligence.md`](docs/IntelligenceModules/HistoricalIntelligence.md).
-
-The desktop dashboard presents these three engine results as independent,
-read-only cards. Missing or failed intelligence affects only its own card, and
-insufficient history is shown as an informational state. See
-[`docs/Dashboard.md`](docs/Dashboard.md).
-
-The [Collection Intelligence Explorer](docs/Explorer.md) expands those same
-presentation models into read-only desktop drill-down sections. It does not
-query persistence or providers and does not calculate intelligence.
-
-[Portfolio Intelligence](docs/PortfolioIntelligence.md) provides separate
-Overview, Distribution, and Concentration views over owned holdings.
-Distribution describes canonical artist, label, format, release-year, and
-decade membership; Concentration transparently measures mathematical clustering
-within those categories. Neither adds valuation, investment-risk interpretation,
-recommendations, or an overall portfolio score.
-
-Portfolio Opportunity Alignment 1.0 is the first downstream Portfolio Decision
-Intelligence synthesis. It interprets already-produced Overview, Distribution,
-and Concentration results with visible evidence, rules, release/copy
-denominators, reasons, and provenance. It produces no score, forecast,
-valuation, recommendation, or rebalancing action.
-
----
-
-# Long-Term Vision
-
-The long-term goal is for DIP to become the first application a serious collector opens before visiting Discogs.
-
-Rather than simply displaying a collection, DIP should answer questions such as:
-
-- What changed this week?
-- Which records deserve my attention?
-- Which records are becoming scarce?
-- Which records have reached all-time highs?
-- Which records are becoming more desirable?
-- Which opportunities am I missing?
-
----
-
-# Development
-
-DIP is being developed as a long-term software platform following modern software engineering practices including:
-
-- Git version control
-- GitHub Issues
-- Milestones
-- Product documentation
-- Modular architecture
-- Transparent scoring
-- Historical data preservation
-
----
-
-# Licence
+## Licence
 
 Private repository.
 
 Copyright © Russell Friend.
-
----
-
-## Document Information
-
-Version: 1.0
-
-Status: Active
-
-Last Updated: July 2026
-
-Owner: Russell Friend

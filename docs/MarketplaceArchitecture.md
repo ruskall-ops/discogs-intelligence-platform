@@ -852,13 +852,16 @@ history defaults to 20 snapshots and accepts explicit limits from 1 through
 preserve repository order and do not calculate intelligence, compare
 snapshots, format presentation values or contact a provider.
 
-The first persistence slice performs no automatic capture or backfill. It is
-not consumed by the Dashboard, Explorer or desktop UI, and it adds no
-scheduling, caching or network behaviour.
+Marketplace History performs no automatic capture or backfill and adds no
+scheduling, caching, or network behaviour. Application execution services
+consume its query boundary to prepare explicit Marketplace Intelligence
+inputs; Dashboard, Explorer, workspaces, and renderers do not query it
+directly.
 
-Price Changes can consume two of these stored observations through explicit
-application orchestration. Rare Appearances, Supply Trends and stronger
-Weekend newness remain future consumers. Weekend Listings still means only
+Price Changes, Supply Changes, Rare Appearances, Listing Lifecycle, and their
+downstream application orchestration can consume stored observations through
+explicit services. Stronger Weekend newness remains future work. Weekend
+Listings still means only
 "observed within the supplied weekend window"; it does not compare the current
 snapshot with a prior snapshot to establish newness.
 
@@ -866,9 +869,9 @@ snapshot with a prior snapshot to establish newness.
 
 # Marketplace Intelligence Modules
 
-Future modules may include:
+Additional future modules may include:
 
-## Supply Trends
+## Broader Supply Trends
 
 Analyse changes in:
 

@@ -20,7 +20,7 @@ Its purpose is to establish one consistent approach to:
 
 It complements:
 
-- `docs/vision.md`
+- `docs/Vision.md`
 - `docs/Development/AI_Development_Playbook.md`
 - `docs/IntelligenceHistory.md`
 - `docs/MarketplaceArchitecture.md`

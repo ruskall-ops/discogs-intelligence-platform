@@ -1,17 +1,20 @@
-# Interactive Dashboard
+# Dashboard
 
 ## Purpose
 
-The Version 0.2 Interactive Dashboard is a read-only presentation layer for
-results produced by the Collection Intelligence Engine.
+The Dashboard is the application's command centre. It retains the Version 0.2
+Collection Intelligence cards and homepage, and adds a unified set of
+navigation cards over existing Portfolio, Marketplace, Collection, and
+Historical presentation state.
 
-The dashboard does not calculate intelligence. It converts standard
-`IntelligenceResult` objects into immutable, presentation-neutral view models
-that can later be rendered by the desktop application or another interface.
+The dashboard does not calculate intelligence. Its Collection Intelligence
+foundation converts standard `IntelligenceResult` objects into immutable,
+presentation-neutral view models. The command centre composes those models
+with existing workspace presentation state.
 
 ---
 
-# Version 0.2 Dashboard Integration
+# Collection Intelligence Dashboard foundation
 
 The dashboard now exposes three independent cards:
 
@@ -151,7 +154,7 @@ filters and arbitrary ranges remain outside the dashboard.
 
 ---
 
-# Version 0.2 Dashboard Homepage
+# Collection Intelligence Dashboard homepage
 
 The first Dashboard homepage is a read-only presentation and integration
 boundary over completed Intelligence History. It does not run intelligence,
@@ -196,8 +199,10 @@ error for fewer than two executions becomes `insufficient_history`; malformed
 history, inconsistent ViewModels and unexpected programming failures continue
 to propagate to the desktop error boundary.
 
-Filtering, drill-down, charts, multi-run trends and background refresh remain
-future work and are not implemented by this homepage slice.
+Filtering, charts, arbitrary multi-run exploration, and background refresh
+remain outside this homepage. Drill-down is provided by the dedicated detail
+experiences and Collection Explorer; broader history is presented by the
+separate Historical Intelligence experiences.
 
 ## Dashboard command centre
 
@@ -214,6 +219,11 @@ first item in the caller-ordered Attention Queue and does not rank or sort it.
 Explicit navigation targets open existing Portfolio, Collection, Marketplace,
 and Historical Intelligence desktop controllers. No routing framework is
 introduced.
+
+The command centre actions for Portfolio Opportunity Alignment, Portfolio
+History, and Portfolio Research currently navigate to visible placeholder
+destinations in the first Portfolio Workspace slice. The actions and
+transitions are implemented; those destination pages are not.
 
 ```text
 Presentation Services

@@ -25,7 +25,7 @@ Application code should read shared settings from the configuration package rath
 Configuration is stored in:
 
 ```text
-config/
+src/dip/config/
 ├── __init__.py
 └── settings.py
 ```
@@ -35,14 +35,14 @@ config/
 The loaded settings object is exposed as:
 
 ```python
-from config import SETTINGS
+from dip.config import SETTINGS
 ```
 
 ---
 
 # Current Settings
 
-Version 0.1 currently includes:
+The implemented settings model includes:
 
 - Application name
 - Application version
@@ -54,7 +54,7 @@ Version 0.1 currently includes:
 Example usage:
 
 ```python
-from config import SETTINGS
+from dip.config import SETTINGS
 
 print(SETTINGS.application_name)
 print(SETTINGS.application_version)
@@ -100,7 +100,7 @@ DIP_WINDOW_HEIGHT
 Example:
 
 ```bash
-DIP_WINDOW_WIDTH=1600 python3 app.py
+DIP_WINDOW_WIDTH=1600 python3 -m dip
 ```
 
 Environment overrides are useful for:
@@ -192,7 +192,10 @@ Potential future settings include:
 - Scheduled analysis options
 - Export preferences
 
-Persistent user preferences and a graphical settings screen are outside the scope of Version 0.1.
+Persistent user preferences and a graphical settings screen are not
+implemented. The `application_version` default remains the legacy
+`0.1-dev` runtime setting and can be overridden independently; the package
+release in `pyproject.toml` is 0.3.0.
 
 ---
 

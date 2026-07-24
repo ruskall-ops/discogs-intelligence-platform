@@ -8,13 +8,18 @@
 
 The Discogs Intelligence Platform (DIP) aims to become the intelligence layer for record collectors.
 
-Rather than replacing Discogs, DIP enhances it by collecting historical marketplace data, analysing trends, and transforming raw information into actionable intelligence.
+Rather than replacing Discogs, DIP enhances it by preserving historical
+Marketplace data, analysing trends, and transforming raw information into
+evidence-led decision support.
 
 The platform follows one core philosophy:
 
 > Automate the research, not the decision.
 
-Collectors remain in control of every buying, selling and collection decision while DIP continuously monitors the market, identifies meaningful changes and presents explainable insights.
+Collectors remain in control of every buying, selling and collection decision.
+DIP identifies meaningful changes and presents explainable insights from the
+observations supplied to it. Continuous monitoring remains a future
+possibility, not a current product claim.
 
 Over time the platform will evolve from personal collection intelligence into broader marketplace and platform intelligence, powered by anonymised community data and years of historical observations.
 
@@ -34,7 +39,8 @@ DIP should never tell the user what they must buy or sell.
 
 Instead, it should surface opportunities, explain the evidence and allow the user to make the final decision.
 
-Every recommendation should be transparent, explainable and supported by objective market data.
+Every surfaced assessment or insight should be transparent, explainable, and
+supported by objective evidence.
 
 ---
 
@@ -69,7 +75,7 @@ DIP is designed for:
 
 ## Transparency
 
-Every recommendation must clearly explain why it has been made.
+Every surfaced assessment must clearly explain why it has been made.
 
 No black-box scoring.
 
@@ -77,7 +83,7 @@ No black-box scoring.
 
 ## Evidence First
 
-Recommendations should always be supported by measurable data such as:
+Assessments should always be supported by measurable data such as:
 
 - Demand
 - Supply
@@ -223,11 +229,11 @@ Community intelligence will always preserve user privacy and never expose indivi
 
 # Decision Philosophy
 
-Every recommendation should answer three questions.
+Every surfaced assessment should answer three questions.
 
 ## Why is this record being shown?
 
-The evidence behind the recommendation.
+The evidence behind the assessment.
 
 ## Why now?
 
@@ -297,15 +303,18 @@ Over time, DIP may integrate additional data sources including:
 - YouTube
 - Google Trends
 
-These integrations should enhance the platform's intelligence while maintaining the same philosophy of transparent, evidence-based recommendations.
+These integrations should enhance the platform's intelligence while maintaining
+the same philosophy of transparent, evidence-based decision support.
 
 ---
 
 # Guiding Principle
 
-> **Every recommendation should be explainable, measurable and reviewable over time.**
+> **Every assessment should be explainable, measurable and reviewable over
+> time.**
 
-If a recommendation cannot be explained with objective evidence, it should not be presented.
+If an assessment cannot be explained with objective evidence, it should not be
+presented.
 
 ---
 

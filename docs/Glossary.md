@@ -245,6 +245,8 @@ Examples include:
 
 - Version 0.1 – Core Platform
 - Version 0.2 – Collection Intelligence
+- Version 0.3 – Marketplace Intelligence and Decision Support
+- Version 0.4 – Collector Workflow Foundation
 
 ---
 
