@@ -53,6 +53,9 @@ class App(tk.Tk):
         self.intelligence_insights_controller = getattr(
             dependencies, "intelligence_insights_controller", None
         )
+        self.marketplace_workspace_controller = getattr(
+            dependencies, "marketplace_workspace_controller", None
+        )
         self.current_portfolio_overview_result = None
         self.current_portfolio_distribution_result = None
         self.current_portfolio_concentration_result = None
@@ -63,6 +66,7 @@ class App(tk.Tk):
         self.current_history_change_view_models = ()
         self.current_history_trend_view_models = ()
         self.current_intelligence_insight_collections = ()
+        self.current_marketplace_workspace_queue = ()
         self.desktop_homepage_renderer = DesktopDashboardHomepageRenderer()
         self.current_dashboard_homepage = DashboardHomepageViewModel.loading()
         self.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -87,6 +91,7 @@ class App(tk.Tk):
         ttk.Button(toolbar, text="Refresh View", command=self.load_table).pack(side="left", padx=3)
         ttk.Button(toolbar, text="Portfolio", command=self.open_portfolio_overview).pack(side="left", padx=3)
         ttk.Button(toolbar, text="Historical Intelligence", command=self.open_intelligence_change_analysis).pack(side="left", padx=3)
+        ttk.Button(toolbar, text="Marketplace Workspace", command=self.open_marketplace_workspace).pack(side="left", padx=3)
 
         self.progress = ttk.Progressbar(toolbar, length=260, mode="determinate")
         self.progress.pack(side="right", padx=5)
@@ -714,6 +719,37 @@ class App(tk.Tk):
                 else f"{title} is not configured."
             )
             text.insert("1.0", body)
+            text.configure(state="disabled")
+            text.pack(fill="both", expand=True)
+        ttk.Button(window, text="Close", command=window.destroy).pack(pady=(0, 12))
+
+    def open_marketplace_workspace(self):
+        """Render one already-supplied Marketplace workflow queue."""
+        if self.marketplace_workspace_controller is None:
+            messagebox.showerror("Marketplace Workspace unavailable", "Marketplace Workspace is not configured.")
+            return
+        try:
+            rendered = self.marketplace_workspace_controller.open(
+                self.current_marketplace_workspace_queue
+            )
+        except Exception as exc:
+            messagebox.showerror(
+                "Marketplace Workspace unavailable",
+                f"Marketplace Workspace could not be displayed:\n\n{exc}",
+            )
+            return
+        window = tk.Toplevel(self)
+        window.title(rendered.title)
+        window.geometry("1120x780")
+        window.minsize(800, 560)
+        window.transient(self)
+        notebook = ttk.Notebook(window)
+        notebook.pack(fill="both", expand=True, padx=12, pady=12)
+        for section in rendered.sections:
+            frame = ttk.Frame(notebook, padding=12)
+            notebook.add(frame, text=section.title)
+            text = tk.Text(frame, wrap="word", padx=10, pady=10)
+            text.insert("1.0", section.body)
             text.configure(state="disabled")
             text.pack(fill="both", expand=True)
         ttk.Button(window, text="Close", command=window.destroy).pack(pady=(0, 12))

@@ -305,3 +305,12 @@ for historical Snapshot, Change, and Trend ViewModels. Insights expose their
 evidence, reasons, diagnostics, source, provenance, category, type, and display
 priority without scoring, confidence estimation, prediction, recommendation,
 or generated prose.
+
+### Marketplace Workspace
+
+Marketplace Workspace 1.0 is the desktop research workflow for already-produced
+Marketplace intelligence. Its caller-ordered Attention Queue links Opportunity
+Detail, Evidence, Marketplace History, Portfolio Context, and user-owned
+Research Status panes without ranking opportunities or recommending an action.
+Opening, filtering, and selecting workspace records performs no retrieval,
+intelligence execution, historical analysis, persistence, or live refresh.

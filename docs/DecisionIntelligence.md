@@ -644,3 +644,16 @@ Priority is ordering metadata, not severity, confidence, or a score. Wording
 selection is rule-based and deterministic; no language model, randomness,
 probability, hidden heuristic, recommendation, valuation, prediction, or
 forecast is involved.
+
+## Marketplace Workspace consumption boundary
+
+Marketplace Workspace consumes already-produced Decision Intelligence
+presentation models. It may expose Marketplace Opportunity classifications,
+component evidence, reasons, diagnostics, provenance, and configuration, but
+does not execute modules, reinterpret their rules, collapse independent
+dimensions into an overall score, or infer an action. Queue order comes from
+the caller and has no implied desirability.
+
+Research statuses are user-owned workflow labels and must not be treated as
+Decision Intelligence. Watching, dismissal, or archival records a user's
+research state only; it is not a recommendation, alert, or automated decision.

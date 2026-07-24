@@ -321,3 +321,19 @@ Version 1 supports Snapshot, Change, and Trend insights only. AI-generated
 explanations, Evolution Insights, Dashboard Insights, cross-module insights,
 alerts, recommendations, predictions, scores, and confidence estimates remain
 deferred.
+
+## Marketplace Workspace desktop
+
+Marketplace Workspace is a separate top-level desktop research experience. It
+receives an explicitly supplied, already-ordered queue of immutable
+presentation models and exposes Attention Queue, Opportunity Detail, Evidence,
+Marketplace History, Portfolio Context, and Research Status panes. Existing
+Opportunity Detail, History Explorer, and Intelligence Insights renderers are
+reused; the workspace does not reproduce their calculations.
+
+Selection and exact filtering create new immutable state and never reorder the
+queue. Research status is user-owned workflow metadata, not an intelligence
+assessment. Empty, unavailable, partial-history, absent-trend, and absent
+portfolio-context states are rendered explicitly. Opening the experience
+performs no fetching, execution, comparison, trend calculation, scoring,
+ranking, persistence, recommendation, forecast, or automation.

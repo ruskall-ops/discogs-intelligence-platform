@@ -1344,3 +1344,23 @@ or network services.
 Intelligence Insights has no Marketplace data boundary. It consumes immutable
 presentation ViewModels and cannot access Marketplace History, repositories,
 SQLite, networking, providers, or clocks.
+
+## Marketplace Workspace 1.0
+
+Marketplace Workspace is a presentation experience over immutable,
+already-produced Marketplace, Historical, Insights, and Portfolio presentation
+models. It has six panes: Attention Queue, Opportunity Detail, Evidence,
+Marketplace History, Portfolio Context, and Research Status.
+
+The supplying application owns queue membership and order. The workspace does
+not rank, score, sort, synthesize, or recommend opportunities. Its filters are
+limited to research status, assessment, evidence state, artist, label,
+ownership, release identity, history availability, and trend availability;
+filtering preserves relative queue order. Research status is explicit
+user-owned workflow state: unreviewed, reviewing, researched, watching,
+dismissed, or archived.
+
+Opening and navigating the workspace performs no Marketplace retrieval,
+provider call, module execution, historical calculation, repository access, or
+persistence. Watchlists, alerts, automatic status transitions, live refresh,
+background monitoring, and purchase or sale automation remain deferred.

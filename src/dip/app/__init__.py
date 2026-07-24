@@ -90,6 +90,7 @@ from .intelligence_change_analysis_presentation import IntelligenceChangeAnalysi
 from .intelligence_trend_analysis_presentation import IntelligenceTrendAnalysisPresentationService
 from .history_explorer_presentation import HistoryExplorerPresentationService
 from .intelligence_insights_presentation import IntelligenceInsightsPresentationService
+from .marketplace_workspace_presentation import MarketplaceWorkspacePresentationService
 from .intelligence_trend_analysis import IntelligenceTrendAnalysisExecutionService
 from .weekend_listings_presentation import WeekendListingsPresentationService
 
@@ -163,6 +164,7 @@ __all__ = [
     "IntelligenceTrendAnalysisPresentationService",
     "HistoryExplorerPresentationService",
     "IntelligenceInsightsPresentationService",
+    "MarketplaceWorkspacePresentationService",
     "IntelligenceTrendAnalysisExecutionService",
     "WeekendListingsPresentationService",
     "build_marketplace_momentum_input",
