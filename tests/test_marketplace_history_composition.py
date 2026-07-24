@@ -7,6 +7,7 @@ from unittest.mock import patch
 from dip.app import (
     MarketplaceHistoryCommandService,
     MarketplaceHistoryQueryService,
+    ProjectManagementService,
     MarketplaceMomentumExecutionService,
     MarketplaceStabilityExecutionService,
     MarketplaceScarcityExecutionService,
@@ -121,6 +122,14 @@ class MarketplaceHistoryCompositionTestCase(unittest.TestCase):
         self.assertIsInstance(
             dependencies.marketplace_history_commands,
             MarketplaceHistoryCommandService,
+        )
+        self.assertIsInstance(
+            dependencies.project_management,
+            ProjectManagementService,
+        )
+        self.assertEqual(
+            dependencies.project_management.active_project().project_id,
+            "current_collection",
         )
         self.assertIsInstance(
             dependencies.price_changes_execution,

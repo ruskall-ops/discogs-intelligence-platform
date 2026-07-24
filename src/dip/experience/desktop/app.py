@@ -68,7 +68,6 @@ class App(tk.Tk):
         self.project_workspace_controller = getattr(
             dependencies, "project_workspace_controller", None
         )
-        self.active_project = getattr(dependencies, "active_project", None)
         self.current_portfolio_overview_result = None
         self.current_portfolio_distribution_result = None
         self.current_portfolio_concentration_result = None
@@ -275,7 +274,7 @@ class App(tk.Tk):
                 self.project_tab, text="Project Workspace is unavailable."
             ).pack(anchor="w")
             return
-        rendered = self.project_workspace_controller.open(self.active_project)
+        rendered = self.project_workspace_controller.open()
         ttk.Label(
             self.project_tab, text=rendered.title, font=("Helvetica", 22, "bold")
         ).pack(anchor="w", pady=(0, 14))

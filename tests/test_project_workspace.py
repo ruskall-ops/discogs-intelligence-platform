@@ -1,7 +1,7 @@
 from dataclasses import FrozenInstanceError
 import unittest
 
-from dip.app import ProjectWorkspacePresentationService
+from dip.app import ProjectManagementService, ProjectWorkspacePresentationService
 from dip.experience.desktop.project_workspace_renderer import (
     DesktopProjectWorkspaceController,
 )
@@ -12,6 +12,7 @@ from dip.experience.project_workspace import (
     ProjectWorkspaceBuilder,
     ProjectWorkspaceNavigationTarget,
 )
+from dip.projects import InMemoryProjectRepository, ManagedProject
 
 
 def active():
@@ -23,8 +24,20 @@ def active():
 
 class ProjectWorkspaceTestCase(unittest.TestCase):
     def setUp(self):
+        self.builder = ProjectWorkspaceBuilder()
+        management = ProjectManagementService(
+            InMemoryProjectRepository(
+                (
+                    ManagedProject(
+                        "current", "Current Collection",
+                        "Collector working environment.", 1,
+                    ),
+                ),
+                active_project_id="current",
+            )
+        )
         self.presentation = ProjectWorkspacePresentationService(
-            ProjectWorkspaceBuilder()
+            management, self.builder
         )
 
     def test_project_models_are_immutable_and_validate_status_roles(self):
@@ -33,7 +46,7 @@ class ProjectWorkspaceTestCase(unittest.TestCase):
         with self.assertRaises(FrozenInstanceError):
             project.name = "Changed"
         with self.assertRaises(ValueError):
-            self.presentation.workspace(
+            self.builder.build(
                 project,
                 (Project("recent", "Recent", "Recent project.", ProjectStatus.ACTIVE),),
             )
@@ -44,8 +57,8 @@ class ProjectWorkspaceTestCase(unittest.TestCase):
             Project("one", "First", "First recent project.", ProjectStatus.RECENT),
         )
         summary = ProjectSummary("Summary", ("Supplied detail.",))
-        first = self.presentation.workspace(active(), recent, summary)
-        second = self.presentation.workspace(active(), recent, summary)
+        first = self.builder.build(active(), recent, summary)
+        second = self.builder.build(active(), recent, summary)
         self.assertEqual(first, second)
         self.assertEqual(
             tuple(value.project_id for value in first.recent_projects.projects),
@@ -53,7 +66,7 @@ class ProjectWorkspaceTestCase(unittest.TestCase):
         )
 
     def test_navigation_model_enables_only_existing_workspace_transitions(self):
-        workspace = self.presentation.workspace(active())
+        workspace = self.presentation.workspace()
         enabled = tuple(
             value.target for value in workspace.actions if value.enabled
         )
@@ -70,7 +83,7 @@ class ProjectWorkspaceTestCase(unittest.TestCase):
         )
 
     def test_renderer_displays_landing_sections_and_empty_recent_state(self):
-        rendered = DesktopProjectWorkspaceController(self.presentation).open(active())
+        rendered = DesktopProjectWorkspaceController(self.presentation).open()
         self.assertEqual(
             tuple(value.title for value in rendered.sections),
             ("Active Project", "Recent Projects", "Project Summary", "Quick Actions"),
@@ -86,7 +99,11 @@ class ProjectWorkspaceTestCase(unittest.TestCase):
             self.assertIn(expected, body)
 
     def test_renderer_supports_no_active_project_without_retrieval(self):
-        rendered = DesktopProjectWorkspaceController(self.presentation).open(None)
+        empty = ProjectWorkspacePresentationService(
+            ProjectManagementService(InMemoryProjectRepository()),
+            ProjectWorkspaceBuilder(),
+        )
+        rendered = DesktopProjectWorkspaceController(empty).open()
         self.assertEqual(
             rendered.sections[0].body, "No active project has been supplied."
         )
