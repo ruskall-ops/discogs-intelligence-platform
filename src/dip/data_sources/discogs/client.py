@@ -3,12 +3,15 @@ from __future__ import annotations
 import time
 import requests
 
+from dip import __version__
+
+
 class DiscogsClient:
     def __init__(self, token: str):
         self.session = requests.Session()
         self.session.headers.update({
             "Authorization": f"Discogs token={token}",
-            "User-Agent": "RussellDiscogsIntelligencePlatform/3.0",
+            "User-Agent": f"RussellDiscogsIntelligencePlatform/{__version__}",
             "Accept": "application/vnd.discogs.v2.discogs+json",
         })
 

@@ -4,6 +4,8 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from dip import __version__
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -27,7 +29,7 @@ def load_settings() -> Settings:
 
     application_version = os.getenv(
         "DIP_APPLICATION_VERSION",
-        "0.1-dev",
+        __version__,
     )
 
     database_filename = os.getenv(

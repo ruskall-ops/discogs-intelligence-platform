@@ -3,7 +3,7 @@
 ## Purpose
 
 This document describes the architecture implemented by the Discogs
-Intelligence Platform (DIP) at version 0.3.0. It records the current component
+Intelligence Platform (DIP) at version 0.4.0. It records the current component
 boundaries, dependency direction, data flows, and constraints that future work
 must preserve.
 
@@ -250,7 +250,13 @@ the active identity through the repository.
 Open Project, Create Project, and Refresh Collection remain disabled UI
 placeholders; only navigation to Dashboard and Portfolio Workspace is wired.
 Filesystem selection, collection refresh, and session or workspace restoration
-remain planned for version 0.4.
+remain future work.
+
+Project persistence currently stores Project metadata only. Collection,
+Marketplace, intelligence, history, and research records are not partitioned
+by Project identity. The released desktop therefore supports a practical
+single-collection workflow; multi-project UI must wait for genuine
+Project-scoped data boundaries.
 
 ## Current desktop workflows
 

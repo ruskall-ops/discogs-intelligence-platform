@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import os
 import unittest
+from unittest.mock import patch
 
-from dip.config import SETTINGS
+from dip import __version__
+from dip.config import SETTINGS, load_settings
+from dip.data_sources.discogs.client import DiscogsClient
 
 
 class ConfigurationTestCase(unittest.TestCase):
@@ -20,6 +24,30 @@ class ConfigurationTestCase(unittest.TestCase):
 
         self.assertGreaterEqual(SETTINGS.window_width, 800)
         self.assertGreaterEqual(SETTINGS.window_height, 500)
+
+    def test_default_application_version_matches_package_version(self) -> None:
+        with patch.dict(os.environ, {}, clear=True):
+            settings = load_settings()
+
+        self.assertEqual(settings.application_version, __version__)
+
+    def test_application_version_environment_override_is_preserved(self) -> None:
+        with patch.dict(
+            os.environ,
+            {"DIP_APPLICATION_VERSION": "test-build"},
+            clear=True,
+        ):
+            settings = load_settings()
+
+        self.assertEqual(settings.application_version, "test-build")
+
+    def test_discogs_user_agent_uses_package_version(self) -> None:
+        client = DiscogsClient("test-token")
+
+        self.assertEqual(
+            client.session.headers["User-Agent"],
+            f"RussellDiscogsIntelligencePlatform/{__version__}",
+        )
 
 
 if __name__ == "__main__":

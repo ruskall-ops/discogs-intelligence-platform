@@ -16,12 +16,13 @@ for every buying, selling, pricing, and collection decision.
 
 ## Current release
 
-**Version 0.3.0 — Marketplace Intelligence and Decision Support**
+**Version 0.4.0 — SQLite Project Persistence**
 
-Versions 0.1, 0.2, and 0.3 are released. The current release includes the
-Marketplace, Portfolio, Historical, Workspace, Dashboard, and Project
-Management foundations described below. Version 0.4, the Collector Workflow
-Foundation, is planned.
+Versions 0.1 through 0.4 are released. Version 0.4 adds durable SQLite Project
+identity, active-project state, deterministic recent-project ordering, and
+idempotent `Current Collection` bootstrap to the Marketplace, Portfolio,
+Historical, Workspace, Dashboard, and Project Management foundations delivered
+through version 0.3.
 
 ## Implemented capabilities
 
@@ -123,6 +124,11 @@ The composition root creates `Current Collection` once on a new database and
 reuses it thereafter. Project creation UI, file selection, collection refresh,
 and session or workspace restoration remain planned work.
 
+Project identity does not yet partition collection, Marketplace, intelligence,
+history, or research data. Version 0.4 therefore remains a practical
+single-collection workflow; multi-project UI is deferred until those data
+boundaries are genuinely Project-scoped.
+
 ## Architecture
 
 ```text
@@ -189,11 +195,11 @@ src/dip/
 
 - **0.1 — Core Platform:** released.
 - **0.2 — Collection Intelligence:** released.
-- **0.3 — Marketplace Intelligence and Decision Support:** released; current
-  package version is 0.3.0.
-- **0.4 — Collector Workflow Foundation:** planned, including completion of the
-  Portfolio Workspace, durable Project workflows, and user-owned research
-  workflow.
+- **0.3 — Marketplace Intelligence and Decision Support:** released.
+- **0.4 — SQLite Project Persistence:** released; current package version is
+  0.4.0.
+- **0.5 — Collector Run Pipeline:** planned, beginning with one collection and
+  establishing refresh orchestration before session restoration.
 
 See the [Roadmap](docs/Roadmap.md) for release scope and future direction.
 
@@ -202,6 +208,7 @@ See the [Roadmap](docs/Roadmap.md) for release scope and future direction.
 - [Vision](docs/Vision.md)
 - [Architecture](docs/Architecture.md)
 - [Roadmap](docs/Roadmap.md)
+- [Configuration](docs/Configuration.md)
 - [Project Workspace](docs/ProjectWorkspace.md)
 - [Marketplace Architecture](docs/MarketplaceArchitecture.md)
 - [Portfolio Intelligence](docs/PortfolioIntelligence.md)
@@ -211,6 +218,7 @@ See the [Roadmap](docs/Roadmap.md) for release scope and future direction.
 - [Collection Explorer](docs/Explorer.md)
 - [Development Standard](docs/Development/DevelopmentStandard.md)
 - [AI Development Playbook](docs/Development/AI_Development_Playbook.md)
+- [Project Bootstrap](PROJECT_BOOTSTRAP.md)
 
 Additional module and future-design documents live under `docs/`. A document
 describing a proposed module is not evidence that the module is implemented;
