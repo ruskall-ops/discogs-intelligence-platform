@@ -39,6 +39,11 @@ immutable `Current Collection` Project exists, and injects
 active. Subsequent starts reuse existing Projects and active state without
 duplicating or overwriting the default.
 
+Version 0.4 persists Project metadata, not Project ownership of the rest of the
+platform data. Collection, Marketplace, intelligence, history, and research
+records are not partitioned by Project. The current desktop is consequently a
+practical single-collection workflow, and multi-project UI remains deferred.
+
 ## Project Management application layer
 
 `ProjectManagementService` owns application workflows for listing, creating,
@@ -85,8 +90,10 @@ atomically updates last-opened and active state.
 
 ## Future extensions
 
-Future milestones may introduce file selection, project creation UI, collection
-refresh, and session or workspace restoration. Project persistence alone does
-not implement any of those capabilities. They must remain outside the
-presentation builder and desktop renderer and use the existing application and
-repository boundaries.
+Future milestones may introduce file selection, project creation UI, a
+Project-scoped collector run pipeline, and session or workspace restoration.
+The run pipeline must precede restoration so restored state refers to a
+well-defined collection workflow. Project persistence alone does not implement
+any of those capabilities. They must remain outside the presentation builder
+and desktop renderer and use the existing application and repository
+boundaries.

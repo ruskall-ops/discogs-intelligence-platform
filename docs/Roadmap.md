@@ -46,7 +46,7 @@ platform:
 
 **Status: Released**
 
-The current 0.3.0 release extends intelligence beyond the collection while
+Version 0.3 extended intelligence beyond the collection while
 preserving evidence and user control:
 
 - immutable Marketplace models, serialization, history repository, and SQLite
@@ -62,43 +62,51 @@ preserving evidence and user control:
 - Project Workspace as the desktop entry point;
 - Project Management application service and repository contract.
 
-Version 0.3 remains a decision-support release. The released scope did not
-introduce forecasts, recommendations, alerts, automatic opportunity ranking,
-Project persistence, or buying and selling automation. SQLite Project
-persistence is tracked below as an implemented 0.4 foundation.
+Version 0.3 remained a decision-support release. It did not introduce
+forecasts, recommendations, alerts, automatic opportunity ranking, Project
+persistence, or buying and selling automation.
 
-## Version 0.4 — Collector Workflow Foundation
+## Version 0.4 — SQLite Project Persistence
+
+**Status: Released**
+
+Version 0.4 established the durable Project persistence boundary:
+
+- SQLite implementation of the existing `ProjectRepository` contract;
+- persistent Project identity and active-project state;
+- deterministic insertion and last-opened ordering;
+- schema migration 4 with fresh-schema and migration parity;
+- idempotent creation and reuse of the default `Current Collection` Project.
+
+This release persists Project metadata only. It does not partition collection,
+Marketplace, intelligence, history, or research data by Project, restore a
+desktop session, enable project create/open UI, or run a Project-scoped
+collection refresh. The practical released workflow therefore remains one
+collection.
+
+## Version 0.5 — Collector Run Pipeline
 
 **Status: Planned**
 
-Version 0.4 will make the implemented intelligence workspaces usable as a
-durable collector workflow. Candidate scope is:
+Version 0.5 will establish the collector run lifecycle before adding session
+restoration. Its initial scope assumes one collection and should connect
+collection refresh, existing intelligence execution, history recording, and
+presentation refresh through current application boundaries.
 
-### Implemented foundation
+Candidate follow-on slices include:
 
-SQLite Project persistence now implements the existing `ProjectRepository`
-boundary, including deterministic Project order, last-opened state,
-active-project persistence, migration version 4, and idempotent first-run
-bootstrap. It does not restore a desktop session or workspace.
+- session and workspace restoration after the run lifecycle is explicit;
+- enabled project creation and opening only after platform data can be
+  partitioned safely by Project;
+- completed Portfolio Workspace destination pages;
+- a user-owned **Weekend Review Queue**, distinct from the calculated
+  **Weekend Marketplace Observations** intelligence;
+- persistent research notes, statuses, watchlists, tags, and saved views.
 
-### Remaining candidate scope
-
-- session and workspace restoration behind existing application boundaries;
-- enabled project creation and opening workflows;
-- project-scoped collection refresh orchestration;
-- completed Portfolio Workspace pages for Distribution, Concentration,
-  Opportunity Alignment, History, and Research;
-- persistent, user-owned research notes and statuses;
-- watchlists, tags, and saved research views;
-- clearer continuity between Project Workspace, Dashboard, Portfolio, and
-  Marketplace research.
-
-The milestone must reuse the existing Project Management, application service,
-repository, presentation, and workspace boundaries. It must not turn research
-state into intelligence, recommendations, or automatic decisions.
-
-Exact 0.4 scope is not yet committed. Capabilities should enter the release only
-as complete, reviewed vertical slices.
+Multi-project UI is deliberately deferred until collection, Marketplace,
+intelligence, history, and research data are genuinely Project-scoped. Research
+workflow state must remain separate from calculated intelligence and must not
+become a recommendation or automatic decision.
 
 ## Future vision
 

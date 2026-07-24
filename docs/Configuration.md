@@ -71,7 +71,7 @@ Current defaults include:
 
 ```text
 Application name: Discogs Intelligence Platform
-Application version: 0.1-dev
+Application version: 0.4.0
 Database filename: discogs_intelligence.db
 Discogs request delay: 1.08 seconds
 Window width: 1380
@@ -193,9 +193,11 @@ Potential future settings include:
 - Export preferences
 
 Persistent user preferences and a graphical settings screen are not
-implemented. The `application_version` default remains the legacy
-`0.1-dev` runtime setting and can be overridden independently; the package
-release in `pyproject.toml` is 0.3.0.
+implemented. The default `application_version` is the canonical runtime
+`dip.__version__`, which is 0.4.0 for this release. The
+`DIP_APPLICATION_VERSION` environment variable may override it for a specific
+runtime without changing package metadata. The Discogs client uses the
+canonical runtime version in its User-Agent.
 
 ---
 

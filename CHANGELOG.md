@@ -4,6 +4,21 @@ All notable changes to the Discogs Intelligence Platform will be documented here
 
 ---
 
+# Version 0.4.0 — SQLite Project Persistence
+
+Released 24 July 2026.
+
+- Added SQLite persistence for Project identity, active state, and deterministic
+  insertion and last-opened ordering.
+- Added schema migration 4 and maintained fresh-schema and migration parity.
+- Added idempotent composition-root bootstrap for `Current Collection`.
+- Preserved the storage-independent `ProjectRepository` boundary and
+  deterministic in-memory adapter.
+- Kept Project creation and opening UI, collection refresh, data partitioning,
+  and session restoration outside the released scope.
+
+---
+
 # Sprint 2 – Collection Intelligence
 
 ## Intelligence Engine Foundation
