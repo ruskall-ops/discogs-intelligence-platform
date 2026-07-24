@@ -86,6 +86,7 @@ from .portfolio_opportunity_alignment import (
     build_portfolio_opportunity_alignment_input,
 )
 from .portfolio_opportunity_alignment_presentation import PortfolioOpportunityAlignmentPresentationService
+from .portfolio_workspace_presentation import PortfolioWorkspacePresentationService
 from .intelligence_change_analysis_presentation import IntelligenceChangeAnalysisPresentationService
 from .intelligence_trend_analysis_presentation import IntelligenceTrendAnalysisPresentationService
 from .history_explorer_presentation import HistoryExplorerPresentationService
@@ -160,6 +161,7 @@ __all__ = [
     "PortfolioOpportunityAlignmentExecutionConsistencyError",
     "PortfolioOpportunityAlignmentExecutionService",
     "PortfolioOpportunityAlignmentPresentationService",
+    "PortfolioWorkspacePresentationService",
     "IntelligenceChangeAnalysisPresentationService",
     "IntelligenceTrendAnalysisPresentationService",
     "HistoryExplorerPresentationService",
