@@ -18,6 +18,7 @@ from dip.experience.dashboard import (
     DashboardNavigationTarget,
 )
 from dip.experience.portfolio_workspace import PortfolioWorkspaceDestination
+from dip.experience.project_workspace import ProjectWorkspaceNavigationTarget
 from dip.experience.desktop.homepage_renderer import (
     DesktopDashboardHomepageRenderer,
 )
@@ -64,6 +65,10 @@ class App(tk.Tk):
         self.dashboard_command_center_controller = getattr(
             dependencies, "dashboard_command_center_controller", None
         )
+        self.project_workspace_controller = getattr(
+            dependencies, "project_workspace_controller", None
+        )
+        self.active_project = getattr(dependencies, "active_project", None)
         self.current_portfolio_overview_result = None
         self.current_portfolio_distribution_result = None
         self.current_portfolio_concentration_result = None
@@ -108,10 +113,13 @@ class App(tk.Tk):
         self.tabs = ttk.Notebook(self)
         self.tabs.pack(fill="both", expand=True)
 
+        self.project_tab = ttk.Frame(self.tabs, padding=18)
         self.dashboard_tab = ttk.Frame(self.tabs, padding=18)
         self.review_tab = ttk.Frame(self.tabs, padding=8)
+        self.tabs.add(self.project_tab, text="Project")
         self.tabs.add(self.dashboard_tab, text="Dashboard")
         self.tabs.add(self.review_tab, text="Collection Review")
+        self._build_project_workspace()
 
         self.kpis = {}
 
@@ -260,6 +268,41 @@ class App(tk.Tk):
         scroll = ttk.Scrollbar(self.review_tab, orient="vertical", command=self.tree.yview)
         scroll.pack(side="right", fill="y")
         self.tree.configure(yscrollcommand=scroll.set)
+
+    def _build_project_workspace(self):
+        if self.project_workspace_controller is None:
+            ttk.Label(
+                self.project_tab, text="Project Workspace is unavailable."
+            ).pack(anchor="w")
+            return
+        rendered = self.project_workspace_controller.open(self.active_project)
+        ttk.Label(
+            self.project_tab, text=rendered.title, font=("Helvetica", 22, "bold")
+        ).pack(anchor="w", pady=(0, 14))
+        for section in rendered.sections:
+            frame = ttk.LabelFrame(self.project_tab, text=section.title, padding=14)
+            frame.pack(fill="x", pady=6)
+            ttk.Label(
+                frame, text=section.body, wraplength=1000, justify="left"
+            ).pack(anchor="w")
+            if section.title == "Quick Actions":
+                actions = ttk.Frame(frame)
+                actions.pack(anchor="w", pady=(10, 0))
+                for action in rendered.actions:
+                    button = ttk.Button(
+                        actions,
+                        text=action.label,
+                        command=lambda target=action.target: self._open_project_target(target),
+                    )
+                    if not action.enabled:
+                        button.state(["disabled"])
+                    button.pack(side="left", padx=(0, 8))
+
+    def _open_project_target(self, target):
+        if target is ProjectWorkspaceNavigationTarget.DASHBOARD:
+            self.tabs.select(self.dashboard_tab)
+        elif target is ProjectWorkspaceNavigationTarget.PORTFOLIO:
+            self.open_portfolio_overview()
 
     def import_csv(self):
         path = filedialog.askopenfilename(
