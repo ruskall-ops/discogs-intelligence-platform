@@ -11,6 +11,7 @@ from dip.app.comparison_presentation import ComparisonPresentationService
 from dip.app.dashboard import DashboardHomepageService
 from dip.app.dashboard_integration_presentation import DashboardIntegrationPresentationService
 from dip.app.project_workspace_presentation import ProjectWorkspacePresentationService
+from dip.app.project_management import ProjectManagementService
 from dip.app.hidden_gems_presentation import HiddenGemsPresentationService
 from dip.app.intelligence_comparison import IntelligenceComparisonService
 from dip.app.intelligence_history import IntelligenceHistoryQueryService
@@ -59,11 +60,8 @@ from dip.experience.collection_health import CollectionHealthDetailViewModelBuil
 from dip.experience.comparison import ComparisonViewModelBuilder
 from dip.experience.collection_trends import CollectionTrendsViewModelBuilder
 from dip.experience.dashboard import DashboardCommandCenterBuilder, DashboardHomepageViewModelBuilder
-from dip.experience.project_workspace import (
-    Project,
-    ProjectStatus,
-    ProjectWorkspaceBuilder,
-)
+from dip.experience.project_workspace import ProjectWorkspaceBuilder
+from dip.projects import InMemoryProjectRepository, ManagedProject
 from dip.experience.explorer import CollectionExplorerViewModelBuilder
 from dip.experience.desktop.collection_health_renderer import (
     DesktopCollectionHealthController,
@@ -228,7 +226,7 @@ class DesktopApplicationDependencies:
     marketplace_workspace_controller: DesktopMarketplaceWorkspaceController | None = None
     dashboard_command_center_controller: DesktopDashboardCommandCenterController | None = None
     project_workspace_controller: DesktopProjectWorkspaceController | None = None
-    active_project: Project | None = None
+    project_management: ProjectManagementService | None = None
 
 
 def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
@@ -463,14 +461,22 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         ),
         DesktopDashboardCommandCenterRenderer(),
     )
-    active_project = Project(
-        "current_collection",
-        "Current Collection",
-        "The current collector working environment.",
-        ProjectStatus.ACTIVE,
+    project_repository = InMemoryProjectRepository(
+        (
+            ManagedProject(
+                "current_collection",
+                "Current Collection",
+                "The current collector working environment.",
+                1,
+            ),
+        ),
+        active_project_id="current_collection",
     )
+    project_management = ProjectManagementService(project_repository)
     project_workspace_controller = DesktopProjectWorkspaceController(
-        ProjectWorkspacePresentationService(ProjectWorkspaceBuilder()),
+        ProjectWorkspacePresentationService(
+            project_management, ProjectWorkspaceBuilder()
+        ),
         DesktopProjectWorkspaceRenderer(),
     )
 
@@ -505,7 +511,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         marketplace_workspace_controller=marketplace_workspace_controller,
         dashboard_command_center_controller=dashboard_command_center_controller,
         project_workspace_controller=project_workspace_controller,
-        active_project=active_project,
+        project_management=project_management,
         dashboard_homepage=DashboardHomepageService(
             history_queries,
             comparison_presentation,

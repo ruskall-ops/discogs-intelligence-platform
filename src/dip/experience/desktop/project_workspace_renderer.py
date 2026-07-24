@@ -59,9 +59,9 @@ class DesktopProjectWorkspaceController:
         self._presentation = presentation
         self._renderer = renderer or DesktopProjectWorkspaceRenderer()
 
-    def open(self, active_project, recent_projects=(), summary=None):
+    def open(self):
         return self._renderer.render(
-            self._presentation.workspace(active_project, recent_projects, summary)
+            self._presentation.workspace()
         )
 
 
