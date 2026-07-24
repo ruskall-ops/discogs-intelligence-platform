@@ -290,3 +290,22 @@ Analysis destinations. Each receives an already-produced result. Opening or
 switching destinations performs no retrieval, execution, joining, trend
 calculation, classification, or sorting. Trend Analysis remains outside
 Collection Explorer, Portfolio, and Marketplace Explorer.
+## History Explorer 1.0
+
+History Explorer is an experience, not Historical Intelligence. It browses
+already-produced immutable Snapshot, Change Analysis, and Trend Analysis
+ViewModels through Timeline, Snapshot, Change, Trend, and Details panes.
+Presentation services remain responsible for producing those ViewModels.
+
+The Timeline preserves supplied chronological order and exposes observation,
+module, version, rule-set, snapshot and portfolio identities, assessment, and
+evidence. Selection creates new immutable presentation state only. Version 1
+filters only by observation number, module, module version, rule set,
+portfolio identity, or snapshot identity; filtering never sorts.
+
+The desktop Historical Intelligence workspace contains Change Analysis, Trend
+Analysis, and History Explorer. Opening or selecting History Explorer performs
+no history retrieval, repository query, persistence, comparison, analysis,
+trend calculation, aggregation, provider execution, clock access, forecast, or
+recommendation. Evolution, Metric, Reason, Diagnostic, and Alert Explorers,
+automatic retrieval, charts, and arbitrary search remain deferred.

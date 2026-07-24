@@ -625,3 +625,8 @@ Historical Intelligence Trend Analysis consumes Change Analysis output only.
 It never reaches through to Portfolio Opportunity Alignment or treats
 Alignment assessments as ordinal. Observed numeric movement and categorical
 modification are descriptive historical patterns, not forecasts or decisions.
+## History Explorer presentation boundary
+
+History Explorer can display completed Change and Trend presentation models,
+but it does not reinterpret Decision Intelligence or Historical Intelligence.
+It provides navigation and inspection only.

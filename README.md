@@ -291,3 +291,10 @@ Trend Analysis 1.0 describes stable, repeated, net, reversing, oscillating, or
 mixed patterns across an explicitly supplied continuous sequence of Portfolio
 Opportunity Alignment Change Analysis results. It performs no history
 retrieval, forecasting, alerting, scoring, or recommendation.
+### History Explorer
+
+History Explorer 1.0 adds Timeline, Snapshot, Change, Trend, and Details panes
+to the Historical Intelligence desktop experience. It browses explicitly
+supplied immutable presentation models without loading history, executing
+intelligence, comparing results, calculating trends, forecasting, or
+recommending action.

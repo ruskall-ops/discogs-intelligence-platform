@@ -1334,3 +1334,8 @@ Marketplace snapshots, listings, or Marketplace History.
 Intelligence Trend Analysis is downstream of Change Analysis and has no
 Marketplace boundary. It consumes no snapshots, listings, Marketplace History,
 or Marketplace Intelligence results.
+## History Explorer isolation
+
+History Explorer has no Marketplace boundary. It consumes presentation
+ViewModels only and cannot query Marketplace History, snapshots, repositories,
+or network services.

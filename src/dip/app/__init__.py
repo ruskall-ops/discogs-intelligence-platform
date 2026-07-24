@@ -88,6 +88,7 @@ from .portfolio_opportunity_alignment import (
 from .portfolio_opportunity_alignment_presentation import PortfolioOpportunityAlignmentPresentationService
 from .intelligence_change_analysis_presentation import IntelligenceChangeAnalysisPresentationService
 from .intelligence_trend_analysis_presentation import IntelligenceTrendAnalysisPresentationService
+from .history_explorer_presentation import HistoryExplorerPresentationService
 from .intelligence_trend_analysis import IntelligenceTrendAnalysisExecutionService
 from .weekend_listings_presentation import WeekendListingsPresentationService
 
@@ -159,6 +160,7 @@ __all__ = [
     "PortfolioOpportunityAlignmentPresentationService",
     "IntelligenceChangeAnalysisPresentationService",
     "IntelligenceTrendAnalysisPresentationService",
+    "HistoryExplorerPresentationService",
     "IntelligenceTrendAnalysisExecutionService",
     "WeekendListingsPresentationService",
     "build_marketplace_momentum_input",

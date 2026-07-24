@@ -46,6 +46,7 @@ from dip.app.portfolio_opportunity_alignment import PortfolioOpportunityAlignmen
 from dip.app.portfolio_opportunity_alignment_presentation import PortfolioOpportunityAlignmentPresentationService
 from dip.app.intelligence_change_analysis_presentation import IntelligenceChangeAnalysisPresentationService
 from dip.app.intelligence_trend_analysis_presentation import IntelligenceTrendAnalysisPresentationService
+from dip.app.history_explorer_presentation import HistoryExplorerPresentationService
 from dip.app.weekend_listings_presentation import WeekendListingsPresentationService
 from dip.comparison import ComparisonEngine
 from dip.config import SETTINGS
@@ -87,6 +88,7 @@ from dip.experience.portfolio_concentration import PortfolioConcentrationViewMod
 from dip.experience.portfolio_opportunity_alignment import PortfolioOpportunityAlignmentViewModelBuilder
 from dip.experience.intelligence_change_analysis import IntelligenceChangeAnalysisViewModelBuilder
 from dip.experience.intelligence_trend_analysis import IntelligenceTrendAnalysisViewModelBuilder
+from dip.experience.history_explorer import HistoryExplorerStateBuilder
 from dip.experience.desktop.price_changes_renderer import (
     DesktopPriceChangesRenderer,
 )
@@ -124,6 +126,10 @@ from dip.experience.desktop.intelligence_change_analysis_renderer import (
 from dip.experience.desktop.intelligence_trend_analysis_renderer import (
     DesktopIntelligenceTrendAnalysisController,
     DesktopIntelligenceTrendAnalysisRenderer,
+)
+from dip.experience.desktop.history_explorer_renderer import (
+    DesktopHistoryExplorerController,
+    DesktopHistoryExplorerRenderer,
 )
 from dip.experience.weekend_listings import WeekendListingsDetailViewModelBuilder
 from dip.experience.desktop.weekend_listings_renderer import (
@@ -178,6 +184,7 @@ class DesktopApplicationDependencies:
     portfolio_opportunity_alignment_controller: DesktopPortfolioOpportunityAlignmentController | None = None
     intelligence_change_analysis_controller: DesktopIntelligenceChangeAnalysisController | None = None
     intelligence_trend_analysis_controller: DesktopIntelligenceTrendAnalysisController | None = None
+    history_explorer_controller: DesktopHistoryExplorerController | None = None
 
 
 def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
@@ -361,6 +368,10 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         IntelligenceTrendAnalysisPresentationService(IntelligenceTrendAnalysisViewModelBuilder()),
         DesktopIntelligenceTrendAnalysisRenderer(),
     )
+    history_explorer_controller = DesktopHistoryExplorerController(
+        HistoryExplorerPresentationService(HistoryExplorerStateBuilder()),
+        DesktopHistoryExplorerRenderer(),
+    )
 
     return DesktopApplicationDependencies(
         database=database,
@@ -386,6 +397,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         portfolio_opportunity_alignment_controller=portfolio_opportunity_alignment_controller,
         intelligence_change_analysis_controller=intelligence_change_analysis_controller,
         intelligence_trend_analysis_controller=intelligence_trend_analysis_controller,
+        history_explorer_controller=history_explorer_controller,
         dashboard_homepage=DashboardHomepageService(
             history_queries,
             comparison_presentation,

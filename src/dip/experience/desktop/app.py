@@ -47,12 +47,18 @@ class App(tk.Tk):
         self.intelligence_trend_analysis_controller = getattr(
             dependencies, "intelligence_trend_analysis_controller", None
         )
+        self.history_explorer_controller = getattr(
+            dependencies, "history_explorer_controller", None
+        )
         self.current_portfolio_overview_result = None
         self.current_portfolio_distribution_result = None
         self.current_portfolio_concentration_result = None
         self.current_portfolio_opportunity_alignment_result = None
         self.current_intelligence_change_analysis_result = None
         self.current_intelligence_trend_analysis_result = None
+        self.current_history_snapshot_view_models = ()
+        self.current_history_change_view_models = ()
+        self.current_history_trend_view_models = ()
         self.desktop_homepage_renderer = DesktopDashboardHomepageRenderer()
         self.current_dashboard_homepage = DashboardHomepageViewModel.loading()
         self.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -655,6 +661,15 @@ class App(tk.Tk):
                 if self.intelligence_trend_analysis_controller is not None
                 else None
             )
+            explorer_rendered = (
+                self.history_explorer_controller.open(
+                    self.current_history_snapshot_view_models,
+                    self.current_history_change_view_models,
+                    self.current_history_trend_view_models,
+                )
+                if self.history_explorer_controller is not None
+                else None
+            )
         except Exception as exc:
             messagebox.showerror(
                 "Historical Intelligence unavailable",
@@ -671,6 +686,7 @@ class App(tk.Tk):
         destinations = (
             ("Change Analysis", change_rendered),
             ("Trend Analysis", trend_rendered),
+            ("History Explorer", explorer_rendered),
         )
         for title, rendered in destinations:
             frame = ttk.Frame(notebook, padding=12)
@@ -682,8 +698,8 @@ class App(tk.Tk):
                     for section in rendered.sections
                 )
                 if rendered is not None and rendered.sections
-                else rendered.summary if rendered is not None
-                else "Trend Analysis is not configured."
+                else getattr(rendered, "summary", "") if rendered is not None
+                else f"{title} is not configured."
             )
             text.insert("1.0", body)
             text.configure(state="disabled")

@@ -1826,3 +1826,10 @@ evidence, rules, diagnostics, and provenance. It does not retrieve history,
 compare snapshots, execute Change Analysis, predict a next state, generate an
 alert, calculate a score, or recommend action. Evolution Analysis, History
 Explorer, automatic retrieval, and alerting remain deferred.
+## History Explorer experience
+
+History Explorer presents historical artefacts produced elsewhere. It does not
+belong to the Historical Intelligence calculation layer and has no repository
+or automatic-loading dependency. Immutable Explorer state preserves supplied
+Snapshot, Change, and Trend ViewModel ordering, current pane, identity-only
+filters, and selected observation, transition, and trend.
