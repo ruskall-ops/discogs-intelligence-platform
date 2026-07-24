@@ -41,6 +41,9 @@ class App(tk.Tk):
         self.hidden_gems_controller = dependencies.hidden_gems_controller
         self.portfolio_overview_controller = dependencies.portfolio_overview_controller
         self.portfolio_controller = dependencies.portfolio_controller
+        self.portfolio_workspace_controller = getattr(
+            dependencies, "portfolio_workspace_controller", None
+        )
         self.intelligence_change_analysis_controller = getattr(
             dependencies, "intelligence_change_analysis_controller", None
         )
@@ -616,11 +619,11 @@ class App(tk.Tk):
 
     def open_portfolio_overview(self):
         """Open the separate Portfolio experience from a supplied completed result."""
-        if self.portfolio_controller is None:
+        if self.portfolio_workspace_controller is None:
             messagebox.showerror("Portfolio unavailable", "Portfolio is not configured.")
             return
         try:
-            rendered = self.portfolio_controller.open(
+            rendered = self.portfolio_workspace_controller.open(
                 self.current_portfolio_overview_result,
                 self.current_portfolio_distribution_result,
                 self.current_portfolio_concentration_result,
@@ -637,18 +640,48 @@ class App(tk.Tk):
         window.geometry("1050x760")
         window.minsize(760, 540)
         window.transient(self)
-        notebook = ttk.Notebook(window)
-        notebook.pack(fill="both", expand=True, padx=12, pady=12)
-        for section in rendered.sections:
-            frame = ttk.Frame(notebook, padding=12)
-            notebook.add(frame, text=section.title)
-            text = tk.Text(frame, wrap="word", padx=10, pady=10)
-            scrollbar = ttk.Scrollbar(frame, orient="vertical", command=text.yview)
-            text.configure(yscrollcommand=scrollbar.set)
-            text.insert("1.0", section.body)
+        workspace = ttk.Frame(window, padding=12)
+        workspace.pack(fill="both", expand=True)
+        navigation = tk.Listbox(workspace, exportselection=False, width=24)
+        navigation.pack(side="left", fill="y", padx=(0, 12))
+        content = ttk.Frame(workspace)
+        content.pack(side="left", fill="both", expand=True)
+        heading = ttk.Label(content, text=rendered.heading, font=("Helvetica", 16, "bold"))
+        heading.pack(anchor="w", pady=(0, 8))
+        text = tk.Text(content, wrap="word", padx=10, pady=10)
+        scrollbar = ttk.Scrollbar(content, orient="vertical", command=text.yview)
+        text.configure(yscrollcommand=scrollbar.set)
+        text.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        for item in rendered.navigation:
+            navigation.insert("end", item.title)
+
+        current = rendered
+
+        def show(value):
+            nonlocal current
+            current = value
+            heading.configure(text=value.heading)
+            text.configure(state="normal")
+            text.delete("1.0", "end")
+            text.insert("1.0", value.body)
             text.configure(state="disabled")
-            text.pack(side="left", fill="both", expand=True)
-            scrollbar.pack(side="right", fill="y")
+
+        def select_destination(event=None):
+            selection = navigation.curselection()
+            if not selection:
+                return
+            destination = current.navigation[selection[0]].destination
+            show(self.portfolio_workspace_controller.navigate(current.state, destination))
+
+        navigation.bind("<<ListboxSelect>>", select_destination)
+        selected_index = next(
+            index for index, item in enumerate(rendered.navigation)
+            if item.destination is rendered.current_destination
+        )
+        navigation.selection_set(selected_index)
+        navigation.activate(selected_index)
+        show(rendered)
         ttk.Button(window, text="Close", command=window.destroy).pack(pady=(0, 12))
 
     def open_intelligence_change_analysis(self):

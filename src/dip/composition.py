@@ -44,6 +44,7 @@ from dip.app.portfolio_concentration import PortfolioConcentrationExecutionServi
 from dip.app.portfolio_concentration_presentation import PortfolioConcentrationPresentationService
 from dip.app.portfolio_opportunity_alignment import PortfolioOpportunityAlignmentExecutionService
 from dip.app.portfolio_opportunity_alignment_presentation import PortfolioOpportunityAlignmentPresentationService
+from dip.app.portfolio_workspace_presentation import PortfolioWorkspacePresentationService
 from dip.app.intelligence_change_analysis_presentation import IntelligenceChangeAnalysisPresentationService
 from dip.app.intelligence_trend_analysis_presentation import IntelligenceTrendAnalysisPresentationService
 from dip.app.history_explorer_presentation import HistoryExplorerPresentationService
@@ -88,6 +89,7 @@ from dip.experience.portfolio_overview import PortfolioOverviewViewModelBuilder
 from dip.experience.portfolio_distribution import PortfolioDistributionViewModelBuilder
 from dip.experience.portfolio_concentration import PortfolioConcentrationViewModelBuilder
 from dip.experience.portfolio_opportunity_alignment import PortfolioOpportunityAlignmentViewModelBuilder
+from dip.experience.portfolio_workspace import PortfolioWorkspaceStateBuilder
 from dip.experience.intelligence_change_analysis import IntelligenceChangeAnalysisViewModelBuilder
 from dip.experience.intelligence_trend_analysis import IntelligenceTrendAnalysisViewModelBuilder
 from dip.experience.history_explorer import HistoryExplorerStateBuilder
@@ -126,6 +128,10 @@ from dip.experience.desktop.portfolio_concentration_renderer import (
 from dip.experience.desktop.portfolio_opportunity_alignment_renderer import (
     DesktopPortfolioOpportunityAlignmentController,
     DesktopPortfolioOpportunityAlignmentRenderer,
+)
+from dip.experience.desktop.portfolio_workspace_renderer import (
+    DesktopPortfolioWorkspaceController,
+    DesktopPortfolioWorkspaceRenderer,
 )
 from dip.experience.desktop.intelligence_change_analysis_renderer import (
     DesktopIntelligenceChangeAnalysisController,
@@ -194,6 +200,7 @@ class DesktopApplicationDependencies:
     portfolio_distribution_execution: PortfolioDistributionExecutionService | None = None
     portfolio_distribution_controller: DesktopPortfolioDistributionController | None = None
     portfolio_controller: DesktopPortfolioController | None = None
+    portfolio_workspace_controller: DesktopPortfolioWorkspaceController | None = None
     portfolio_concentration_execution: PortfolioConcentrationExecutionService | None = None
     portfolio_concentration_controller: DesktopPortfolioConcentrationController | None = None
     portfolio_opportunity_alignment_execution: PortfolioOpportunityAlignmentExecutionService | None = None
@@ -357,20 +364,34 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         MarketplaceOpportunityDetailViewModelBuilder()
     )
     marketplace_opportunity_renderer = DesktopMarketplaceOpportunityRenderer()
+    portfolio_overview_presentation = PortfolioOverviewPresentationService(
+        PortfolioOverviewViewModelBuilder()
+    )
+    portfolio_distribution_presentation = PortfolioDistributionPresentationService(
+        PortfolioDistributionViewModelBuilder()
+    )
+    portfolio_concentration_presentation = PortfolioConcentrationPresentationService(
+        PortfolioConcentrationViewModelBuilder()
+    )
+    portfolio_opportunity_alignment_presentation = (
+        PortfolioOpportunityAlignmentPresentationService(
+            PortfolioOpportunityAlignmentViewModelBuilder()
+        )
+    )
     portfolio_overview_controller = DesktopPortfolioOverviewController(
-        PortfolioOverviewPresentationService(PortfolioOverviewViewModelBuilder()),
+        portfolio_overview_presentation,
         DesktopPortfolioOverviewRenderer(),
     )
     portfolio_distribution_controller = DesktopPortfolioDistributionController(
-        PortfolioDistributionPresentationService(PortfolioDistributionViewModelBuilder()),
+        portfolio_distribution_presentation,
         DesktopPortfolioDistributionRenderer(),
     )
     portfolio_concentration_controller = DesktopPortfolioConcentrationController(
-        PortfolioConcentrationPresentationService(PortfolioConcentrationViewModelBuilder()),
+        portfolio_concentration_presentation,
         DesktopPortfolioConcentrationRenderer(),
     )
     portfolio_opportunity_alignment_controller = DesktopPortfolioOpportunityAlignmentController(
-        PortfolioOpportunityAlignmentPresentationService(PortfolioOpportunityAlignmentViewModelBuilder()),
+        portfolio_opportunity_alignment_presentation,
         DesktopPortfolioOpportunityAlignmentRenderer(),
     )
     portfolio_controller = DesktopPortfolioController(
@@ -378,6 +399,16 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         portfolio_distribution_controller,
         portfolio_concentration_controller,
         portfolio_opportunity_alignment_controller,
+    )
+    portfolio_workspace_controller = DesktopPortfolioWorkspaceController(
+        PortfolioWorkspacePresentationService(
+            portfolio_overview_presentation,
+            portfolio_distribution_presentation,
+            portfolio_concentration_presentation,
+            portfolio_opportunity_alignment_presentation,
+            PortfolioWorkspaceStateBuilder(),
+        ),
+        DesktopPortfolioWorkspaceRenderer(),
     )
     intelligence_change_analysis_controller = DesktopIntelligenceChangeAnalysisController(
         IntelligenceChangeAnalysisPresentationService(IntelligenceChangeAnalysisViewModelBuilder()),
@@ -420,6 +451,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         portfolio_distribution_execution=portfolio_distribution_execution,
         portfolio_distribution_controller=portfolio_distribution_controller,
         portfolio_controller=portfolio_controller,
+        portfolio_workspace_controller=portfolio_workspace_controller,
         portfolio_concentration_execution=portfolio_concentration_execution,
         portfolio_concentration_controller=portfolio_concentration_controller,
         portfolio_opportunity_alignment_execution=portfolio_opportunity_alignment_execution,

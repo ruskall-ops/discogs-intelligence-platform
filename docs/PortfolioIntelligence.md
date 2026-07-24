@@ -304,3 +304,23 @@ Portfolio Opportunity Alignment may be compared by Change Analysis, whose
 ordered results may then feed Trend Analysis. Trend Analysis consumes neither
 Alignment outputs nor portfolio sources directly and does not predict the next
 portfolio state.
+
+## Portfolio Workspace 1.0
+
+Portfolio Workspace is a desktop presentation workflow over already-produced
+Portfolio presentation models. Its application composition boundary invokes
+the existing Portfolio Overview, Distribution, Concentration, and Opportunity
+Alignment presentation services once each, then supplies their immutable view
+models to a deterministic workspace builder.
+
+The first slice provides fixed left navigation for Overview, Distribution,
+Concentration, Opportunity Alignment, History, and Research. Overview is the
+only implemented page and presents the four existing Portfolio views together.
+The remaining destinations are explicit placeholders for later slices.
+Navigation replaces immutable presentation state only.
+
+Portfolio Workspace performs no intelligence execution, source normalization,
+aggregation, ratio or concentration calculation, classification, sorting,
+history retrieval, repository access, persistence, forecasting, or
+recommendation. Existing presentation builders and desktop renderers remain
+the authoritative boundaries for their respective Portfolio capabilities.
