@@ -12,7 +12,8 @@ Its purpose is to transform a static Discogs collection into an intelligent, con
 
 DIP is **not** a replacement for Discogs.
 
-Instead, it enhances Discogs by providing insights, historical context and transparent recommendations that help collectors make better-informed decisions.
+Instead, it enhances Discogs by providing explainable insights, evidence and
+historical context that help collectors make better-informed decisions.
 
 The collector always remains in control.
 
@@ -28,93 +29,117 @@ To build the world's best intelligence platform for vinyl collectors by **automa
 
 🚧 **Active Development**
 
-Current Milestone:
+Current release:
 
-**Version 0.1 – Core Platform**
+**Version 0.3.0 – Marketplace Intelligence and Decision Support Foundation**
+
+Version 0.3.0 extends the released Core Platform and Collection Intelligence
+foundations with Marketplace Intelligence, Portfolio Intelligence, Historical
+Intelligence, explainability, and the first research-oriented Marketplace
+Workspace.
 
 ---
 
-# Current Features
+# Completed Capabilities
 
 Current functionality includes:
 
-- Import Discogs Collection CSV
-- Discogs Marketplace Integration
-- SQLite Database
-- Historical Market Snapshots
-- Opportunity Scoring
-- Personal Decisions & Notes
-- Search & Filtering
-- Excel Export
+- Core platform
+  - Discogs collection CSV import
+  - Discogs Marketplace integration
+  - SQLite persistence and ordered migrations
+  - collection and Marketplace snapshots
+  - configuration, reporting, search, filtering, and Excel export
+- Collection Intelligence
+  - deterministic, versioned Intelligence Engine
+  - Collection Health
+  - Hidden Gems
+  - Historical Intelligence
+  - Dashboard and Collection Intelligence Explorer presentation
+- Marketplace Intelligence
+  - Weekend Listings
+  - Price Changes
+  - Supply Changes
+  - Rare Appearances
+  - Marketplace Activity
+  - Listing Lifecycle
+- Marketplace Decision Intelligence
+  - Marketplace Momentum
+  - Marketplace Stability
+  - Marketplace Scarcity
+  - Marketplace Opportunity synthesis
+- Portfolio Intelligence
+  - Portfolio Overview
+  - Portfolio Distribution
+  - Portfolio Concentration
+  - Portfolio Opportunity Alignment
+- Historical and explainability experiences
+  - immutable Intelligence History
+  - Intelligence Change Analysis
+  - Intelligence Trend Analysis
+  - History Explorer
+  - Intelligence Insights
+- Marketplace Workspace
+  - caller-ordered Attention Queue
+  - Opportunity Detail and grouped Evidence
+  - Marketplace History and Portfolio Context
+  - user-owned Research Status
 
-These features will continue to evolve as the platform develops.
+All intelligence remains deterministic, evidence-led, versioned, and
+presentation-independent. The platform explains observed conditions and
+uncertainty; it does not automate purchasing or selling decisions.
 
 ---
 
-# Planned Roadmap
+# Release Roadmap
 
 ## Version 0.1 – Core Platform
 
-- SQLite Database
-- Import Engine
-- Historical Snapshots
-- Reporting Engine
-- Configuration System
-- Modular Architecture
+**Status: Released**
+
+Established the database, import, snapshot, reporting, configuration,
+migration, and modular architecture foundations.
 
 ---
 
 ## Version 0.2 – Collection Intelligence
 
-- Collection Intelligence Engine foundation
-- Versioned module registry
-- Standard analysis context and results
-- Failure-isolated module execution
-- Collection Health module (Issue #18)
-  - 0–100 explainable health score
-  - weighted component scores
-  - strengths, improvement opportunities, evidence and diagnostics
-- Hidden Gems intelligence module
-  - immutable ranked research candidates
-  - demand, scarcity, community-rating, ownership and price-efficiency factors
-  - configurable thresholds, weights, evidence and diagnostics
-- Interactive Dashboard foundation
-  - presentation-neutral intelligence view models
-  - read-only Collection Health card
-  - safe ready, skipped, failed and incomplete states
-- Desktop Dashboard integration
-  - Collection Health, Hidden Gems and Historical Intelligence cards
-  - per-card unavailable, insufficient-history and failure states
-  - read-only rendering of Collection Intelligence Engine results
-- Collection Intelligence Explorer
-  - dashboard navigation to Collection Health, Hidden Gems and Historical drill-down
-  - full explainable release evidence without raw scoring internals
-  - independent unavailable, failed and insufficient-history sections
-- Weekend Listings
-- Dashboard
-- Opportunity Engine
-- Protected Records
-- Collection Health
+**Status: Released**
+
+Introduced the versioned Intelligence Engine, Collection Health, Hidden Gems,
+Historical Intelligence, Dashboard, and Collection Intelligence Explorer.
 
 ---
 
-## Version 0.3 – Market Intelligence
+## Version 0.3.0 – Marketplace Intelligence and Decision Support Foundation
 
-- Price History
-- Demand Momentum
-- Scarcity Trends
-- Weekly Intelligence Reports
-- Why Now? Engine
-- Market Trend Detection
+**Status: Current**
+
+Delivers Marketplace History and Intelligence, Marketplace Decision
+Intelligence, Portfolio Intelligence, Intelligence History, Change and Trend
+Analysis, History Explorer, Intelligence Insights, and Marketplace Workspace
+1.0.
+
+The release establishes decision-support and research workflows without
+opportunity ranking, recommendations, predictions, alerts, or automated
+decisions.
 
 ---
 
-## Version 0.4 – Personal Intelligence
+## Beyond Version 0.3.0
 
-- Collector DNA
-- Decision Tracking
-- Recommendation Memory
-- Personal Recommendation Engine
+Candidate future work includes:
+
+- richer Marketplace and Portfolio history exploration
+- broader cross-module insights
+- user-managed watchlists, notes, tags, and saved searches
+- alerts and notifications built on explicit evidence
+- dashboards, charts, and scheduled research workflows
+- personalisation that remains transparent and user-controlled
+
+These capabilities are not part of Version 0.3.0. Roadmap priorities remain
+subject to architectural review and must preserve the platform’s
+decision-support boundary.
 
 ---
 
@@ -128,7 +153,7 @@ The platform never tells the user what they should buy or sell.
 
 Instead, it identifies opportunities, explains the evidence and allows the collector to make the final decision.
 
-Every recommendation should be:
+Every surfaced assessment or insight should be:
 
 - Transparent
 - Explainable
@@ -143,18 +168,17 @@ Detailed documentation is available in the **docs** folder.
 
 Current documentation includes:
 
-- Vision.md
-- Architecture.md
-- Dashboard.md
-- IntelligenceModules/CollectionIntelligence.md
-- IntelligenceModules/HiddenGems.md
-- DevelopmentPrinciples.md *(in progress)*
-- Roadmap.md *(planned)*
-- ProductPositioning.md *(planned)*
-- Database.md *(planned)*
-- Scoring.md *(planned)*
-- Development/DevelopmentStandard.md – engineering and implementation standards
-- Development/AIDevelopmentPlaybook.md – AI-assisted development workflow
+- [Vision](docs/vision.md)
+- [Architecture](docs/Architecture.md)
+- [Marketplace Architecture](docs/MarketplaceArchitecture.md)
+- [Portfolio Intelligence](docs/PortfolioIntelligence.md)
+- [Decision Intelligence](docs/DecisionIntelligence.md)
+- [Intelligence History](docs/IntelligenceHistory.md)
+- [Explorer](docs/Explorer.md)
+- [Dashboard](docs/Dashboard.md)
+- [Roadmap](docs/Roadmap.md)
+- [Development Standard](docs/Development/DevelopmentStandard.md)
+- [AI Development Playbook](docs/Development/AI_Development_Playbook.md)
 
 ---
 
@@ -202,11 +226,11 @@ discogs-intelligence-platform/
 
 The package boundaries mirror the platform architecture: external providers and presentation remain replaceable, while intelligence stays deterministic, explainable and reusable.
 
-Version 0.2 intelligence currently includes Collection Health, Hidden Gems and
-a presentation-independent Historical Intelligence comparison. Historical
-Intelligence compares the latest two prepared snapshots, separates collection
-additions and removals from valuation movements, and reports evidence coverage
-without inventing missing values. See
+The Collection Intelligence foundation includes Collection Health, Hidden Gems,
+and a presentation-independent Historical Intelligence comparison. Historical
+Intelligence compares prepared snapshots, separates collection additions and
+removals from valuation movements, and reports evidence coverage without
+inventing missing values. See
 [`docs/IntelligenceModules/HistoricalIntelligence.md`](docs/IntelligenceModules/HistoricalIntelligence.md).
 
 The desktop dashboard presents these three engine results as independent,
@@ -279,38 +303,3 @@ Status: Active
 Last Updated: July 2026
 
 Owner: Russell Friend
-## Historical Intelligence
-
-Intelligence Change Analysis 1.0 compares two explicitly supplied immutable
-Portfolio Opportunity Alignment results. It exposes neutral categorical
-transitions and exact numeric deltas without retrieving history, recalculating
-intelligence, forecasting, or recommending action.
-### Intelligence Trend Analysis
-
-Trend Analysis 1.0 describes stable, repeated, net, reversing, oscillating, or
-mixed patterns across an explicitly supplied continuous sequence of Portfolio
-Opportunity Alignment Change Analysis results. It performs no history
-retrieval, forecasting, alerting, scoring, or recommendation.
-### History Explorer
-
-History Explorer 1.0 adds Timeline, Snapshot, Change, Trend, and Details panes
-to the Historical Intelligence desktop experience. It browses explicitly
-supplied immutable presentation models without loading history, executing
-intelligence, comparing results, calculating trends, forecasting, or
-recommending action.
-### Intelligence Insights
-
-Intelligence Insights 1.0 provides deterministic evidence-first observations
-for historical Snapshot, Change, and Trend ViewModels. Insights expose their
-evidence, reasons, diagnostics, source, provenance, category, type, and display
-priority without scoring, confidence estimation, prediction, recommendation,
-or generated prose.
-
-### Marketplace Workspace
-
-Marketplace Workspace 1.0 is the desktop research workflow for already-produced
-Marketplace intelligence. Its caller-ordered Attention Queue links Opportunity
-Detail, Evidence, Marketplace History, Portfolio Context, and user-owned
-Research Status panes without ranking opportunities or recommending an action.
-Opening, filtering, and selecting workspace records performs no retrieval,
-intelligence execution, historical analysis, persistence, or live refresh.
