@@ -86,6 +86,7 @@ from .portfolio_opportunity_alignment import (
     build_portfolio_opportunity_alignment_input,
 )
 from .portfolio_opportunity_alignment_presentation import PortfolioOpportunityAlignmentPresentationService
+from .intelligence_change_analysis_presentation import IntelligenceChangeAnalysisPresentationService
 from .weekend_listings_presentation import WeekendListingsPresentationService
 
 
@@ -154,6 +155,7 @@ __all__ = [
     "PortfolioOpportunityAlignmentExecutionConsistencyError",
     "PortfolioOpportunityAlignmentExecutionService",
     "PortfolioOpportunityAlignmentPresentationService",
+    "IntelligenceChangeAnalysisPresentationService",
     "WeekendListingsPresentationService",
     "build_marketplace_momentum_input",
     "build_marketplace_stability_input",

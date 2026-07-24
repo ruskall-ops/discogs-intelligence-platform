@@ -1779,3 +1779,23 @@ Maintaining these responsibilities as separate concerns keeps the platform deter
 Ultimately, Intelligence History embodies the core philosophy of the Discogs Intelligence Platform:
 
 > **Automate the research, not the collecting decision.**
+## Historical Intelligence: Change Analysis 1.0
+
+Intelligence Change Analysis is the first Historical Intelligence capability.
+It compares exactly two explicitly supplied immutable `IntelligenceResult`
+snapshots. Version 1 supports only `portfolio_opportunity_alignment` module
+version and rule set `1.0`.
+
+It validates typed outputs, completed status, identities, versions, rule sets,
+and available snapshot provenance. Invalid or unsupported inputs produce a
+deterministic insufficient result. Transitions preserve previous and current
+assessment, evidence, versions, reasons, diagnostics, provenance, dimensions,
+release/copy counts, and exact Decimal ratios. Numeric differences are
+`increased`, `decreased`, or `unchanged`; categorical differences are
+`modified`, never improvements or regressions.
+
+Change Analysis performs no history loading, repository query, provider
+execution, recalculation, clock access, or fallback. Its output participates
+through additive history serialization registrations. Trend and Evolution
+Analysis, automatic retrieval, History Explorer, alerts, and dashboard
+integration remain future work.

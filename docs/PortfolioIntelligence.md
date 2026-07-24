@@ -292,3 +292,9 @@ directly. It preserves release/copy semantics and source order, and uses
 Concentration states without recalculation. Its explainable assessment
 interprets observed relationships, not portfolio merit, risk, expected return,
 or an action.
+## Historical comparison
+
+Two immutable Portfolio Opportunity Alignment 1.0 results may be passed
+explicitly to Intelligence Change Analysis 1.0. Historical Intelligence
+preserves both snapshots and reports only what changed; it does not rebuild
+portfolio facts, recalculate Alignment, or load history automatically.

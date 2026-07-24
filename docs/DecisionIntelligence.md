@@ -612,3 +612,10 @@ Decision Intelligence must never:
 # Guiding Principle
 
 > **Primary Intelligence discovers facts. Composite Intelligence organises facts. Decision Intelligence interprets facts. The user makes the decision.**
+## Relationship to Historical Intelligence
+
+Intelligence Change Analysis 1.0 compares two completed Portfolio Opportunity
+Alignment 1.0 results without rerunning or reinterpreting Alignment.
+Assessment and evidence changes are categorical modifications; release, copy,
+and ratio changes are objective numeric deltas. No transition states
+desirability or recommends an action.

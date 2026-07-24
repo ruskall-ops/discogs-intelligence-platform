@@ -279,3 +279,9 @@ Status: Active
 Last Updated: July 2026
 
 Owner: Russell Friend
+## Historical Intelligence
+
+Intelligence Change Analysis 1.0 compares two explicitly supplied immutable
+Portfolio Opportunity Alignment results. It exposes neutral categorical
+transitions and exact numeric deltas without retrieving history, recalculating
+intelligence, forecasting, or recommending action.

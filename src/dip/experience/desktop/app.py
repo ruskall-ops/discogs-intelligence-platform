@@ -41,10 +41,14 @@ class App(tk.Tk):
         self.hidden_gems_controller = dependencies.hidden_gems_controller
         self.portfolio_overview_controller = dependencies.portfolio_overview_controller
         self.portfolio_controller = dependencies.portfolio_controller
+        self.intelligence_change_analysis_controller = getattr(
+            dependencies, "intelligence_change_analysis_controller", None
+        )
         self.current_portfolio_overview_result = None
         self.current_portfolio_distribution_result = None
         self.current_portfolio_concentration_result = None
         self.current_portfolio_opportunity_alignment_result = None
+        self.current_intelligence_change_analysis_result = None
         self.desktop_homepage_renderer = DesktopDashboardHomepageRenderer()
         self.current_dashboard_homepage = DashboardHomepageViewModel.loading()
         self.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -68,6 +72,7 @@ class App(tk.Tk):
         ttk.Button(toolbar, text="Export Intelligence Report", command=self.export_intelligence_report).pack(side="left", padx=3)
         ttk.Button(toolbar, text="Refresh View", command=self.load_table).pack(side="left", padx=3)
         ttk.Button(toolbar, text="Portfolio", command=self.open_portfolio_overview).pack(side="left", padx=3)
+        ttk.Button(toolbar, text="Historical Intelligence", command=self.open_intelligence_change_analysis).pack(side="left", padx=3)
 
         self.progress = ttk.Progressbar(toolbar, length=260, mode="determinate")
         self.progress.pack(side="right", padx=5)
@@ -625,6 +630,43 @@ class App(tk.Tk):
             text.configure(state="disabled")
             text.pack(side="left", fill="both", expand=True)
             scrollbar.pack(side="right", fill="y")
+        ttk.Button(window, text="Close", command=window.destroy).pack(pady=(0, 12))
+
+    def open_intelligence_change_analysis(self):
+        """Render one already-produced Historical Intelligence result."""
+        if self.intelligence_change_analysis_controller is None:
+            messagebox.showerror(
+                "Historical Intelligence unavailable",
+                "Intelligence Change Analysis is not configured.",
+            )
+            return
+        try:
+            rendered = self.intelligence_change_analysis_controller.open(
+                self.current_intelligence_change_analysis_result
+            )
+        except Exception as exc:
+            messagebox.showerror(
+                "Historical Intelligence unavailable",
+                f"Intelligence Change Analysis could not be displayed:\n\n{exc}",
+            )
+            return
+        window = tk.Toplevel(self)
+        window.title("Historical Intelligence — Change Analysis")
+        window.geometry("1050x760")
+        window.minsize(760, 540)
+        window.transient(self)
+        notebook = ttk.Notebook(window)
+        notebook.pack(fill="both", expand=True, padx=12, pady=12)
+        sections = rendered.sections or (
+            type("_Section", (), {"title": "Change Analysis", "body": rendered.summary})(),
+        )
+        for section in sections:
+            frame = ttk.Frame(notebook, padding=12)
+            notebook.add(frame, text=section.title)
+            text = tk.Text(frame, wrap="word", padx=10, pady=10)
+            text.insert("1.0", section.body)
+            text.configure(state="disabled")
+            text.pack(fill="both", expand=True)
         ttk.Button(window, text="Close", command=window.destroy).pack(pady=(0, 12))
 
     def load_table(self):

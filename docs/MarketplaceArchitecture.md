@@ -1324,3 +1324,8 @@ Together with Collection History and Intelligence History, Marketplace Architect
 These foundations enable transparent, explainable and evidence-based intelligence while remaining faithful to DIP's guiding principle:
 
 > **Automate the research, not the collecting decision.**
+## Historical Intelligence boundary
+
+Intelligence Change Analysis 1.0 accepts two completed Portfolio Opportunity
+Alignment results only. It never reaches back into Marketplace Opportunity,
+Marketplace snapshots, listings, or Marketplace History.

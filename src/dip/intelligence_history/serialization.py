@@ -72,6 +72,11 @@ from dip.portfolio_decision_intelligence import (
     PortfolioOpportunityAlignmentReasonCode,
     PortfolioOpportunityMappingCategory,
 )
+from dip.historical_intelligence import (
+    IntelligenceChangeAnalysisDiagnosticCode,
+    IntelligenceChangeAnalysisReasonCode,
+    IntelligenceComparisonState,
+)
 from dip.marketplace_intelligence.models import (
     MarketplaceDataStatus,
     MarketplaceDiagnosticSeverity,
@@ -162,6 +167,9 @@ _ENUM_TYPES: dict[str, type[Enum]] = {
     "dip.portfolio_decision_intelligence.portfolio_opportunity_alignment.PortfolioOpportunityAlignmentEvidenceCoverage": PortfolioOpportunityAlignmentEvidenceCoverage,
     "dip.portfolio_decision_intelligence.portfolio_opportunity_alignment.PortfolioOpportunityAlignmentReasonCode": PortfolioOpportunityAlignmentReasonCode,
     "dip.portfolio_decision_intelligence.portfolio_opportunity_alignment.PortfolioOpportunityMappingCategory": PortfolioOpportunityMappingCategory,
+    "dip.historical_intelligence.intelligence_change_analysis.IntelligenceChangeAnalysisDiagnosticCode": IntelligenceChangeAnalysisDiagnosticCode,
+    "dip.historical_intelligence.intelligence_change_analysis.IntelligenceChangeAnalysisReasonCode": IntelligenceChangeAnalysisReasonCode,
+    "dip.historical_intelligence.intelligence_change_analysis.IntelligenceComparisonState": IntelligenceComparisonState,
     (
         "dip.decision_intelligence.marketplace_momentum."
         "ActivityIntensity"

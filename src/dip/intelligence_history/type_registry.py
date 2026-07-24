@@ -141,6 +141,16 @@ from dip.portfolio_decision_intelligence import (
     PortfolioOpportunityBreadth,
     PortfolioOpportunityMappingEntry,
 )
+from dip.historical_intelligence import (
+    CategoricalTransition,
+    CollectionTransition,
+    ComparisonProvenance,
+    ComparisonRuleConfiguration,
+    ComparisonSummary,
+    IntelligenceChangeAnalysisDiagnostic,
+    IntelligenceComparisonOutput,
+    MetricTransition,
+)
 
 
 APPROVED_DATACLASS_TYPES: dict[str, type[Any]] = {
@@ -265,6 +275,14 @@ APPROVED_DATACLASS_TYPES: dict[str, type[Any]] = {
         PortfolioOpportunityAlignmentSummary,
         PortfolioOpportunityBreadth,
         PortfolioOpportunityMappingEntry,
+        CategoricalTransition,
+        CollectionTransition,
+        ComparisonProvenance,
+        ComparisonRuleConfiguration,
+        ComparisonSummary,
+        IntelligenceChangeAnalysisDiagnostic,
+        IntelligenceComparisonOutput,
+        MetricTransition,
     )
 }
 

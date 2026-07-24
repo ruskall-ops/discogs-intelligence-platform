@@ -277,3 +277,9 @@ per-release trends,
 Protected Records, Market Movers, broader Marketplace Intelligence, automatic
 Price Changes, Marketplace Momentum, Marketplace Stability, Marketplace Scarcity, or Marketplace Opportunity execution, live Marketplace monitoring,
 background refresh, and AI summaries remain future work.
+## Historical Intelligence desktop
+
+Historical Intelligence is a separate top-level experience with a Change
+Analysis destination. The desktop receives one already-produced comparison
+result. Opening it performs no history retrieval, comparison, calculation,
+provider execution, or sorting. Version 1 does not add a History Explorer.
