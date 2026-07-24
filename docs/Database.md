@@ -94,7 +94,7 @@ within the same table.
 
 ---
 
-# Proposed Database Structure
+# Database Structure
 
 ## schema_migrations
 
@@ -220,6 +220,29 @@ Examples:
 
 ---
 
+## projects
+
+Stores normalized Project application state:
+
+- `project_id` — stable text primary key;
+- `name` — required display name;
+- `description` — required presentation-ready description;
+- `last_opened_order` — nullable positive application-controlled sequence;
+- `insertion_order` — required unique positive sequence used for deterministic
+  listing.
+
+## project_state
+
+Stores exactly one row with `singleton_id = 1`. Its nullable
+`active_project_id` is a foreign key to `projects.project_id` with restricted
+deletion. Active state is separate from Project content.
+
+Migration version 4 adds both tables. A fresh database includes the same schema.
+The first desktop composition creates `Current Collection` only when absent and
+does not replace an existing Project or active selection.
+
+---
+
 # Entity Relationships
 
 ```text
@@ -315,6 +338,9 @@ Examples include:
 - Custom tags
 
 User Knowledge should never be overwritten by future imports.
+
+Project persistence does not include collection refresh state, open-window
+state, workspace navigation, or session restoration.
 
 This separation allows DIP to safely refresh imported data while preserving all user-generated information.
 

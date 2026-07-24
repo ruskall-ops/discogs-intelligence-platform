@@ -273,6 +273,14 @@ This release introduces external intelligence while maintaining the platform's c
 
 📅 Planned
 
+### Implemented foundation
+
+The Project Management application layer and SQLite Project repository now
+persist Project identity, last-opened order, and active selection. This
+foundation does not complete the planned collector workflow: Project creation
+UI, file selection, collection refresh, session restoration, workspace
+restoration, and research persistence remain unimplemented.
+
 ### Goal
 
 Personalise the platform around the individual collector.

@@ -40,8 +40,14 @@ class Database:
 
         with self._lock:
             if not self.conn.in_transaction:
-                with self.conn:
+                self.conn.execute("BEGIN")
+                try:
                     yield self.conn
+                except BaseException:
+                    self.conn.rollback()
+                    raise
+                else:
+                    self.conn.commit()
                 return
 
             savepoint = f"dip_transaction_{next(self._savepoint_ids)}"

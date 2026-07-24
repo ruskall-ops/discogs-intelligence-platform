@@ -61,7 +61,7 @@ from dip.experience.comparison import ComparisonViewModelBuilder
 from dip.experience.collection_trends import CollectionTrendsViewModelBuilder
 from dip.experience.dashboard import DashboardCommandCenterBuilder, DashboardHomepageViewModelBuilder
 from dip.experience.project_workspace import ProjectWorkspaceBuilder
-from dip.projects import InMemoryProjectRepository, ManagedProject
+from dip.projects import ManagedProject
 from dip.experience.explorer import CollectionExplorerViewModelBuilder
 from dip.experience.desktop.collection_health_renderer import (
     DesktopCollectionHealthController,
@@ -185,6 +185,7 @@ from dip.persistence.sqlite import (
     Database,
     SQLiteIntelligenceHistoryRepository,
     SQLiteMarketplaceHistoryRepository,
+    SQLiteProjectRepository,
 )
 
 
@@ -461,16 +462,14 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         ),
         DesktopDashboardCommandCenterRenderer(),
     )
-    project_repository = InMemoryProjectRepository(
-        (
-            ManagedProject(
-                "current_collection",
-                "Current Collection",
-                "The current collector working environment.",
-                1,
-            ),
-        ),
-        active_project_id="current_collection",
+    project_repository = SQLiteProjectRepository(database)
+    project_repository.ensure_default_project(
+        ManagedProject(
+            "current_collection",
+            "Current Collection",
+            "The current collector working environment.",
+            1,
+        )
     )
     project_management = ProjectManagementService(project_repository)
     project_workspace_controller = DesktopProjectWorkspaceController(

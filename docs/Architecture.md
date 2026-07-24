@@ -340,11 +340,36 @@ ScoreRepository
 DecisionRepository
 AnalysisRunRepository
 SettingsRepository
+ProjectRepository
 ```
 
 A repository owns the queries for one area of the data model.
 
 Other layers should not contain raw SQL once the repository structure is established.
+
+### Project persistence
+
+The implemented Project flow preserves the existing dependency direction:
+
+```text
+Desktop Project Workspace
+        ↓
+Project Workspace Presentation
+        ↓
+ProjectManagementService
+        ↓
+ProjectRepository
+        ↓
+SQLiteProjectRepository
+        ↓
+shared SQLite Database boundary
+```
+
+`ProjectManagementService` and Project presentation remain storage-independent.
+The composition root supplies `SQLiteProjectRepository`, which stores immutable
+`ManagedProject` fields, deterministic insertion and last-opened order, and the
+active Project identity. The first run creates `Current Collection` once and
+makes it active; later starts reuse persisted state.
 
 ### Database Migrations
 

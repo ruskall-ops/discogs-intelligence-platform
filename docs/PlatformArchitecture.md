@@ -180,6 +180,18 @@ This ensures consistent behaviour throughout the platform.
 
 ---
 
+# Project Foundation
+
+Project Workspace is the application entry point. Project Management coordinates
+Project workflows through a storage-independent repository contract. The
+current SQLite adapter preserves Projects, last-opened order, and active-project
+state across application restarts.
+
+This is a persistence foundation only. It does not restore open windows,
+workspace state, collection refresh state, or a previous desktop session.
+
+---
+
 # User Decisions
 
 A key design principle of DIP is:

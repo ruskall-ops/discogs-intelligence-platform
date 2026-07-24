@@ -201,9 +201,25 @@ Confidence is separate from Opportunity Score.
 
 # Repository
 
-A software component responsible for reading and writing a specific area of the SQLite database.
+A storage-independent contract for reading and writing a specific domain area.
+Concrete adapters may use SQLite or another implementation.
 
 Repositories isolate database access from the rest of the application.
+
+---
+
+# Project
+
+A collector's named working environment and the root of the desktop
+experience. Project identity, description, last-opened order, and active state
+are persisted; workspace and session state are not.
+
+---
+
+# Project Management
+
+The application service that lists, creates, opens, and selects Projects
+through `ProjectRepository`. It contains no SQLite knowledge.
 
 ---
 

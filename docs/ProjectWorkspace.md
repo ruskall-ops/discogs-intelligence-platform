@@ -6,27 +6,38 @@ Project Workspace is the presentation root of the Discogs Intelligence
 Platform. A Project represents a collector's working environment and provides
 an entry point to the existing Dashboard and Portfolio Workspace.
 
-Version 1 establishes presentation and navigation only. A Project is not a
-stored file, persistence record, import definition, or configuration object.
+Version 1 establishes presentation and navigation over Project application
+state. A Project is not a stored file, import definition, or configuration
+object. Its identity, description, open order, and active state are now
+persisted through a repository adapter.
 
 ## Architecture
 
 ```text
-ProjectManagementService
+Desktop UI and Project Workspace controller
         ↓
 ProjectWorkspacePresentationService
         ↓
-ProjectWorkspaceBuilder
+ProjectManagementService
         ↓
-immutable Project Workspace ViewModel
+ProjectRepository
         ↓
-DesktopProjectWorkspaceRenderer
+SQLiteProjectRepository
+        ↓
+shared SQLite Database boundary
+        ↓
+SQLite
 ```
 
-The composition root constructs a deterministic `InMemoryProjectRepository`,
-seeds one immutable `Current Collection` project, and injects a
-`ProjectManagementService` into presentation. No project is discovered, loaded
-from external storage, saved, or restored.
+The presentation service maps application models and invokes the deterministic
+`ProjectWorkspaceBuilder`; the desktop renderer receives only the resulting
+immutable ViewModel.
+
+The composition root constructs `SQLiteProjectRepository`, ensures one
+immutable `Current Collection` Project exists, and injects
+`ProjectManagementService` into presentation. A new database makes that default
+active. Subsequent starts reuse existing Projects and active state without
+duplicating or overwriting the default.
 
 ## Project Management application layer
 
@@ -35,11 +46,12 @@ opening, selecting the active project, updating last-opened state, and
 presenting recent projects. It depends only on the storage-independent
 `ProjectRepository` protocol.
 
-The first repository adapter is `InMemoryProjectRepository`. It preserves
-insertion order for project listing and uses a monotonically increasing integer
-for deterministic last-opened ordering. Recent projects exclude the active
-project and projects that have never been opened, then use last-opened order
-descending and project identity as a stable tie-break.
+`InMemoryProjectRepository` remains the deterministic test and alternative
+adapter. Normal desktop execution uses `SQLiteProjectRepository`. Both preserve
+insertion order and use a monotonically increasing integer for deterministic
+last-opened ordering. Recent projects exclude the active Project and Projects
+that have never been opened, then use last-opened order descending and Project
+identity as a stable tie-break.
 
 The application `ManagedProject` model is immutable and separate from the
 presentation-only `Project` model. The presentation service performs the
@@ -62,17 +74,19 @@ methods. No routing framework or controller logic is duplicated.
 ## Boundaries
 
 Project Workspace performs no file access, repository access, importing,
-configuration, persistence, SQLite access, networking,
+configuration, SQLite access, networking,
 intelligence execution, calculation, or analysis. Models and nested
 collections are immutable, and the builder does not sort supplied projects.
 
-The application service may orchestrate its repository, but contains no
-storage implementation. The in-memory adapter is process-local and provides no
-session restoration.
+The application service orchestrates only the storage-independent
+`ProjectRepository`. SQLite mapping, constraints, reconstruction, error
+translation, and transactions remain inside the adapter. Opening a Project
+atomically updates last-opened and active state.
 
 ## Future extensions
 
-Future milestones may introduce persistence adapters, file selection, project
-creation UI, and session restoration. Those capabilities must remain outside
-the presentation builder and desktop renderer and must be supplied through the
-existing application and repository boundaries.
+Future milestones may introduce file selection, project creation UI, collection
+refresh, and session or workspace restoration. Project persistence alone does
+not implement any of those capabilities. They must remain outside the
+presentation builder and desktop renderer and use the existing application and
+repository boundaries.

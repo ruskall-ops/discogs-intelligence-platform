@@ -31,6 +31,10 @@ class InMemoryProjectRepository:
         if project.project_id in self._projects:
             raise ValueError("Project identity already exists.")
         self._projects[project.project_id] = project
+        self._next_open_order = max(
+            self._next_open_order,
+            (project.last_opened_order or 0) + 1,
+        )
 
     def active_project_id(self):
         return self._active_project_id
@@ -43,6 +47,13 @@ class InMemoryProjectRepository:
         project = self._require(project_id).opened(self._next_open_order)
         self._next_open_order += 1
         self._projects[project_id] = project
+        return project
+
+    def open(self, project_id):
+        project = self._require(project_id).opened(self._next_open_order)
+        self._next_open_order += 1
+        self._projects[project_id] = project
+        self._active_project_id = project_id
         return project
 
     def _require(self, project_id):

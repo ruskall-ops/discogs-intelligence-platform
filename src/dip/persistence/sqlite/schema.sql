@@ -168,5 +168,27 @@ CREATE TABLE IF NOT EXISTS marketplace_snapshots (
 CREATE INDEX IF NOT EXISTS idx_marketplace_snapshots_captured
 ON marketplace_snapshots(captured_at DESC, snapshot_id DESC);
 
+CREATE TABLE IF NOT EXISTS projects (
+    project_id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    last_opened_order INTEGER
+        CHECK (last_opened_order IS NULL OR last_opened_order > 0),
+    insertion_order INTEGER NOT NULL UNIQUE
+        CHECK (insertion_order > 0)
+);
+
+CREATE TABLE IF NOT EXISTS project_state (
+    singleton_id INTEGER PRIMARY KEY
+        CHECK (singleton_id = 1),
+    active_project_id TEXT,
+    FOREIGN KEY (active_project_id)
+        REFERENCES projects(project_id)
+        ON DELETE RESTRICT
+);
+
+INSERT OR IGNORE INTO project_state(singleton_id, active_project_id)
+VALUES (1, NULL);
+
 INSERT OR IGNORE INTO schema_migrations(version)
 VALUES (1);

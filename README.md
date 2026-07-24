@@ -84,6 +84,12 @@ Current functionality includes:
   - Opportunity Detail and grouped Evidence
   - Marketplace History and Portfolio Context
   - user-owned Research Status
+- Project foundation
+  - Project Workspace application entry point
+  - Project Management application service
+  - storage-independent Project repository contract
+  - SQLite-backed Project and active-project persistence
+  - deterministic first-run `Current Collection` bootstrap
 
 All intelligence remains deterministic, evidence-led, versioned, and
 presentation-independent. The platform explains observed conditions and
@@ -141,6 +147,11 @@ These capabilities are not part of Version 0.3.0. Roadmap priorities remain
 subject to architectural review and must preserve the platform’s
 decision-support boundary.
 
+Project identity, last-opened order, and active-project state now persist in
+the existing SQLite database. This persistence does not implement session or
+workspace restoration, project file selection, collection refresh, or project
+creation UI.
+
 ---
 
 # Product Philosophy
@@ -168,7 +179,7 @@ Detailed documentation is available in the **docs** folder.
 
 Current documentation includes:
 
-- [Vision](docs/vision.md)
+- [Vision](docs/Vision.md)
 - [Architecture](docs/Architecture.md)
 - [Marketplace Architecture](docs/MarketplaceArchitecture.md)
 - [Portfolio Intelligence](docs/PortfolioIntelligence.md)

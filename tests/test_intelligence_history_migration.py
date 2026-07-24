@@ -32,10 +32,11 @@ class IntelligenceHistoryMigrationTestCase(unittest.TestCase):
 
         self.assertEqual(
             tuple(migration.version for migration in applied),
-            (2, 3),
+            (2, 3, 4),
         )
         self.assertEqual(applied[0].name, "Add Intelligence History tables")
         self.assertIn("Marketplace History", applied[1].name)
+        self.assertIn("Project", applied[2].name)
         self._assert_intelligence_history_schema(self.connection)
         versions = {
             row["version"]
@@ -43,7 +44,7 @@ class IntelligenceHistoryMigrationTestCase(unittest.TestCase):
                 "SELECT version FROM schema_migrations"
             ).fetchall()
         }
-        self.assertEqual(versions, {1, 2, 3})
+        self.assertEqual(versions, {1, 2, 3, 4})
 
     def test_migration_failure_rolls_back_ddl_and_version_record(self) -> None:
         self._install_version_one_schema(self.connection)
