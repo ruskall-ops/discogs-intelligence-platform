@@ -547,6 +547,32 @@ Older Intelligence History records must remain reproducible.
 
 # Future Decision Intelligence Modules
 
+## Portfolio Opportunity Alignment 1.0
+
+Portfolio Opportunity Alignment is the first Portfolio Decision Intelligence
+module. It consumes exactly the already-produced Portfolio Overview,
+Distribution, and Concentration 1.0 outputs. Overview owns holdings-to-
+Marketplace-Opportunity association, Distribution owns category membership,
+and Concentration owns mathematical metrics and states; Alignment only
+interprets their relationship.
+
+The application boundary calls each configured provider once and validates
+typed outputs, statuses, versions, ownership and release populations, snapshot
+identity, supported dimensions, and Concentration's reference to the supplied
+Distribution result. Invalid or incompatible sources produce deterministic
+`insufficient` synthesis without a lower-level fallback.
+
+Opportunity maps in canonical order to supportive (`strong`, `developing`),
+neutral (`balanced`), limiting (`constrained`), adverse (`weak`), and unusable
+(`insufficient`, unmatched, or missing). Release/copy numerators, denominators,
+Decimal shares, IDs, source category order, dominant-category order, and
+separate release/copy concentration states remain visible.
+
+Assessment precedence is `insufficient`, `constrained`, `broadly_aligned`,
+`selectively_aligned`, then `mixed`. Versioned thresholds, source evidence,
+reasons, diagnostics, and provenance are inspectable. The module creates no
+weighted score, forecast, valuation, recommendation, or rebalancing guidance.
+
 Potential Decision Intelligence modules include:
 
 - Marketplace Momentum

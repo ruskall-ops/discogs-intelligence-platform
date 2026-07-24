@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from dip.portfolio_intelligence import PortfolioOverviewInput
     from dip.portfolio_intelligence import PortfolioDistributionInput
     from dip.portfolio_intelligence import PortfolioConcentrationInput
+    from dip.portfolio_decision_intelligence import PortfolioOpportunityAlignmentInput
     from dip.marketplace_intelligence.price_changes import (
         MarketplaceSnapshotComparisonInput,
     )
@@ -47,3 +48,4 @@ class IntelligenceContext:
     portfolio_overview_input: PortfolioOverviewInput | None = None
     portfolio_distribution_input: PortfolioDistributionInput | None = None
     portfolio_concentration_input: PortfolioConcentrationInput | None = None
+    portfolio_opportunity_alignment_input: PortfolioOpportunityAlignmentInput | None = None

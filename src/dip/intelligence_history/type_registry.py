@@ -130,6 +130,17 @@ from dip.portfolio_intelligence import (
     PortfolioDimensionConcentration,
     PortfolioTopNConcentration,
 )
+from dip.portfolio_decision_intelligence import (
+    PortfolioCategoryAlignment,
+    PortfolioDimensionAlignment,
+    PortfolioOpportunityAlignmentDiagnostic,
+    PortfolioOpportunityAlignmentOutput,
+    PortfolioOpportunityAlignmentProvenance,
+    PortfolioOpportunityAlignmentRuleConfiguration,
+    PortfolioOpportunityAlignmentSummary,
+    PortfolioOpportunityBreadth,
+    PortfolioOpportunityMappingEntry,
+)
 
 
 APPROVED_DATACLASS_TYPES: dict[str, type[Any]] = {
@@ -245,6 +256,15 @@ APPROVED_DATACLASS_TYPES: dict[str, type[Any]] = {
         PortfolioConcentrationSummary,
         PortfolioDimensionConcentration,
         PortfolioTopNConcentration,
+        PortfolioCategoryAlignment,
+        PortfolioDimensionAlignment,
+        PortfolioOpportunityAlignmentDiagnostic,
+        PortfolioOpportunityAlignmentOutput,
+        PortfolioOpportunityAlignmentProvenance,
+        PortfolioOpportunityAlignmentRuleConfiguration,
+        PortfolioOpportunityAlignmentSummary,
+        PortfolioOpportunityBreadth,
+        PortfolioOpportunityMappingEntry,
     )
 }
 

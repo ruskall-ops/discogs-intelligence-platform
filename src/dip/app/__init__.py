@@ -80,6 +80,12 @@ from .portfolio_concentration import (
     build_portfolio_concentration_input,
 )
 from .portfolio_concentration_presentation import PortfolioConcentrationPresentationService
+from .portfolio_opportunity_alignment import (
+    PortfolioOpportunityAlignmentExecutionConsistencyError,
+    PortfolioOpportunityAlignmentExecutionService,
+    build_portfolio_opportunity_alignment_input,
+)
+from .portfolio_opportunity_alignment_presentation import PortfolioOpportunityAlignmentPresentationService
 from .weekend_listings_presentation import WeekendListingsPresentationService
 
 
@@ -145,6 +151,9 @@ __all__ = [
     "PortfolioConcentrationExecutionConsistencyError",
     "PortfolioConcentrationExecutionService",
     "PortfolioConcentrationPresentationService",
+    "PortfolioOpportunityAlignmentExecutionConsistencyError",
+    "PortfolioOpportunityAlignmentExecutionService",
+    "PortfolioOpportunityAlignmentPresentationService",
     "WeekendListingsPresentationService",
     "build_marketplace_momentum_input",
     "build_marketplace_stability_input",
@@ -153,5 +162,6 @@ __all__ = [
     "build_portfolio_overview_input",
     "build_portfolio_distribution_input",
     "build_portfolio_concentration_input",
+    "build_portfolio_opportunity_alignment_input",
     "main",
 ]

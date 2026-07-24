@@ -42,6 +42,8 @@ from dip.app.portfolio_distribution import PortfolioDistributionExecutionService
 from dip.app.portfolio_distribution_presentation import PortfolioDistributionPresentationService
 from dip.app.portfolio_concentration import PortfolioConcentrationExecutionService
 from dip.app.portfolio_concentration_presentation import PortfolioConcentrationPresentationService
+from dip.app.portfolio_opportunity_alignment import PortfolioOpportunityAlignmentExecutionService
+from dip.app.portfolio_opportunity_alignment_presentation import PortfolioOpportunityAlignmentPresentationService
 from dip.app.weekend_listings_presentation import WeekendListingsPresentationService
 from dip.comparison import ComparisonEngine
 from dip.config import SETTINGS
@@ -80,6 +82,7 @@ from dip.experience.marketplace_opportunity import MarketplaceOpportunityDetailV
 from dip.experience.portfolio_overview import PortfolioOverviewViewModelBuilder
 from dip.experience.portfolio_distribution import PortfolioDistributionViewModelBuilder
 from dip.experience.portfolio_concentration import PortfolioConcentrationViewModelBuilder
+from dip.experience.portfolio_opportunity_alignment import PortfolioOpportunityAlignmentViewModelBuilder
 from dip.experience.desktop.price_changes_renderer import (
     DesktopPriceChangesRenderer,
 )
@@ -106,6 +109,10 @@ from dip.experience.desktop.portfolio_concentration_renderer import (
     DesktopPortfolioConcentrationController,
     DesktopPortfolioConcentrationRenderer,
 )
+from dip.experience.desktop.portfolio_opportunity_alignment_renderer import (
+    DesktopPortfolioOpportunityAlignmentController,
+    DesktopPortfolioOpportunityAlignmentRenderer,
+)
 from dip.experience.weekend_listings import WeekendListingsDetailViewModelBuilder
 from dip.experience.desktop.weekend_listings_renderer import (
     DesktopWeekendListingsRenderer,
@@ -119,6 +126,7 @@ from dip.portfolio_intelligence import (
     PortfolioConcentrationRuleConfiguration,
     PortfolioOverviewModule,
 )
+from dip.portfolio_decision_intelligence import PortfolioOpportunityAlignmentModule
 from dip.marketplace_intelligence import ListingLifecycleModule, MarketplaceActivityModule, PriceChangesModule, RareAppearancesModule, SupplyChangesModule
 from dip.persistence.sqlite import (
     Database,
@@ -154,6 +162,8 @@ class DesktopApplicationDependencies:
     portfolio_controller: DesktopPortfolioController | None = None
     portfolio_concentration_execution: PortfolioConcentrationExecutionService | None = None
     portfolio_concentration_controller: DesktopPortfolioConcentrationController | None = None
+    portfolio_opportunity_alignment_execution: PortfolioOpportunityAlignmentExecutionService | None = None
+    portfolio_opportunity_alignment_controller: DesktopPortfolioOpportunityAlignmentController | None = None
 
 
 def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
@@ -237,6 +247,12 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         portfolio_distribution_execution,
         IntelligenceEngine((PortfolioConcentrationModule(concentration_rules),)),
     )
+    portfolio_opportunity_alignment_execution = PortfolioOpportunityAlignmentExecutionService(
+        portfolio_overview_execution,
+        portfolio_distribution_execution,
+        portfolio_concentration_execution,
+        IntelligenceEngine((PortfolioOpportunityAlignmentModule(),)),
+    )
     history_repository = SQLiteIntelligenceHistoryRepository(database)
     history_queries = IntelligenceHistoryQueryService(history_repository)
     comparison_service = IntelligenceComparisonService(
@@ -313,10 +329,15 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         PortfolioConcentrationPresentationService(PortfolioConcentrationViewModelBuilder()),
         DesktopPortfolioConcentrationRenderer(),
     )
+    portfolio_opportunity_alignment_controller = DesktopPortfolioOpportunityAlignmentController(
+        PortfolioOpportunityAlignmentPresentationService(PortfolioOpportunityAlignmentViewModelBuilder()),
+        DesktopPortfolioOpportunityAlignmentRenderer(),
+    )
     portfolio_controller = DesktopPortfolioController(
         portfolio_overview_controller,
         portfolio_distribution_controller,
         portfolio_concentration_controller,
+        portfolio_opportunity_alignment_controller,
     )
 
     return DesktopApplicationDependencies(
@@ -339,6 +360,8 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         portfolio_controller=portfolio_controller,
         portfolio_concentration_execution=portfolio_concentration_execution,
         portfolio_concentration_controller=portfolio_concentration_controller,
+        portfolio_opportunity_alignment_execution=portfolio_opportunity_alignment_execution,
+        portfolio_opportunity_alignment_controller=portfolio_opportunity_alignment_controller,
         dashboard_homepage=DashboardHomepageService(
             history_queries,
             comparison_presentation,

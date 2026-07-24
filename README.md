@@ -225,6 +225,12 @@ decade membership; Concentration transparently measures mathematical clustering
 within those categories. Neither adds valuation, investment-risk interpretation,
 recommendations, or an overall portfolio score.
 
+Portfolio Opportunity Alignment 1.0 is the first downstream Portfolio Decision
+Intelligence synthesis. It interprets already-produced Overview, Distribution,
+and Concentration results with visible evidence, rules, release/copy
+denominators, reasons, and provenance. It produces no score, forecast,
+valuation, recommendation, or rebalancing action.
+
 ---
 
 # Long-Term Vision

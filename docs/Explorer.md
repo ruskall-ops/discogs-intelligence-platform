@@ -167,8 +167,8 @@ query, repository access, persistence write, comparison, sorting, filtering or
 refresh; each only renders the result captured when the Explorer was built.
 
 Portfolio Intelligence is intentionally outside Collection Explorer. The
-separate top-level Portfolio workspace contains Overview, Distribution, and
-Concentration.
+separate top-level Portfolio workspace contains Overview, Distribution,
+Concentration, and Opportunity Alignment.
 Overview aggregates Marketplace Decision Intelligence coverage while
 Distribution describes canonical collection metadata. Concentration measures
 mathematical clustering within Distribution's already-produced categories.
@@ -176,6 +176,11 @@ All controllers receive already-produced results; opening Portfolio or switching
 collection query, provider call, intelligence execution, normalization,
 matching, aggregation, ratio calculation, concentration calculation, or
 sorting.
+
+Opportunity Alignment is Portfolio Decision Intelligence rather than an
+Explorer feature. Its tab receives one completed result and renders its source
+evidence, breadth, category composition, concentration context, rules, reasons,
+provenance, and diagnostics without executing providers or joining sources.
 
 The existing direct **Open Collection Health** and **Open Hidden Gems** actions
 remain dedicated windows for compatibility and convenience. They share the

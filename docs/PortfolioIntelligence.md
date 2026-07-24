@@ -277,12 +277,18 @@ evidence state, supported dimensions, analysed dimensions, unusable dimensions,
 source diagnostics, and source category order. No timestamp or identity is
 invented.
 
-The Portfolio desktop workspace contains Overview, Distribution, and
-Concentration tabs. Each tab receives an already-produced result. Opening the
+The Portfolio desktop workspace contains Overview, Distribution,
+Concentration, and Opportunity Alignment tabs. Each tab receives an
+already-produced result. Opening the
 workspace or changing tabs performs no provider call, repository query,
 calculation, classification, aggregation, or sorting.
 
 Portfolio Concentration creates no overall portfolio score, risk rating,
 valuation, recommendation, target allocation, or rebalancing guidance.
-Portfolio Decision Intelligence remains deferred and may later interpret
-multiple portfolio-level intelligence results.
+Portfolio Opportunity Alignment is the first downstream Portfolio Decision
+Intelligence synthesis. It requires compatible Overview, Distribution, and
+Concentration 1.0 outputs and never reads collection or Marketplace data
+directly. It preserves release/copy semantics and source order, and uses
+Concentration states without recalculation. Its explainable assessment
+interprets observed relationships, not portfolio merit, risk, expected return,
+or an action.

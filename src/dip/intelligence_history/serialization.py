@@ -62,6 +62,16 @@ from dip.portfolio_intelligence import (
     PortfolioConcentrationReasonCode,
     PortfolioConcentrationState,
 )
+from dip.portfolio_decision_intelligence import (
+    PortfolioCategoryAlignmentCategory,
+    PortfolioConcentrationContextCategory,
+    PortfolioOpportunityAlignmentAnalysisState,
+    PortfolioOpportunityAlignmentAssessment,
+    PortfolioOpportunityAlignmentDiagnosticCode,
+    PortfolioOpportunityAlignmentEvidenceCoverage,
+    PortfolioOpportunityAlignmentReasonCode,
+    PortfolioOpportunityMappingCategory,
+)
 from dip.marketplace_intelligence.models import (
     MarketplaceDataStatus,
     MarketplaceDiagnosticSeverity,
@@ -144,6 +154,14 @@ _ENUM_TYPES: dict[str, type[Enum]] = {
     "dip.portfolio_intelligence.portfolio_concentration.PortfolioConcentrationEvidenceCoverage": PortfolioConcentrationEvidenceCoverage,
     "dip.portfolio_intelligence.portfolio_concentration.PortfolioConcentrationReasonCode": PortfolioConcentrationReasonCode,
     "dip.portfolio_intelligence.portfolio_concentration.PortfolioConcentrationState": PortfolioConcentrationState,
+    "dip.portfolio_decision_intelligence.portfolio_opportunity_alignment.PortfolioCategoryAlignmentCategory": PortfolioCategoryAlignmentCategory,
+    "dip.portfolio_decision_intelligence.portfolio_opportunity_alignment.PortfolioConcentrationContextCategory": PortfolioConcentrationContextCategory,
+    "dip.portfolio_decision_intelligence.portfolio_opportunity_alignment.PortfolioOpportunityAlignmentAnalysisState": PortfolioOpportunityAlignmentAnalysisState,
+    "dip.portfolio_decision_intelligence.portfolio_opportunity_alignment.PortfolioOpportunityAlignmentAssessment": PortfolioOpportunityAlignmentAssessment,
+    "dip.portfolio_decision_intelligence.portfolio_opportunity_alignment.PortfolioOpportunityAlignmentDiagnosticCode": PortfolioOpportunityAlignmentDiagnosticCode,
+    "dip.portfolio_decision_intelligence.portfolio_opportunity_alignment.PortfolioOpportunityAlignmentEvidenceCoverage": PortfolioOpportunityAlignmentEvidenceCoverage,
+    "dip.portfolio_decision_intelligence.portfolio_opportunity_alignment.PortfolioOpportunityAlignmentReasonCode": PortfolioOpportunityAlignmentReasonCode,
+    "dip.portfolio_decision_intelligence.portfolio_opportunity_alignment.PortfolioOpportunityMappingCategory": PortfolioOpportunityMappingCategory,
     (
         "dip.decision_intelligence.marketplace_momentum."
         "ActivityIntensity"

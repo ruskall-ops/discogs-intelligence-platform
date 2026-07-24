@@ -44,6 +44,7 @@ class App(tk.Tk):
         self.current_portfolio_overview_result = None
         self.current_portfolio_distribution_result = None
         self.current_portfolio_concentration_result = None
+        self.current_portfolio_opportunity_alignment_result = None
         self.desktop_homepage_renderer = DesktopDashboardHomepageRenderer()
         self.current_dashboard_homepage = DashboardHomepageViewModel.loading()
         self.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -599,6 +600,7 @@ class App(tk.Tk):
                 self.current_portfolio_overview_result,
                 self.current_portfolio_distribution_result,
                 self.current_portfolio_concentration_result,
+                self.current_portfolio_opportunity_alignment_result,
             )
         except Exception as exc:
             messagebox.showerror(

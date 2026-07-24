@@ -359,7 +359,16 @@ Marketplace Opportunity
         │
         ▼
 Portfolio Intelligence
+        │
+        ▼
+Portfolio Opportunity Alignment
 ```
+
+Portfolio Opportunity Alignment is downstream Portfolio Decision Intelligence.
+It consumes Portfolio Overview, Distribution, and Concentration only, never
+Marketplace Opportunity or Marketplace source data directly. Marketplace
+Opportunity reaches this synthesis solely through Overview's preserved
+release-level facts.
 
 ```text
                 Discogs API
