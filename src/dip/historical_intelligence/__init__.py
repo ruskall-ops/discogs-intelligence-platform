@@ -14,6 +14,25 @@ from .intelligence_change_analysis import (
     IntelligenceComparisonState,
     MetricTransition,
 )
+from .intelligence_trend_analysis import (
+    IntelligenceCategoricalTrend,
+    IntelligenceDimensionTrend,
+    IntelligenceNumericMetricTrend,
+    IntelligencePresenceTrend,
+    IntelligencePresenceItemTrend,
+    IntelligenceStateTransitionFrequency,
+    IntelligenceTrendAnalysis,
+    IntelligenceTrendAnalysisOutput,
+    IntelligenceTrendAnalysisSummary,
+    IntelligenceTrendClassification,
+    IntelligenceTrendDiagnostic,
+    IntelligenceTrendDiagnosticCode,
+    IntelligenceTrendEvidenceCoverage,
+    IntelligenceTrendOverallPattern,
+    IntelligenceTrendProvenance,
+    IntelligenceTrendReasonCode,
+    IntelligenceTrendRuleConfiguration,
+)
 
 __all__ = [
     "CategoricalTransition", "CollectionTransition", "ComparisonProvenance",
@@ -22,4 +41,14 @@ __all__ = [
     "IntelligenceChangeAnalysisDiagnosticCode",
     "IntelligenceChangeAnalysisReasonCode", "IntelligenceComparisonOutput",
     "IntelligenceComparisonState", "MetricTransition",
+    "IntelligenceCategoricalTrend", "IntelligenceDimensionTrend",
+    "IntelligenceNumericMetricTrend", "IntelligencePresenceTrend",
+    "IntelligencePresenceItemTrend",
+    "IntelligenceStateTransitionFrequency", "IntelligenceTrendAnalysis",
+    "IntelligenceTrendAnalysisOutput",
+    "IntelligenceTrendAnalysisSummary", "IntelligenceTrendClassification",
+    "IntelligenceTrendDiagnostic", "IntelligenceTrendDiagnosticCode",
+    "IntelligenceTrendEvidenceCoverage", "IntelligenceTrendOverallPattern",
+    "IntelligenceTrendProvenance", "IntelligenceTrendReasonCode",
+    "IntelligenceTrendRuleConfiguration",
 ]

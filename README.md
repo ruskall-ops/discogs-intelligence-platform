@@ -285,3 +285,9 @@ Intelligence Change Analysis 1.0 compares two explicitly supplied immutable
 Portfolio Opportunity Alignment results. It exposes neutral categorical
 transitions and exact numeric deltas without retrieving history, recalculating
 intelligence, forecasting, or recommending action.
+### Intelligence Trend Analysis
+
+Trend Analysis 1.0 describes stable, repeated, net, reversing, oscillating, or
+mixed patterns across an explicitly supplied continuous sequence of Portfolio
+Opportunity Alignment Change Analysis results. It performs no history
+retrieval, forecasting, alerting, scoring, or recommendation.

@@ -1329,3 +1329,8 @@ These foundations enable transparent, explainable and evidence-based intelligenc
 Intelligence Change Analysis 1.0 accepts two completed Portfolio Opportunity
 Alignment results only. It never reaches back into Marketplace Opportunity,
 Marketplace snapshots, listings, or Marketplace History.
+## Trend Analysis isolation
+
+Intelligence Trend Analysis is downstream of Change Analysis and has no
+Marketplace boundary. It consumes no snapshots, listings, Marketplace History,
+or Marketplace Intelligence results.

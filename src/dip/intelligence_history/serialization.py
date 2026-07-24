@@ -76,6 +76,11 @@ from dip.historical_intelligence import (
     IntelligenceChangeAnalysisDiagnosticCode,
     IntelligenceChangeAnalysisReasonCode,
     IntelligenceComparisonState,
+    IntelligenceTrendClassification,
+    IntelligenceTrendDiagnosticCode,
+    IntelligenceTrendEvidenceCoverage,
+    IntelligenceTrendOverallPattern,
+    IntelligenceTrendReasonCode,
 )
 from dip.marketplace_intelligence.models import (
     MarketplaceDataStatus,
@@ -170,6 +175,11 @@ _ENUM_TYPES: dict[str, type[Enum]] = {
     "dip.historical_intelligence.intelligence_change_analysis.IntelligenceChangeAnalysisDiagnosticCode": IntelligenceChangeAnalysisDiagnosticCode,
     "dip.historical_intelligence.intelligence_change_analysis.IntelligenceChangeAnalysisReasonCode": IntelligenceChangeAnalysisReasonCode,
     "dip.historical_intelligence.intelligence_change_analysis.IntelligenceComparisonState": IntelligenceComparisonState,
+    "dip.historical_intelligence.intelligence_trend_analysis.IntelligenceTrendClassification": IntelligenceTrendClassification,
+    "dip.historical_intelligence.intelligence_trend_analysis.IntelligenceTrendDiagnosticCode": IntelligenceTrendDiagnosticCode,
+    "dip.historical_intelligence.intelligence_trend_analysis.IntelligenceTrendEvidenceCoverage": IntelligenceTrendEvidenceCoverage,
+    "dip.historical_intelligence.intelligence_trend_analysis.IntelligenceTrendOverallPattern": IntelligenceTrendOverallPattern,
+    "dip.historical_intelligence.intelligence_trend_analysis.IntelligenceTrendReasonCode": IntelligenceTrendReasonCode,
     (
         "dip.decision_intelligence.marketplace_momentum."
         "ActivityIntensity"

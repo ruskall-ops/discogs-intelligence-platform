@@ -1799,3 +1799,30 @@ execution, recalculation, clock access, or fallback. Its output participates
 through additive history serialization registrations. Trend and Evolution
 Analysis, automatic retrieval, History Explorer, alerts, and dashboard
 integration remain future work.
+## Intelligence Trend Analysis 1.0
+
+Trend Analysis is the second Historical Intelligence capability. Change
+Analysis reports what changed between two snapshots; Trend Analysis describes
+repeated patterns across an explicitly supplied ordered sequence of at least
+two compatible Change Analysis results. Version 1 supports only Change
+Analysis 1.0 over Portfolio Opportunity Alignment 1.0.
+
+Inputs must form a continuous chain such as A→B, B→C. Supplied order is
+preserved and never sorted. Trend Analysis validates snapshot continuity,
+visible value continuity, metric identity and type, source versions and rule
+sets, and delta reconciliation. It analyses transition and observation counts,
+not elapsed calendar time.
+
+Numeric classifications are stable, consistently increasing or decreasing,
+net increasing or decreasing, reversing, oscillating, mixed, or insufficient.
+Consistency is strict: a plateau prevents a consistent-direction label.
+Unchanged transitions remain visible but do not create direction changes.
+Reversal precedes oscillation, which precedes net movement. Assessment and
+evidence remain categorical and are only stable, modified, or insufficient.
+
+The output preserves assessment and evidence history, numeric runs and deltas,
+transition frequencies, reason and diagnostic presence, dimension evolution,
+evidence, rules, diagnostics, and provenance. It does not retrieve history,
+compare snapshots, execute Change Analysis, predict a next state, generate an
+alert, calculate a score, or recommend action. Evolution Analysis, History
+Explorer, automatic retrieval, and alerting remain deferred.

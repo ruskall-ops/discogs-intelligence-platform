@@ -44,11 +44,15 @@ class App(tk.Tk):
         self.intelligence_change_analysis_controller = getattr(
             dependencies, "intelligence_change_analysis_controller", None
         )
+        self.intelligence_trend_analysis_controller = getattr(
+            dependencies, "intelligence_trend_analysis_controller", None
+        )
         self.current_portfolio_overview_result = None
         self.current_portfolio_distribution_result = None
         self.current_portfolio_concentration_result = None
         self.current_portfolio_opportunity_alignment_result = None
         self.current_intelligence_change_analysis_result = None
+        self.current_intelligence_trend_analysis_result = None
         self.desktop_homepage_renderer = DesktopDashboardHomepageRenderer()
         self.current_dashboard_homepage = DashboardHomepageViewModel.loading()
         self.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -633,7 +637,7 @@ class App(tk.Tk):
         ttk.Button(window, text="Close", command=window.destroy).pack(pady=(0, 12))
 
     def open_intelligence_change_analysis(self):
-        """Render one already-produced Historical Intelligence result."""
+        """Render already-produced Change and Trend Analysis results."""
         if self.intelligence_change_analysis_controller is None:
             messagebox.showerror(
                 "Historical Intelligence unavailable",
@@ -641,8 +645,15 @@ class App(tk.Tk):
             )
             return
         try:
-            rendered = self.intelligence_change_analysis_controller.open(
+            change_rendered = self.intelligence_change_analysis_controller.open(
                 self.current_intelligence_change_analysis_result
+            )
+            trend_rendered = (
+                self.intelligence_trend_analysis_controller.open(
+                    self.current_intelligence_trend_analysis_result
+                )
+                if self.intelligence_trend_analysis_controller is not None
+                else None
             )
         except Exception as exc:
             messagebox.showerror(
@@ -651,20 +662,30 @@ class App(tk.Tk):
             )
             return
         window = tk.Toplevel(self)
-        window.title("Historical Intelligence — Change Analysis")
+        window.title("Historical Intelligence")
         window.geometry("1050x760")
         window.minsize(760, 540)
         window.transient(self)
         notebook = ttk.Notebook(window)
         notebook.pack(fill="both", expand=True, padx=12, pady=12)
-        sections = rendered.sections or (
-            type("_Section", (), {"title": "Change Analysis", "body": rendered.summary})(),
+        destinations = (
+            ("Change Analysis", change_rendered),
+            ("Trend Analysis", trend_rendered),
         )
-        for section in sections:
+        for title, rendered in destinations:
             frame = ttk.Frame(notebook, padding=12)
-            notebook.add(frame, text=section.title)
+            notebook.add(frame, text=title)
             text = tk.Text(frame, wrap="word", padx=10, pady=10)
-            text.insert("1.0", section.body)
+            body = (
+                "\n\n".join(
+                    f"{section.title}\n{section.body}"
+                    for section in rendered.sections
+                )
+                if rendered is not None and rendered.sections
+                else rendered.summary if rendered is not None
+                else "Trend Analysis is not configured."
+            )
+            text.insert("1.0", body)
             text.configure(state="disabled")
             text.pack(fill="both", expand=True)
         ttk.Button(window, text="Close", command=window.destroy).pack(pady=(0, 12))

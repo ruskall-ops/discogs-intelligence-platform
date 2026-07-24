@@ -150,6 +150,17 @@ from dip.historical_intelligence import (
     IntelligenceChangeAnalysisDiagnostic,
     IntelligenceComparisonOutput,
     MetricTransition,
+    IntelligenceCategoricalTrend,
+    IntelligenceDimensionTrend,
+    IntelligenceNumericMetricTrend,
+    IntelligencePresenceTrend,
+    IntelligencePresenceItemTrend,
+    IntelligenceStateTransitionFrequency,
+    IntelligenceTrendAnalysisOutput,
+    IntelligenceTrendAnalysisSummary,
+    IntelligenceTrendDiagnostic,
+    IntelligenceTrendProvenance,
+    IntelligenceTrendRuleConfiguration,
 )
 
 
@@ -283,6 +294,17 @@ APPROVED_DATACLASS_TYPES: dict[str, type[Any]] = {
         IntelligenceChangeAnalysisDiagnostic,
         IntelligenceComparisonOutput,
         MetricTransition,
+        IntelligenceCategoricalTrend,
+        IntelligenceDimensionTrend,
+        IntelligenceNumericMetricTrend,
+        IntelligencePresenceTrend,
+        IntelligencePresenceItemTrend,
+        IntelligenceStateTransitionFrequency,
+        IntelligenceTrendAnalysisOutput,
+        IntelligenceTrendAnalysisSummary,
+        IntelligenceTrendDiagnostic,
+        IntelligenceTrendProvenance,
+        IntelligenceTrendRuleConfiguration,
     )
 }
 

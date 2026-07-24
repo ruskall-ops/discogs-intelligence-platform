@@ -45,6 +45,7 @@ from dip.app.portfolio_concentration_presentation import PortfolioConcentrationP
 from dip.app.portfolio_opportunity_alignment import PortfolioOpportunityAlignmentExecutionService
 from dip.app.portfolio_opportunity_alignment_presentation import PortfolioOpportunityAlignmentPresentationService
 from dip.app.intelligence_change_analysis_presentation import IntelligenceChangeAnalysisPresentationService
+from dip.app.intelligence_trend_analysis_presentation import IntelligenceTrendAnalysisPresentationService
 from dip.app.weekend_listings_presentation import WeekendListingsPresentationService
 from dip.comparison import ComparisonEngine
 from dip.config import SETTINGS
@@ -85,6 +86,7 @@ from dip.experience.portfolio_distribution import PortfolioDistributionViewModel
 from dip.experience.portfolio_concentration import PortfolioConcentrationViewModelBuilder
 from dip.experience.portfolio_opportunity_alignment import PortfolioOpportunityAlignmentViewModelBuilder
 from dip.experience.intelligence_change_analysis import IntelligenceChangeAnalysisViewModelBuilder
+from dip.experience.intelligence_trend_analysis import IntelligenceTrendAnalysisViewModelBuilder
 from dip.experience.desktop.price_changes_renderer import (
     DesktopPriceChangesRenderer,
 )
@@ -118,6 +120,10 @@ from dip.experience.desktop.portfolio_opportunity_alignment_renderer import (
 from dip.experience.desktop.intelligence_change_analysis_renderer import (
     DesktopIntelligenceChangeAnalysisController,
     DesktopIntelligenceChangeAnalysisRenderer,
+)
+from dip.experience.desktop.intelligence_trend_analysis_renderer import (
+    DesktopIntelligenceTrendAnalysisController,
+    DesktopIntelligenceTrendAnalysisRenderer,
 )
 from dip.experience.weekend_listings import WeekendListingsDetailViewModelBuilder
 from dip.experience.desktop.weekend_listings_renderer import (
@@ -171,6 +177,7 @@ class DesktopApplicationDependencies:
     portfolio_opportunity_alignment_execution: PortfolioOpportunityAlignmentExecutionService | None = None
     portfolio_opportunity_alignment_controller: DesktopPortfolioOpportunityAlignmentController | None = None
     intelligence_change_analysis_controller: DesktopIntelligenceChangeAnalysisController | None = None
+    intelligence_trend_analysis_controller: DesktopIntelligenceTrendAnalysisController | None = None
 
 
 def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
@@ -350,6 +357,10 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         IntelligenceChangeAnalysisPresentationService(IntelligenceChangeAnalysisViewModelBuilder()),
         DesktopIntelligenceChangeAnalysisRenderer(),
     )
+    intelligence_trend_analysis_controller = DesktopIntelligenceTrendAnalysisController(
+        IntelligenceTrendAnalysisPresentationService(IntelligenceTrendAnalysisViewModelBuilder()),
+        DesktopIntelligenceTrendAnalysisRenderer(),
+    )
 
     return DesktopApplicationDependencies(
         database=database,
@@ -374,6 +385,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         portfolio_opportunity_alignment_execution=portfolio_opportunity_alignment_execution,
         portfolio_opportunity_alignment_controller=portfolio_opportunity_alignment_controller,
         intelligence_change_analysis_controller=intelligence_change_analysis_controller,
+        intelligence_trend_analysis_controller=intelligence_trend_analysis_controller,
         dashboard_homepage=DashboardHomepageService(
             history_queries,
             comparison_presentation,

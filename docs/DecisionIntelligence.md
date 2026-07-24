@@ -619,3 +619,9 @@ Alignment 1.0 results without rerunning or reinterpreting Alignment.
 Assessment and evidence changes are categorical modifications; release, copy,
 and ratio changes are objective numeric deltas. No transition states
 desirability or recommends an action.
+## Trend Analysis downstream boundary
+
+Historical Intelligence Trend Analysis consumes Change Analysis output only.
+It never reaches through to Portfolio Opportunity Alignment or treats
+Alignment assessments as ordinal. Observed numeric movement and categorical
+modification are descriptive historical patterns, not forecasts or decisions.

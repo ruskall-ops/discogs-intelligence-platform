@@ -283,3 +283,10 @@ Historical Intelligence is a separate top-level experience with a Change
 Analysis destination. The desktop receives one already-produced comparison
 result. Opening it performs no history retrieval, comparison, calculation,
 provider execution, or sorting. Version 1 does not add a History Explorer.
+## Historical Intelligence Trend Analysis
+
+The Historical Intelligence desktop now contains Change Analysis and Trend
+Analysis destinations. Each receives an already-produced result. Opening or
+switching destinations performs no retrieval, execution, joining, trend
+calculation, classification, or sorting. Trend Analysis remains outside
+Collection Explorer, Portfolio, and Marketplace Explorer.

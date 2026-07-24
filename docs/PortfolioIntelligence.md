@@ -298,3 +298,9 @@ Two immutable Portfolio Opportunity Alignment 1.0 results may be passed
 explicitly to Intelligence Change Analysis 1.0. Historical Intelligence
 preserves both snapshots and reports only what changed; it does not rebuild
 portfolio facts, recalculate Alignment, or load history automatically.
+## Downstream Trend Analysis
+
+Portfolio Opportunity Alignment may be compared by Change Analysis, whose
+ordered results may then feed Trend Analysis. Trend Analysis consumes neither
+Alignment outputs nor portfolio sources directly and does not predict the next
+portfolio state.
