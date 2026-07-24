@@ -189,6 +189,7 @@ discogs-intelligence-platform/
 │   ├── marketplace/          # marketplace capability boundary
 │   ├── snapshots/            # historical comparisons
 │   ├── intelligence/         # engine, context, results and modules
+│   ├── portfolio_intelligence/  # owned-portfolio aggregation
 │   ├── decisions/            # user decisions and notes
 │   ├── experience/           # desktop, dashboard, explorer, reporting
 │   ├── exports/              # file export adapters
@@ -216,6 +217,19 @@ insufficient history is shown as an informational state. See
 The [Collection Intelligence Explorer](docs/Explorer.md) expands those same
 presentation models into read-only desktop drill-down sections. It does not
 query persistence or providers and does not calculate intelligence.
+
+[Portfolio Intelligence](docs/PortfolioIntelligence.md) provides separate
+Overview, Distribution, and Concentration views over owned holdings.
+Distribution describes canonical artist, label, format, release-year, and
+decade membership; Concentration transparently measures mathematical clustering
+within those categories. Neither adds valuation, investment-risk interpretation,
+recommendations, or an overall portfolio score.
+
+Portfolio Opportunity Alignment 1.0 is the first downstream Portfolio Decision
+Intelligence synthesis. It interprets already-produced Overview, Distribution,
+and Concentration results with visible evidence, rules, release/copy
+denominators, reasons, and provenance. It produces no score, forecast,
+valuation, recommendation, or rebalancing action.
 
 ---
 
@@ -265,3 +279,38 @@ Status: Active
 Last Updated: July 2026
 
 Owner: Russell Friend
+## Historical Intelligence
+
+Intelligence Change Analysis 1.0 compares two explicitly supplied immutable
+Portfolio Opportunity Alignment results. It exposes neutral categorical
+transitions and exact numeric deltas without retrieving history, recalculating
+intelligence, forecasting, or recommending action.
+### Intelligence Trend Analysis
+
+Trend Analysis 1.0 describes stable, repeated, net, reversing, oscillating, or
+mixed patterns across an explicitly supplied continuous sequence of Portfolio
+Opportunity Alignment Change Analysis results. It performs no history
+retrieval, forecasting, alerting, scoring, or recommendation.
+### History Explorer
+
+History Explorer 1.0 adds Timeline, Snapshot, Change, Trend, and Details panes
+to the Historical Intelligence desktop experience. It browses explicitly
+supplied immutable presentation models without loading history, executing
+intelligence, comparing results, calculating trends, forecasting, or
+recommending action.
+### Intelligence Insights
+
+Intelligence Insights 1.0 provides deterministic evidence-first observations
+for historical Snapshot, Change, and Trend ViewModels. Insights expose their
+evidence, reasons, diagnostics, source, provenance, category, type, and display
+priority without scoring, confidence estimation, prediction, recommendation,
+or generated prose.
+
+### Marketplace Workspace
+
+Marketplace Workspace 1.0 is the desktop research workflow for already-produced
+Marketplace intelligence. Its caller-ordered Attention Queue links Opportunity
+Detail, Evidence, Marketplace History, Portfolio Context, and user-owned
+Research Status panes without ranking opportunities or recommending an action.
+Opening, filtering, and selecting workspace records performs no retrieval,
+intelligence execution, historical analysis, persistence, or live refresh.

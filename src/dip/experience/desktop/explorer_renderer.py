@@ -1,4 +1,4 @@
-"""Desktop rendering models for the Collection Intelligence Explorer."""
+"""Compatibility renderer for the original current-engine Explorer."""
 
 from __future__ import annotations
 
@@ -158,7 +158,7 @@ class DesktopExplorerRenderer:
 
 
 class DesktopExplorerController:
-    """Lightweight navigation boundary from dashboard to Explorer view."""
+    """Preserve the prior controller API for compatibility clients."""
 
     def __init__(
         self,

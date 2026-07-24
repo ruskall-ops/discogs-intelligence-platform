@@ -40,25 +40,29 @@ def run_migrations(connection: sqlite3.Connection) -> list[AppliedMigration]:
         if migration.version in applied_versions:
             continue
 
+        savepoint = f"dip_migration_{migration.version}"
         try:
-            with connection:
-                migration.upgrade(connection)
+            connection.execute(f"SAVEPOINT {savepoint}")
+            migration.upgrade(connection)
 
-                connection.execute(
-                    """
-                    INSERT INTO schema_migrations (
-                        version,
-                        name
-                    )
-                    VALUES (?, ?)
-                    """,
-                    (
-                        migration.version,
-                        migration.name,
-                    ),
+            connection.execute(
+                """
+                INSERT INTO schema_migrations (
+                    version,
+                    name
                 )
+                VALUES (?, ?)
+                """,
+                (
+                    migration.version,
+                    migration.name,
+                ),
+            )
+            connection.execute(f"RELEASE SAVEPOINT {savepoint}")
 
         except sqlite3.DatabaseError as exc:
+            connection.execute(f"ROLLBACK TO SAVEPOINT {savepoint}")
+            connection.execute(f"RELEASE SAVEPOINT {savepoint}")
             raise RuntimeError(
                 f"Migration {migration.version} "
                 f"({migration.name}) failed"

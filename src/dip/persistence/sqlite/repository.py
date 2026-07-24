@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Iterator
+from contextlib import contextmanager
+from itertools import count
 from pathlib import Path
 from threading import RLock
 from typing import Any, Iterable
@@ -15,8 +18,42 @@ class Database:
     def __init__(self, path: Path):
         self.path = Path(path).expanduser().resolve()
         self._lock = RLock()
+        self._savepoint_ids = count(1)
         self.conn = create_connection(self.path)
         initialise_schema(self.conn)
+
+    @contextmanager
+    def locked_connection(self) -> Iterator[sqlite3.Connection]:
+        """Yield the shared connection while holding its coordinating lock."""
+
+        with self._lock:
+            yield self.conn
+
+    @contextmanager
+    def transaction(self) -> Iterator[sqlite3.Connection]:
+        """Own a transaction or isolate work inside a caller transaction.
+
+        A top-level call commits or rolls back its own transaction. When the
+        caller already has an active transaction, a savepoint isolates failure
+        while leaving the final commit or rollback decision with the caller.
+        """
+
+        with self._lock:
+            if not self.conn.in_transaction:
+                with self.conn:
+                    yield self.conn
+                return
+
+            savepoint = f"dip_transaction_{next(self._savepoint_ids)}"
+            self.conn.execute(f"SAVEPOINT {savepoint}")
+            try:
+                yield self.conn
+            except BaseException:
+                self.conn.execute(f"ROLLBACK TO SAVEPOINT {savepoint}")
+                self.conn.execute(f"RELEASE SAVEPOINT {savepoint}")
+                raise
+            else:
+                self.conn.execute(f"RELEASE SAVEPOINT {savepoint}")
 
     def close(self) -> None:
         """Close the active database connection."""
@@ -167,6 +204,40 @@ class Database:
             ).fetchall()
 
         return [int(row["release_id"]) for row in rows]
+
+    def owned_portfolio_rows(self) -> list[sqlite3.Row]:
+        """Return canonical ownership facts in deterministic release order."""
+
+        with self._lock:
+            return self.conn.execute(
+                """
+                SELECT
+                    release_id,
+                    quantity
+                FROM collection_ownership
+                ORDER BY release_id
+                """
+            ).fetchall()
+
+    def owned_portfolio_metadata_rows(self) -> list[sqlite3.Row]:
+        """Return canonical ownership and release metadata in release order."""
+
+        with self._lock:
+            return self.conn.execute(
+                """
+                SELECT
+                    co.release_id,
+                    co.quantity,
+                    r.artist,
+                    r.label,
+                    r.format,
+                    r.released
+                FROM collection_ownership co
+                JOIN releases r
+                    ON r.release_id = co.release_id
+                ORDER BY co.release_id
+                """
+            ).fetchall()
         
     def start_analysis_run(
         self,

@@ -100,8 +100,10 @@ does not import the Collection Health module or reproduce its weighted formula.
 
 The Hidden Gems card displays the candidate total and up to five ranked
 releases. Each displayed release includes a concise explanation selected from
-the module-provided evidence. Internal factors, weights and raw candidate
-scores are not exposed to the desktop UI.
+the module-provided evidence. Its shared presentation model also retains the
+module-provided score and ordered supporting and factor values for read-only
+detail clients; the compact card does not display those additional values.
+Weights and scoring rules are not exposed to the desktop UI.
 
 # Historical Intelligence Card
 
@@ -137,6 +139,152 @@ package itself receives only engine results and has no persistence or provider
 dependency.
 
 Every module result and card mapping is isolated. A failed, missing or
-malformed result changes only its own card. The Version 0.2 Collection
-Intelligence Explorer now provides read-only drill-down from these card models;
-charts, filters and arbitrary ranges remain outside the dashboard.
+malformed result changes only its own card. The Collection Explorer provides
+read-only navigation from the current historical homepage into Overview,
+Collection Health, Hidden Gems, a latest-two-execution Trends view, Weekend
+Listings, and a sixth Price Changes destination. The Marketplace destinations
+receive optional, already-produced standard intelligence results when the
+Explorer opens; the Dashboard does not select Marketplace History, execute
+either module, compare snapshots or fetch Marketplace data. With no supplied
+result, the corresponding destination remains visible and unavailable. Charts,
+filters and arbitrary ranges remain outside the dashboard.
+
+---
+
+# Version 0.2 Dashboard Homepage
+
+The first Dashboard homepage is a read-only presentation and integration
+boundary over completed Intelligence History. It does not run intelligence,
+query SQLite, compare executions or rank candidates.
+
+```text
+IntelligenceHistoryQueryService     ComparisonPresentationService
+                │                               │
+                └───────────────┬───────────────┘
+                                ▼
+                 DashboardHomepageService
+                                ▼
+              DashboardHomepageViewModelBuilder
+                                ▼
+                     Desktop Dashboard UI
+```
+
+The immutable homepage contains exactly five sections in this order:
+
+1. Collection overview;
+2. Collection Health;
+3. Hidden Gems;
+4. What Changed;
+5. Latest execution.
+
+Collection Health and Hidden Gems reuse their established card presenters.
+Their calculated scores, counts and ranked candidate order are copied from the
+latest completed historical execution. The homepage neither recalculates a
+score nor re-ranks a candidate. Hidden Gems displays at most the first three
+candidates in the supplied order.
+
+What Changed consumes the existing comparison ViewModel. Changed, unchanged,
+added and removed counts are preserved, and non-unchanged modules retain the
+order supplied by the comparison boundary. Empty history and a single
+execution are normal states; the latter is shown as insufficient history rather
+than an error.
+
+Every section has an explicit typed state: `loading`, `available`, `empty`,
+`unavailable`, `error` or `insufficient_history`. Missing optional module data
+degrades only its corresponding section. The expected comparison-availability
+error for fewer than two executions becomes `insufficient_history`; malformed
+history, inconsistent ViewModels and unexpected programming failures continue
+to propagate to the desktop error boundary.
+
+Filtering, drill-down, charts, multi-run trends and background refresh remain
+future work and are not implemented by this homepage slice.
+
+---
+
+# Collection Health Experience
+
+The dedicated Collection Health experience is a read-only detail presentation
+over the Collection Health card already assembled for the Dashboard homepage.
+It does not query history independently, run the Intelligence Engine, or
+recalculate any score.
+
+```text
+DashboardCollectionHealthViewModel
+                │
+                ▼
+CollectionHealthPresentationService
+                │
+                ▼
+CollectionHealthDetailViewModelBuilder
+                │
+                ▼
+DesktopCollectionHealthController and renderer
+                │
+                ▼
+Collection Health detail window
+```
+
+The frozen detail ViewModel preserves the supplied overall score, the four
+component scores in canonical module order, strengths, improvement
+opportunities, evidence and diagnostics. The renderer displays those values in
+the explicit order: component scores, strengths, improvement opportunities,
+evidence and diagnostics.
+
+The detail experience supports `loading`, `available`, `empty`, `unavailable`
+and `error` states. A skipped empty-collection result retains the module's
+existing guidance and zero-valued scores. Missing results remain unavailable;
+failed or incomplete results retain available diagnostics and partial values
+without guessing missing data.
+
+The Dashboard Collection Health card provides the navigation action. Because
+the detail is built from the current homepage ViewModel, the card and detail
+window always describe the same historical result. Trends, charts, filtering
+and comparisons remain outside this experience.
+
+---
+
+# Hidden Gems Experience
+
+The dedicated Hidden Gems experience is a read-only detail presentation over
+the Hidden Gems section already assembled for the Dashboard homepage. Opening
+it performs no second history query or Intelligence Engine execution and does
+not recalculate qualification or scores.
+
+```text
+DashboardHiddenGemsViewModel
+                │
+                ▼
+HiddenGemsPresentationService
+                │
+                ▼
+HiddenGemsDetailViewModelBuilder
+                │
+                ▼
+DesktopHiddenGemsController and renderer
+                │
+                ▼
+Hidden Gems detail window
+```
+
+The shared Dashboard model contains both the bounded homepage preview and the
+complete candidate tuple. The detail builder copies the complete tuple in its
+existing rank order; it never sorts or filters it. Each frozen detail candidate
+contains the supplied release identity, display metadata, score, explanation,
+evidence, and these explicitly ordered values:
+
+- supporting metrics: wants, copies for sale, demand-to-supply ratio,
+  community rating, owned quantity, lowest price, wants per price unit;
+- factor scores: demand, scarcity, community rating, collection ownership,
+  price efficiency.
+
+The detail experience supports `loading`, `available`, `partial`, `empty`,
+`unavailable` and `error`. `partial` is used when a valid candidate contains a
+legitimately unavailable optional value, such as rating or price evidence; the
+candidate remains in place and the renderer labels that value unavailable.
+Aggregate invariants cover rank continuity, unique release and metric IDs,
+candidate counts, score ranges and state consistency.
+
+The Dashboard action is shown only when the current Hidden Gems section has
+meaningful detail to open. The dedicated window displays the complete list in
+a scrollable view. User sorting, filtering, charts, trends, comparisons and
+changes to Hidden Gems scoring remain future work.

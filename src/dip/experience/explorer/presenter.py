@@ -1,4 +1,4 @@
-"""Map existing dashboard presentation models into Explorer sections."""
+"""Compatibility presenter for the original current-engine Explorer."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from .models import (
 
 
 class CollectionIntelligenceExplorerPresenter:
-    """Create drill-down models from the established dashboard models."""
+    """Preserve the prior Explorer API for non-desktop compatibility clients."""
 
     def present(
         self,

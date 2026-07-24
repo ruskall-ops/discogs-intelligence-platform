@@ -1,6 +1,13 @@
 """Collection Intelligence Explorer presentation boundary."""
 
+from .builder import CollectionExplorerViewModelBuilder
 from .models import (
+    CollectionExplorerConsistencyError,
+    CollectionExplorerDestination,
+    CollectionExplorerDestinationViewModel,
+    CollectionExplorerOverviewViewModel,
+    CollectionExplorerState,
+    CollectionExplorerViewModel,
     CollectionHealthExplorerViewModel,
     CollectionIntelligenceExplorerViewModel,
     HiddenGemsExplorerViewModel,
@@ -9,6 +16,13 @@ from .models import (
 from .presenter import CollectionIntelligenceExplorerPresenter
 
 __all__ = [
+    "CollectionExplorerConsistencyError",
+    "CollectionExplorerDestination",
+    "CollectionExplorerDestinationViewModel",
+    "CollectionExplorerOverviewViewModel",
+    "CollectionExplorerState",
+    "CollectionExplorerViewModel",
+    "CollectionExplorerViewModelBuilder",
     "CollectionHealthExplorerViewModel",
     "CollectionIntelligenceExplorerPresenter",
     "CollectionIntelligenceExplorerViewModel",

@@ -9,21 +9,23 @@ from tkinter import ttk, filedialog, messagebox, simpledialog
 
 from dip.collection.importers import CollectionImportError
 from dip.collection.services import ImportService
-from dip.app.intelligence_context import IntelligenceContextFactory
+from dip.composition import build_desktop_application_dependencies
 from dip.config import SETTINGS
 from dip.data_sources.discogs import DiscogsClient
 from dip.experience.reporting import ReportingService, render_markdown
-from dip.experience.dashboard import IntelligenceDashboardPresenter
-from dip.experience.desktop.dashboard_renderer import DesktopDashboardRenderer
-from dip.experience.desktop.explorer_renderer import DesktopExplorerController
+from dip.experience.dashboard import (
+    DashboardHomepageViewModel,
+)
+from dip.experience.desktop.homepage_renderer import (
+    DesktopDashboardHomepageRenderer,
+)
 from dip.exports import export_excel
 from dip.intelligence.modules.opportunity_scoring import calculate
-from dip.intelligence import IntelligenceEngine, build_v02_intelligence_registry
-from dip.persistence.sqlite import Database
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
+        dependencies = build_desktop_application_dependencies()
         self.title(SETTINGS.application_name)
         self.geometry(
 
@@ -31,18 +33,42 @@ class App(tk.Tk):
 
 )
         self.minsize(1050, 650)
-        self.db = Database(SETTINGS.database_path)
+        self.db = dependencies.database
         self.import_service = ImportService(self.db)
-        self.intelligence_context_factory = IntelligenceContextFactory(self.db)
-        self.intelligence_engine = IntelligenceEngine(
-            build_v02_intelligence_registry()
+        self.dashboard_homepage_service = dependencies.dashboard_homepage
+        self.collection_health_controller = dependencies.collection_health_controller
+        self.collection_explorer_controller = dependencies.collection_explorer_controller
+        self.hidden_gems_controller = dependencies.hidden_gems_controller
+        self.portfolio_overview_controller = dependencies.portfolio_overview_controller
+        self.portfolio_controller = dependencies.portfolio_controller
+        self.intelligence_change_analysis_controller = getattr(
+            dependencies, "intelligence_change_analysis_controller", None
         )
-        self.intelligence_dashboard_presenter = IntelligenceDashboardPresenter()
-        self.desktop_dashboard_renderer = DesktopDashboardRenderer()
-        self.intelligence_explorer_controller = DesktopExplorerController()
-        self.current_intelligence_dashboard = (
-            self.intelligence_dashboard_presenter.present(())
+        self.intelligence_trend_analysis_controller = getattr(
+            dependencies, "intelligence_trend_analysis_controller", None
         )
+        self.history_explorer_controller = getattr(
+            dependencies, "history_explorer_controller", None
+        )
+        self.intelligence_insights_controller = getattr(
+            dependencies, "intelligence_insights_controller", None
+        )
+        self.marketplace_workspace_controller = getattr(
+            dependencies, "marketplace_workspace_controller", None
+        )
+        self.current_portfolio_overview_result = None
+        self.current_portfolio_distribution_result = None
+        self.current_portfolio_concentration_result = None
+        self.current_portfolio_opportunity_alignment_result = None
+        self.current_intelligence_change_analysis_result = None
+        self.current_intelligence_trend_analysis_result = None
+        self.current_history_snapshot_view_models = ()
+        self.current_history_change_view_models = ()
+        self.current_history_trend_view_models = ()
+        self.current_intelligence_insight_collections = ()
+        self.current_marketplace_workspace_queue = ()
+        self.desktop_homepage_renderer = DesktopDashboardHomepageRenderer()
+        self.current_dashboard_homepage = DashboardHomepageViewModel.loading()
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
         self.status_var = tk.StringVar(value="Ready")
@@ -63,6 +89,9 @@ class App(tk.Tk):
         ttk.Button(toolbar, text="Export Excel", command=self.export_report).pack(side="left", padx=3)
         ttk.Button(toolbar, text="Export Intelligence Report", command=self.export_intelligence_report).pack(side="left", padx=3)
         ttk.Button(toolbar, text="Refresh View", command=self.load_table).pack(side="left", padx=3)
+        ttk.Button(toolbar, text="Portfolio", command=self.open_portfolio_overview).pack(side="left", padx=3)
+        ttk.Button(toolbar, text="Historical Intelligence", command=self.open_intelligence_change_analysis).pack(side="left", padx=3)
+        ttk.Button(toolbar, text="Marketplace Workspace", command=self.open_marketplace_workspace).pack(side="left", padx=3)
 
         self.progress = ttk.Progressbar(toolbar, length=260, mode="determinate")
         self.progress.pack(side="right", padx=5)
@@ -119,18 +148,20 @@ class App(tk.Tk):
             "when you want an export."
         ), wraplength=1100, justify="left").pack(anchor="w")
 
-        self.intelligence_card_vars = {}
-        intelligence_cards = (
-            ("collection_health", "Collection Health"),
-            ("hidden_gems", "Hidden Gems"),
-            ("historical_intelligence", "Historical Intelligence"),
+        self.dashboard_homepage_vars = {}
+        homepage_sections = (
+            ("collection_overview", "Collection overview", 2, 0, 3),
+            ("collection_health", "Collection Health", 2, 3, 3),
+            ("hidden_gems", "Hidden Gems", 3, 0, 3),
+            ("what_changed", "What Changed", 3, 3, 3),
+            ("latest_execution", "Latest execution", 4, 0, 6),
         )
-        for index, (module_id, title) in enumerate(intelligence_cards):
+        for section_id, title, row, column, columnspan in homepage_sections:
             card = ttk.LabelFrame(self.dashboard_tab, text=title, padding=14)
             card.grid(
-                row=2,
-                column=index * 2,
-                columnspan=2,
+                row=row,
+                column=column,
+                columnspan=columnspan,
                 padx=8,
                 pady=8,
                 sticky="nsew",
@@ -142,14 +173,28 @@ class App(tk.Tk):
                 wraplength=350,
                 justify="left",
             ).pack(anchor="nw", fill="both", expand=True)
-            self.intelligence_card_vars[module_id] = body
+            if section_id == "collection_health":
+                ttk.Button(
+                    card,
+                    text="Open Collection Health",
+                    command=self.open_collection_health,
+                ).pack(anchor="w", pady=(10, 0))
+            elif section_id == "hidden_gems":
+                self.hidden_gems_button = ttk.Button(
+                    card,
+                    text="Open Hidden Gems",
+                    command=self.open_hidden_gems,
+                )
+            self.dashboard_homepage_vars[section_id] = body
         self.dashboard_tab.rowconfigure(2, weight=1)
-        ttk.Button(
+        self.dashboard_tab.rowconfigure(3, weight=1)
+        self.collection_explorer_button = ttk.Button(
             self.dashboard_tab,
-            text="Open Collection Intelligence Explorer",
+            text="Open Collection Explorer",
             command=self.open_intelligence_explorer,
-        ).grid(
-            row=3,
+        )
+        self.collection_explorer_button.grid(
+            row=5,
             column=0,
             columnspan=6,
             padx=8,
@@ -382,33 +427,161 @@ class App(tk.Tk):
 
     def refresh_intelligence_dashboard(self):
         try:
-            context = self.intelligence_context_factory.build()
-            execution = self.intelligence_engine.execute(context)
-            dashboard = self.intelligence_dashboard_presenter.present(execution)
-            self.current_intelligence_dashboard = dashboard
-            cards = self.desktop_dashboard_renderer.render(dashboard)
-            rendered = {card.module_id: card.body for card in cards}
-        except Exception as exc:
-            self.current_intelligence_dashboard = (
-            self.intelligence_dashboard_presenter.present(())
-            )
+            homepage = self.dashboard_homepage_service.homepage()
+            self.current_dashboard_homepage = homepage
+            sections = self.desktop_homepage_renderer.render(homepage)
             rendered = {
-                module_id: (
-                    "Intelligence is unavailable.\n"
+                section.section_id.value: section.body
+                for section in sections
+            }
+        except Exception as exc:
+            self.current_dashboard_homepage = DashboardHomepageViewModel.loading()
+            rendered = {
+                section_id: (
+                    "Dashboard information is unavailable.\n"
                     f"{type(exc).__name__}: {exc}"
                 )
-                for module_id in self.intelligence_card_vars
+                for section_id in self.dashboard_homepage_vars
             }
 
-        for module_id, variable in self.intelligence_card_vars.items():
-            variable.set(
-                rendered.get(module_id, "Intelligence is unavailable.")
+        for section_id, variable in self.dashboard_homepage_vars.items():
+            variable.set(rendered.get(section_id, "Dashboard information is unavailable."))
+        self._update_collection_explorer_navigation()
+        self._update_hidden_gems_navigation()
+
+    def open_collection_health(self):
+        try:
+            rendered = self.collection_health_controller.open(
+                self.current_dashboard_homepage
             )
+        except Exception as exc:
+            messagebox.showerror(
+                "Collection Health unavailable",
+                f"Collection Health could not be displayed:\n\n{exc}",
+            )
+            return
+
+        window = tk.Toplevel(self)
+        window.title(rendered.title)
+        window.geometry("780x680")
+        window.minsize(620, 500)
+        window.transient(self)
+
+        header = ttk.Frame(window, padding=(18, 18, 18, 8))
+        header.pack(fill="x")
+        ttk.Label(
+            header,
+            text=rendered.headline,
+            font=("Helvetica", 20, "bold"),
+        ).pack(anchor="w")
+        ttk.Label(
+            header,
+            text=rendered.summary,
+            wraplength=720,
+            justify="left",
+        ).pack(anchor="w", pady=(8, 0))
+
+        content = ttk.Frame(window, padding=(18, 8, 18, 12))
+        content.pack(fill="both", expand=True)
+        text = tk.Text(content, wrap="word", padx=10, pady=10)
+        scrollbar = ttk.Scrollbar(
+            content,
+            orient="vertical",
+            command=text.yview,
+        )
+        text.configure(yscrollcommand=scrollbar.set)
+        for section in rendered.sections:
+            text.insert("end", f"{section.title}\n", "section_heading")
+            text.insert("end", f"{section.body}\n\n")
+        text.tag_configure(
+            "section_heading",
+            font=("Helvetica", 12, "bold"),
+        )
+        text.configure(state="disabled")
+        text.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        ttk.Button(window, text="Close", command=window.destroy).pack(
+            pady=(0, 12)
+        )
+
+    def _update_hidden_gems_navigation(self):
+        if self.hidden_gems_controller.can_open(self.current_dashboard_homepage):
+            self.hidden_gems_button.pack(anchor="w", pady=(10, 0))
+        else:
+            self.hidden_gems_button.pack_forget()
+
+    def _update_collection_explorer_navigation(self):
+        if self.collection_explorer_controller.can_open(
+            self.current_dashboard_homepage
+        ):
+            self.collection_explorer_button.state(["!disabled"])
+        else:
+            self.collection_explorer_button.state(["disabled"])
+
+    def open_hidden_gems(self):
+        try:
+            rendered = self.hidden_gems_controller.open(
+                self.current_dashboard_homepage
+            )
+        except Exception as exc:
+            messagebox.showerror(
+                "Hidden Gems unavailable",
+                f"Hidden Gems could not be displayed:\n\n{exc}",
+            )
+            return
+
+        window = tk.Toplevel(self)
+        window.title(rendered.title)
+        window.geometry("820x720")
+        window.minsize(640, 520)
+        window.transient(self)
+
+        header = ttk.Frame(window, padding=(18, 18, 18, 8))
+        header.pack(fill="x")
+        ttk.Label(
+            header,
+            text=rendered.headline,
+            font=("Helvetica", 20, "bold"),
+        ).pack(anchor="w")
+        ttk.Label(
+            header,
+            text=rendered.summary,
+            wraplength=760,
+            justify="left",
+        ).pack(anchor="w", pady=(8, 0))
+
+        content = ttk.Frame(window, padding=(18, 8, 18, 12))
+        content.pack(fill="both", expand=True)
+        text = tk.Text(content, wrap="word", padx=10, pady=10)
+        scrollbar = ttk.Scrollbar(content, orient="vertical", command=text.yview)
+        text.configure(yscrollcommand=scrollbar.set)
+        for candidate in rendered.candidates:
+            text.insert("end", f"{candidate.heading}\n", "candidate_heading")
+            text.insert("end", f"{candidate.body}\n\n")
+        if rendered.diagnostics:
+            text.insert("end", "Diagnostics\n", "candidate_heading")
+            text.insert("end", rendered.diagnostics)
+        text.tag_configure("candidate_heading", font=("Helvetica", 12, "bold"))
+        text.configure(state="disabled")
+        text.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        ttk.Button(window, text="Close", command=window.destroy).pack(
+            pady=(0, 12)
+        )
 
     def open_intelligence_explorer(self):
-        rendered = self.intelligence_explorer_controller.open(
-            self.current_intelligence_dashboard
-        )
+        try:
+            rendered = self.collection_explorer_controller.open(
+                self.current_dashboard_homepage
+            )
+        except Exception as exc:
+            messagebox.showerror(
+                "Collection Explorer unavailable",
+                f"Collection Explorer could not be displayed:\n\n{exc}",
+            )
+            return
 
         window = tk.Toplevel(self)
         window.title(rendered.title)
@@ -419,9 +592,12 @@ class App(tk.Tk):
         notebook = ttk.Notebook(window)
         notebook.pack(fill="both", expand=True, padx=12, pady=12)
 
-        for section in rendered.sections:
+        selected_index = 0
+        for index, section in enumerate(rendered.sections):
             frame = ttk.Frame(notebook, padding=12)
             notebook.add(frame, text=section.title)
+            if section.destination is rendered.selected_destination:
+                selected_index = index
             text = tk.Text(frame, wrap="word", padx=10, pady=10)
             scrollbar = ttk.Scrollbar(
                 frame,
@@ -433,10 +609,150 @@ class App(tk.Tk):
             text.configure(state="disabled")
             text.pack(side="left", fill="both", expand=True)
             scrollbar.pack(side="right", fill="y")
-
+        notebook.select(selected_index)
         ttk.Button(window, text="Close", command=window.destroy).pack(
             pady=(0, 12)
         )
+
+    def open_portfolio_overview(self):
+        """Open the separate Portfolio experience from a supplied completed result."""
+        if self.portfolio_controller is None:
+            messagebox.showerror("Portfolio unavailable", "Portfolio is not configured.")
+            return
+        try:
+            rendered = self.portfolio_controller.open(
+                self.current_portfolio_overview_result,
+                self.current_portfolio_distribution_result,
+                self.current_portfolio_concentration_result,
+                self.current_portfolio_opportunity_alignment_result,
+            )
+        except Exception as exc:
+            messagebox.showerror(
+                "Portfolio unavailable",
+                f"Portfolio could not be displayed:\n\n{exc}",
+            )
+            return
+        window = tk.Toplevel(self)
+        window.title(rendered.title)
+        window.geometry("1050x760")
+        window.minsize(760, 540)
+        window.transient(self)
+        notebook = ttk.Notebook(window)
+        notebook.pack(fill="both", expand=True, padx=12, pady=12)
+        for section in rendered.sections:
+            frame = ttk.Frame(notebook, padding=12)
+            notebook.add(frame, text=section.title)
+            text = tk.Text(frame, wrap="word", padx=10, pady=10)
+            scrollbar = ttk.Scrollbar(frame, orient="vertical", command=text.yview)
+            text.configure(yscrollcommand=scrollbar.set)
+            text.insert("1.0", section.body)
+            text.configure(state="disabled")
+            text.pack(side="left", fill="both", expand=True)
+            scrollbar.pack(side="right", fill="y")
+        ttk.Button(window, text="Close", command=window.destroy).pack(pady=(0, 12))
+
+    def open_intelligence_change_analysis(self):
+        """Render already-produced Change and Trend Analysis results."""
+        if self.intelligence_change_analysis_controller is None:
+            messagebox.showerror(
+                "Historical Intelligence unavailable",
+                "Intelligence Change Analysis is not configured.",
+            )
+            return
+        try:
+            change_rendered = self.intelligence_change_analysis_controller.open(
+                self.current_intelligence_change_analysis_result
+            )
+            trend_rendered = (
+                self.intelligence_trend_analysis_controller.open(
+                    self.current_intelligence_trend_analysis_result
+                )
+                if self.intelligence_trend_analysis_controller is not None
+                else None
+            )
+            explorer_rendered = (
+                self.history_explorer_controller.open(
+                    self.current_history_snapshot_view_models,
+                    self.current_history_change_view_models,
+                    self.current_history_trend_view_models,
+                )
+                if self.history_explorer_controller is not None
+                else None
+            )
+            insights_rendered = (
+                self.intelligence_insights_controller.open(
+                    self.current_intelligence_insight_collections
+                )
+                if self.intelligence_insights_controller is not None
+                else None
+            )
+        except Exception as exc:
+            messagebox.showerror(
+                "Historical Intelligence unavailable",
+                f"Intelligence Change Analysis could not be displayed:\n\n{exc}",
+            )
+            return
+        window = tk.Toplevel(self)
+        window.title("Historical Intelligence")
+        window.geometry("1050x760")
+        window.minsize(760, 540)
+        window.transient(self)
+        notebook = ttk.Notebook(window)
+        notebook.pack(fill="both", expand=True, padx=12, pady=12)
+        destinations = (
+            ("Change Analysis", change_rendered),
+            ("Trend Analysis", trend_rendered),
+            ("History Explorer", explorer_rendered),
+            ("Intelligence Insights", insights_rendered),
+        )
+        for title, rendered in destinations:
+            frame = ttk.Frame(notebook, padding=12)
+            notebook.add(frame, text=title)
+            text = tk.Text(frame, wrap="word", padx=10, pady=10)
+            body = (
+                "\n\n".join(
+                    f"{section.title}\n{section.body}"
+                    for section in rendered.sections
+                )
+                if rendered is not None and rendered.sections
+                else getattr(rendered, "summary", "") if rendered is not None
+                else f"{title} is not configured."
+            )
+            text.insert("1.0", body)
+            text.configure(state="disabled")
+            text.pack(fill="both", expand=True)
+        ttk.Button(window, text="Close", command=window.destroy).pack(pady=(0, 12))
+
+    def open_marketplace_workspace(self):
+        """Render one already-supplied Marketplace workflow queue."""
+        if self.marketplace_workspace_controller is None:
+            messagebox.showerror("Marketplace Workspace unavailable", "Marketplace Workspace is not configured.")
+            return
+        try:
+            rendered = self.marketplace_workspace_controller.open(
+                self.current_marketplace_workspace_queue
+            )
+        except Exception as exc:
+            messagebox.showerror(
+                "Marketplace Workspace unavailable",
+                f"Marketplace Workspace could not be displayed:\n\n{exc}",
+            )
+            return
+        window = tk.Toplevel(self)
+        window.title(rendered.title)
+        window.geometry("1120x780")
+        window.minsize(800, 560)
+        window.transient(self)
+        notebook = ttk.Notebook(window)
+        notebook.pack(fill="both", expand=True, padx=12, pady=12)
+        for section in rendered.sections:
+            frame = ttk.Frame(notebook, padding=12)
+            notebook.add(frame, text=section.title)
+            text = tk.Text(frame, wrap="word", padx=10, pady=10)
+            text.insert("1.0", section.body)
+            text.configure(state="disabled")
+            text.pack(fill="both", expand=True)
+        ttk.Button(window, text="Close", command=window.destroy).pack(pady=(0, 12))
 
     def load_table(self):
         for item in self.tree.get_children():
