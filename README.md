@@ -89,7 +89,7 @@ recalculate the original modules or predict a future state.
 ### Desktop workspaces
 
 - **Project Workspace** is the application entry point. It presents one
-  in-memory active project, recent-project state, a summary, and navigation to
+  persisted active Project, recent-project state, a summary, and navigation to
   Dashboard and Portfolio Workspace.
 - **Dashboard** is the command centre. Eight summary cards answer what changed,
   what deserves attention, and where to investigate next.
@@ -113,12 +113,15 @@ The Project Management application layer provides:
 - immutable `ManagedProject` application models;
 - a storage-independent `ProjectRepository` protocol;
 - deterministic `InMemoryProjectRepository`;
+- SQLite-backed `SQLiteProjectRepository`;
 - list, create, open, active, last-opened, and recent-project workflows through
   `ProjectManagementService`.
 
-Version 0.3.0 does not persist Projects. The composition root seeds one
-`Current Collection` project for the process. Project creation UI, file
-selection, durable storage, and session restoration remain planned work.
+Normal desktop execution persists Project identity, deterministic insertion and
+last-opened order, and active-project state in the existing SQLite database.
+The composition root creates `Current Collection` once on a new database and
+reuses it thereafter. Project creation UI, file selection, collection refresh,
+and session or workspace restoration remain planned work.
 
 ## Architecture
 
@@ -189,7 +192,8 @@ src/dip/
 - **0.3 — Marketplace Intelligence and Decision Support:** released; current
   package version is 0.3.0.
 - **0.4 — Collector Workflow Foundation:** planned, including completion of the
-  Portfolio Workspace, durable Projects, and user-owned research workflow.
+  Portfolio Workspace, durable Project workflows, and user-owned research
+  workflow.
 
 See the [Roadmap](docs/Roadmap.md) for release scope and future direction.
 

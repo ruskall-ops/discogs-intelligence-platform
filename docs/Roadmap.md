@@ -60,12 +60,12 @@ preserving evidence and user control:
 - Marketplace Workspace and the first Portfolio Workspace vertical slice;
 - Dashboard command centre with deterministic workspace navigation;
 - Project Workspace as the desktop entry point;
-- Project Management application service, repository contract, and in-memory
-  adapter.
+- Project Management application service and repository contract.
 
-Version 0.3 remains a decision-support release. It does not introduce forecasts,
-recommendations, alerts, automatic opportunity ranking, project persistence,
-or buying and selling automation.
+Version 0.3 remains a decision-support release. The released scope did not
+introduce forecasts, recommendations, alerts, automatic opportunity ranking,
+Project persistence, or buying and selling automation. SQLite Project
+persistence is tracked below as an implemented 0.4 foundation.
 
 ## Version 0.4 — Collector Workflow Foundation
 
@@ -74,8 +74,16 @@ or buying and selling automation.
 Version 0.4 will make the implemented intelligence workspaces usable as a
 durable collector workflow. Candidate scope is:
 
-- persistent Projects and session restoration behind the existing
-  `ProjectRepository` boundary;
+### Implemented foundation
+
+SQLite Project persistence now implements the existing `ProjectRepository`
+boundary, including deterministic Project order, last-opened state,
+active-project persistence, migration version 4, and idempotent first-run
+bootstrap. It does not restore a desktop session or workspace.
+
+### Remaining candidate scope
+
+- session and workspace restoration behind existing application boundaries;
 - enabled project creation and opening workflows;
 - project-scoped collection refresh orchestration;
 - completed Portfolio Workspace pages for Distribution, Concentration,

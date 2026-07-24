@@ -24,6 +24,18 @@ from dip.marketplace_intelligence import (
     MarketplaceReleaseObservation,
     MarketplaceSnapshot,
 )
+from dip.projects import InMemoryProjectRepository
+
+
+class _CompositionProjectRepository(InMemoryProjectRepository):
+    def ensure_default_project(self, project):
+        existing = self.get(project.project_id)
+        if existing is None:
+            self.add(project)
+            existing = project
+        if self.active_project_id() is None:
+            self.set_active(existing.project_id)
+        return existing
 
 
 class _CompositionMarketplaceHistoryRepository:
@@ -102,6 +114,7 @@ class MarketplaceHistoryCompositionTestCase(unittest.TestCase):
             ),
         )
         repository = _CompositionMarketplaceHistoryRepository(stored)
+        project_repository = _CompositionProjectRepository()
         database = object()
 
         with (
@@ -110,10 +123,15 @@ class MarketplaceHistoryCompositionTestCase(unittest.TestCase):
                 "dip.composition.SQLiteMarketplaceHistoryRepository",
                 return_value=repository,
             ) as repository_type,
+            patch(
+                "dip.composition.SQLiteProjectRepository",
+                return_value=project_repository,
+            ) as project_repository_type,
         ):
             dependencies = build_desktop_application_dependencies()
 
         repository_type.assert_called_once_with(database)
+        project_repository_type.assert_called_once_with(database)
         self.assertIs(dependencies.database, database)
         self.assertIsInstance(
             dependencies.marketplace_history_queries,

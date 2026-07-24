@@ -20,10 +20,7 @@ class ProjectManagementService:
         return self.open_project(project_id)
 
     def open_project(self, project_id):
-        if self._repository.get(project_id) is None:
-            raise ValueError("Project does not exist.")
-        self._repository.set_active(project_id)
-        return self._repository.update_last_opened(project_id)
+        return self._repository.open(project_id)
 
     def update_last_opened(self, project_id):
         return self._repository.update_last_opened(project_id)

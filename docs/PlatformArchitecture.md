@@ -74,9 +74,11 @@ workflow and never alter an assessment.
 
 ## Implemented entry and navigation
 
-Project Workspace is the desktop entry point. It currently uses one
-process-local active Project supplied by Project Management. From there, the
-collector can open the Dashboard command centre or Portfolio Workspace.
+Project Workspace is the desktop entry point. Project Management supplies its
+active and recent Projects through a storage-independent repository contract.
+Normal desktop execution persists those Projects, last-opened order, and active
+identity through SQLite. From there, the collector can open the Dashboard
+command centre or Portfolio Workspace.
 
 The Dashboard summarises existing Portfolio, Collection, Marketplace, and
 Historical presentation state and opens their established desktop
@@ -86,10 +88,12 @@ implements its six research panes.
 
 ## Extensibility
 
-Future data providers, persistent Projects, and durable research workflows
-should enter through the existing provider, application-service, and repository
-boundaries. Alternative interfaces should consume the same presentation or
-application boundaries rather than reproducing intelligence.
+Future data providers and durable research workflows should enter through the
+existing provider, application-service, and repository boundaries. Project
+creation UI, collection refresh, and session or workspace restoration should
+extend the implemented Project boundary. Alternative interfaces should consume
+the same presentation or application boundaries rather than reproducing
+intelligence.
 
 Platform Intelligence based on anonymised community data remains a long-term
 vision. It is not part of the current single-user desktop architecture.

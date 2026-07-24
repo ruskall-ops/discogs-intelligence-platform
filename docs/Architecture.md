@@ -194,8 +194,8 @@ Repositories:
 ### Persistence
 
 `dip.persistence.sqlite` implements SQLite connection management, schema
-creation, migrations, collection data access, Intelligence History, and
-Marketplace History.
+creation, migrations, collection data access, Intelligence History, Marketplace
+History, and Project persistence.
 
 SQLite is the persistent source of truth for implemented collection and history
 data. Historical observations are append-only through their repository
@@ -203,8 +203,11 @@ contracts. Writes use explicit transaction boundaries, deterministic
 serialization, and savepoint isolation when nested in an existing transaction.
 Fresh schema creation and ordered migrations are kept equivalent.
 
-Project Management deliberately uses `InMemoryProjectRepository` in version
-0.3.0. Projects are not yet persisted and are not restored between sessions.
+Normal desktop composition uses `SQLiteProjectRepository`.
+`InMemoryProjectRepository` remains a deterministic alternative and test
+adapter. Project content, insertion and last-opened order, and the active
+Project identity persist across database reopen. Session and workspace state do
+not.
 
 ### External providers
 
@@ -228,7 +231,9 @@ ProjectManagementService
             ↓
 ProjectRepository
             ↓
-InMemoryProjectRepository
+SQLiteProjectRepository
+            ↓
+shared SQLite Database boundary
 ```
 
 `ProjectManagementService` supports listing, creating, opening, selecting the
@@ -236,11 +241,16 @@ active project, updating last-opened state, and returning recent projects.
 `ManagedProject` is an immutable application model. The presentation service
 maps it into separate immutable Project Workspace models.
 
-The composition root seeds one active `Current Collection` project.
+The composition root idempotently creates one active `Current Collection`
+Project on a new database. Later starts reuse existing Projects and active
+state without duplicating or overwriting that default. Opening a Project
+atomically advances its application-controlled last-opened order and changes
+the active identity through the repository.
+
 Open Project, Create Project, and Refresh Collection remain disabled UI
 placeholders; only navigation to Dashboard and Portfolio Workspace is wired.
-Filesystem selection, project persistence, and session restoration are planned
-for version 0.4.
+Filesystem selection, collection refresh, and session or workspace restoration
+remain planned for version 0.4.
 
 ## Current desktop workflows
 
@@ -335,7 +345,7 @@ The current architecture does not implement:
 - automated purchasing, selling, listing, bidding, or pricing;
 - forecasts or investment-return predictions;
 - opaque overall decision scores;
-- project persistence or session restoration;
+- session or workspace restoration;
 - complete Portfolio Workspace destination pages;
 - saved research notes, watchlists, or alerts;
 - background scheduling or live monitoring;

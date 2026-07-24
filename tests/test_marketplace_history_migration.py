@@ -20,7 +20,7 @@ class MarketplaceHistoryMigrationTestCase(unittest.TestCase):
 
         applied = run_migrations(self.connection)
 
-        self.assertEqual(tuple(item.version for item in applied), (3,))
+        self.assertEqual(tuple(item.version for item in applied), (3, 4))
         self.assertIn("Marketplace History", applied[0].name)
         self._assert_marketplace_history_schema(self.connection)
         self.assertEqual(
@@ -55,7 +55,7 @@ class MarketplaceHistoryMigrationTestCase(unittest.TestCase):
                     "SELECT version FROM schema_migrations"
                 ).fetchall()
             },
-            {1, 2, 3},
+            {1, 2, 3, 4},
         )
 
         self.assertEqual(run_migrations(self.connection), [])
@@ -66,7 +66,7 @@ class MarketplaceHistoryMigrationTestCase(unittest.TestCase):
             1,
         )
 
-    def test_current_schema_and_version_three_migration_are_equivalent(self) -> None:
+    def test_current_schema_and_pending_migrations_are_equivalent(self) -> None:
         self._install_version_two_schema(self.connection)
         run_migrations(self.connection)
         migrated_signature = self._schema_signature(self.connection)

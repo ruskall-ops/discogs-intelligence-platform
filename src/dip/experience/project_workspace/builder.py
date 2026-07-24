@@ -43,7 +43,8 @@ class ProjectWorkspaceBuilder:
                 (
                     "Dashboard, Portfolio, Marketplace, and Historical Intelligence "
                     "remain available through existing workspaces.",
-                    "Project storage and session restoration are not implemented.",
+                    "Project identity and active state are stored in SQLite; "
+                    "session and workspace restoration are not implemented.",
                 ),
             )
         return ProjectWorkspaceViewModel(active, recent, summary, _ACTIONS)

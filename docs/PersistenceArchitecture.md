@@ -368,6 +368,42 @@ Repositories do not own:
 
 ---
 
+# Project Persistence
+
+`SQLiteProjectRepository` implements the storage-independent
+`ProjectRepository` protocol through the shared `Database` boundary.
+
+The normalized `projects` table stores the fields required to reconstruct
+`ManagedProject` plus an internal insertion-order key. `project_state` contains
+one constrained row and stores the optional active Project identity through a
+foreign key.
+
+The repository preserves:
+
+- insertion-ordered Project listing;
+- nullable, positive `last_opened_order`;
+- monotonic application-controlled open ordering;
+- deterministic recent ordering in `ProjectManagementService`;
+- active-project state across database reopen;
+- `None` for a missing lookup;
+- `ValueError` for duplicate or missing required Projects.
+
+Opening a Project updates its last-opened order and active identity inside one
+repository transaction. Nested calls use the existing savepoint boundary.
+Expected SQLite failures are translated to `ProjectPersistenceError`; raw
+SQLite exceptions do not cross the Project repository boundary.
+
+Migration version 4 creates both tables and their singleton state row. Fresh
+schema and migrated databases are tested for parity. The composition root uses
+an idempotent bootstrap operation: `Current Collection` is inserted only when
+absent and is made active only when no active Project already exists.
+
+Project status remains a presentation concern derived as active or recent. No
+duplicate status column or invented timestamp is persisted because neither is
+part of `ManagedProject`.
+
+---
+
 # Append-Only Historical Data
 
 Historical repositories should expose append-only APIs.

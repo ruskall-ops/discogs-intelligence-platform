@@ -92,7 +92,7 @@ class ProjectWorkspaceTestCase(unittest.TestCase):
         for expected in (
             "Current Collection",
             "No recent projects have been supplied.",
-            "Project storage and session restoration are not implemented.",
+            "Project identity and active state are stored in SQLite",
             "Open Dashboard",
             "Open Portfolio Workspace",
         ):

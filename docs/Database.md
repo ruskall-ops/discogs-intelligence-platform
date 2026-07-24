@@ -10,8 +10,7 @@ History, and aggregate Marketplace History persistence. This document is a
 schema overview. Transaction, locking, reconstruction, and migration rules are
 defined by [Persistence Architecture](PersistenceArchitecture.md).
 
-Projects are the deliberate exception: version 0.3.0 uses an in-memory Project
-repository, so Projects are not stored in SQLite.
+Projects use the same SQLite boundary through a dedicated repository adapter.
 
 ## Implemented schema
 
@@ -30,6 +29,8 @@ The current schema in `src/dip/persistence/sqlite/schema.sql` contains:
 | `intelligence_runs` | Immutable Intelligence History run metadata |
 | `intelligence_results` | Immutable, versioned module result records |
 | `marketplace_snapshots` | Canonically serialized aggregate Marketplace snapshots |
+| `projects` | Normalized immutable Project application fields and deterministic order |
+| `project_state` | Singleton active-project identity |
 
 `market_snapshots` and `marketplace_snapshots` are intentionally different
 contracts. The former supports the original per-release refresh workflow; the
@@ -77,6 +78,21 @@ observation or calculated historical result.
 Marketplace Workspace Research Status is currently presentation state and is
 not persisted.
 
+## Project persistence
+
+`projects` stores `project_id`, `name`, `description`, nullable positive
+`last_opened_order`, and a unique positive `insertion_order`. Repository reads
+reconstruct `ManagedProject` values and list them by insertion order.
+
+`project_state` contains exactly one row with `singleton_id = 1`. Its nullable
+`active_project_id` references `projects.project_id` with restricted deletion.
+Opening a Project updates active identity and last-opened order atomically.
+
+Migration version 4 creates both tables and the singleton state row. Fresh and
+migrated schemas are equivalent. First desktop startup creates
+`Current Collection` only when absent and makes it active only when no active
+Project exists.
+
 ## Connection and transaction boundary
 
 The shared `Database` boundary owns the SQLite connection and lock. Repository
@@ -100,5 +116,5 @@ through ordered, atomic migrations. Both paths must remain schema-equivalent.
 
 New persistence belongs behind a narrow domain-oriented Repository. Workspaces,
 renderers, intelligence modules, and provider adapters must not issue SQL.
-Project persistence should be added as a future `ProjectRepository` adapter,
-not embedded in Project Workspace or Project Management.
+Project persistence follows this rule through `SQLiteProjectRepository`;
+Project Workspace and Project Management remain SQLite-independent.
