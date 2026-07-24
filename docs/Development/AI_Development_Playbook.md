@@ -8,9 +8,9 @@ Its purpose is to ensure that every implementation—whether produced by a human
 
 It complements:
 
-- vision.md
-- MarketplaceArchitecture.md
-- IntelligenceHistory.md
+- [Vision](../Vision.md)
+- [Marketplace Architecture](../MarketplaceArchitecture.md)
+- [Intelligence History](../IntelligenceHistory.md)
 
 This document defines **how software should be developed**, not **what features should exist**.
 

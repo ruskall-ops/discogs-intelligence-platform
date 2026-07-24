@@ -129,7 +129,8 @@ Portfolio Intelligence is a distinct aggregation layer: it combines ownership
 facts with already-produced Decision Intelligence and does not reinterpret
 Marketplace History. Portfolio Overview 1.0 consumes Marketplace Opportunity
 only. Portfolio Decision Intelligence, which would interpret portfolio-level
-facts, is deferred. See `PortfolioIntelligence.md`.
+facts, is implemented first by Portfolio Opportunity Alignment. See
+`PortfolioIntelligence.md`.
 
 Portfolio Concentration's per-dimension mathematical states remain descriptive
 Portfolio Intelligence. They measure normalized category clustering and are not
@@ -545,7 +546,7 @@ Older Intelligence History records must remain reproducible.
 
 ---
 
-# Future Decision Intelligence Modules
+# Portfolio Decision Intelligence
 
 ## Portfolio Opportunity Alignment 1.0
 
@@ -573,12 +574,8 @@ Assessment precedence is `insufficient`, `constrained`, `broadly_aligned`,
 reasons, diagnostics, and provenance are inspectable. The module creates no
 weighted score, forecast, valuation, recommendation, or rebalancing guidance.
 
-Potential Decision Intelligence modules include:
+Other potential Decision Intelligence modules include:
 
-- Marketplace Momentum
-- Marketplace Stability
-- Marketplace Scarcity
-- Marketplace Opportunity
 - Portfolio Risk
 - Portfolio Diversification
 - Portfolio Quality

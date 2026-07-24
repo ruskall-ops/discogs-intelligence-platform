@@ -18,7 +18,8 @@ Inclusion within this folder does **not** imply that development has been schedu
 
 During development, new ideas naturally emerge.
 
-Rather than allowing these ideas to distract from the current sprint, they are documented here for future evaluation.
+These ideas are documented here for future evaluation rather than being
+presented as committed release scope.
 
 This approach ensures that:
 
