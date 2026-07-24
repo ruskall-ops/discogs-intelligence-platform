@@ -10,6 +10,7 @@ from dip.app.collection_trends_presentation import CollectionTrendsPresentationS
 from dip.app.comparison_presentation import ComparisonPresentationService
 from dip.app.dashboard import DashboardHomepageService
 from dip.app.dashboard_integration_presentation import DashboardIntegrationPresentationService
+from dip.app.project_workspace_presentation import ProjectWorkspacePresentationService
 from dip.app.hidden_gems_presentation import HiddenGemsPresentationService
 from dip.app.intelligence_comparison import IntelligenceComparisonService
 from dip.app.intelligence_history import IntelligenceHistoryQueryService
@@ -58,6 +59,11 @@ from dip.experience.collection_health import CollectionHealthDetailViewModelBuil
 from dip.experience.comparison import ComparisonViewModelBuilder
 from dip.experience.collection_trends import CollectionTrendsViewModelBuilder
 from dip.experience.dashboard import DashboardCommandCenterBuilder, DashboardHomepageViewModelBuilder
+from dip.experience.project_workspace import (
+    Project,
+    ProjectStatus,
+    ProjectWorkspaceBuilder,
+)
 from dip.experience.explorer import CollectionExplorerViewModelBuilder
 from dip.experience.desktop.collection_health_renderer import (
     DesktopCollectionHealthController,
@@ -158,6 +164,10 @@ from dip.experience.desktop.dashboard_command_center_renderer import (
     DesktopDashboardCommandCenterController,
     DesktopDashboardCommandCenterRenderer,
 )
+from dip.experience.desktop.project_workspace_renderer import (
+    DesktopProjectWorkspaceController,
+    DesktopProjectWorkspaceRenderer,
+)
 from dip.experience.weekend_listings import WeekendListingsDetailViewModelBuilder
 from dip.experience.desktop.weekend_listings_renderer import (
     DesktopWeekendListingsRenderer,
@@ -217,6 +227,8 @@ class DesktopApplicationDependencies:
     intelligence_insights_controller: DesktopIntelligenceInsightsController | None = None
     marketplace_workspace_controller: DesktopMarketplaceWorkspaceController | None = None
     dashboard_command_center_controller: DesktopDashboardCommandCenterController | None = None
+    project_workspace_controller: DesktopProjectWorkspaceController | None = None
+    active_project: Project | None = None
 
 
 def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
@@ -451,6 +463,16 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         ),
         DesktopDashboardCommandCenterRenderer(),
     )
+    active_project = Project(
+        "current_collection",
+        "Current Collection",
+        "The current collector working environment.",
+        ProjectStatus.ACTIVE,
+    )
+    project_workspace_controller = DesktopProjectWorkspaceController(
+        ProjectWorkspacePresentationService(ProjectWorkspaceBuilder()),
+        DesktopProjectWorkspaceRenderer(),
+    )
 
     return DesktopApplicationDependencies(
         database=database,
@@ -482,6 +504,8 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         intelligence_insights_controller=intelligence_insights_controller,
         marketplace_workspace_controller=marketplace_workspace_controller,
         dashboard_command_center_controller=dashboard_command_center_controller,
+        project_workspace_controller=project_workspace_controller,
+        active_project=active_project,
         dashboard_homepage=DashboardHomepageService(
             history_queries,
             comparison_presentation,
