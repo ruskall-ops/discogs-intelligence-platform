@@ -38,6 +38,8 @@ from dip.app.marketplace_opportunity import MarketplaceOpportunityExecutionServi
 from dip.app.marketplace_opportunity_presentation import MarketplaceOpportunityPresentationService
 from dip.app.portfolio_overview import PortfolioOverviewExecutionService
 from dip.app.portfolio_overview_presentation import PortfolioOverviewPresentationService
+from dip.app.portfolio_distribution import PortfolioDistributionExecutionService
+from dip.app.portfolio_distribution_presentation import PortfolioDistributionPresentationService
 from dip.app.weekend_listings_presentation import WeekendListingsPresentationService
 from dip.comparison import ComparisonEngine
 from dip.config import SETTINGS
@@ -74,6 +76,7 @@ from dip.experience.marketplace_stability import MarketplaceStabilityDetailViewM
 from dip.experience.marketplace_scarcity import MarketplaceScarcityDetailViewModelBuilder
 from dip.experience.marketplace_opportunity import MarketplaceOpportunityDetailViewModelBuilder
 from dip.experience.portfolio_overview import PortfolioOverviewViewModelBuilder
+from dip.experience.portfolio_distribution import PortfolioDistributionViewModelBuilder
 from dip.experience.desktop.price_changes_renderer import (
     DesktopPriceChangesRenderer,
 )
@@ -91,13 +94,22 @@ from dip.experience.desktop.portfolio_overview_renderer import (
     DesktopPortfolioOverviewController,
     DesktopPortfolioOverviewRenderer,
 )
+from dip.experience.desktop.portfolio_distribution_renderer import (
+    DesktopPortfolioDistributionController,
+    DesktopPortfolioDistributionRenderer,
+)
+from dip.experience.desktop.portfolio_renderer import DesktopPortfolioController
 from dip.experience.weekend_listings import WeekendListingsDetailViewModelBuilder
 from dip.experience.desktop.weekend_listings_renderer import (
     DesktopWeekendListingsRenderer,
 )
 from dip.intelligence import IntelligenceEngine
 from dip.decision_intelligence import MarketplaceMomentumModule, MarketplaceOpportunityModule, MarketplaceScarcityModule, MarketplaceStabilityModule
-from dip.portfolio_intelligence import PortfolioOverviewModule
+from dip.portfolio_intelligence import (
+    PortfolioDistributionModule,
+    PortfolioDistributionRuleConfiguration,
+    PortfolioOverviewModule,
+)
 from dip.marketplace_intelligence import ListingLifecycleModule, MarketplaceActivityModule, PriceChangesModule, RareAppearancesModule, SupplyChangesModule
 from dip.persistence.sqlite import (
     Database,
@@ -128,6 +140,9 @@ class DesktopApplicationDependencies:
     marketplace_opportunity_execution: MarketplaceOpportunityExecutionService | None = None
     portfolio_overview_execution: PortfolioOverviewExecutionService | None = None
     portfolio_overview_controller: DesktopPortfolioOverviewController | None = None
+    portfolio_distribution_execution: PortfolioDistributionExecutionService | None = None
+    portfolio_distribution_controller: DesktopPortfolioDistributionController | None = None
+    portfolio_controller: DesktopPortfolioController | None = None
 
 
 def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
@@ -200,6 +215,12 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         marketplace_opportunity_execution,
         IntelligenceEngine((PortfolioOverviewModule(),)),
     )
+    distribution_rules = PortfolioDistributionRuleConfiguration()
+    portfolio_distribution_execution = PortfolioDistributionExecutionService(
+        database,
+        IntelligenceEngine((PortfolioDistributionModule(distribution_rules),)),
+        rules=distribution_rules,
+    )
     history_repository = SQLiteIntelligenceHistoryRepository(database)
     history_queries = IntelligenceHistoryQueryService(history_repository)
     comparison_service = IntelligenceComparisonService(
@@ -268,6 +289,14 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         PortfolioOverviewPresentationService(PortfolioOverviewViewModelBuilder()),
         DesktopPortfolioOverviewRenderer(),
     )
+    portfolio_distribution_controller = DesktopPortfolioDistributionController(
+        PortfolioDistributionPresentationService(PortfolioDistributionViewModelBuilder()),
+        DesktopPortfolioDistributionRenderer(),
+    )
+    portfolio_controller = DesktopPortfolioController(
+        portfolio_overview_controller,
+        portfolio_distribution_controller,
+    )
 
     return DesktopApplicationDependencies(
         database=database,
@@ -284,6 +313,9 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         marketplace_opportunity_execution=marketplace_opportunity_execution,
         portfolio_overview_execution=portfolio_overview_execution,
         portfolio_overview_controller=portfolio_overview_controller,
+        portfolio_distribution_execution=portfolio_distribution_execution,
+        portfolio_distribution_controller=portfolio_distribution_controller,
+        portfolio_controller=portfolio_controller,
         dashboard_homepage=DashboardHomepageService(
             history_queries,
             comparison_presentation,

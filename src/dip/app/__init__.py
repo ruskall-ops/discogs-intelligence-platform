@@ -68,6 +68,12 @@ from .portfolio_overview import (
     build_portfolio_overview_input,
 )
 from .portfolio_overview_presentation import PortfolioOverviewPresentationService
+from .portfolio_distribution import (
+    PortfolioDistributionExecutionConsistencyError,
+    PortfolioDistributionExecutionService,
+    build_portfolio_distribution_input,
+)
+from .portfolio_distribution_presentation import PortfolioDistributionPresentationService
 from .weekend_listings_presentation import WeekendListingsPresentationService
 
 
@@ -127,11 +133,15 @@ __all__ = [
     "PortfolioOverviewExecutionConsistencyError",
     "PortfolioOverviewExecutionService",
     "PortfolioOverviewPresentationService",
+    "PortfolioDistributionExecutionConsistencyError",
+    "PortfolioDistributionExecutionService",
+    "PortfolioDistributionPresentationService",
     "WeekendListingsPresentationService",
     "build_marketplace_momentum_input",
     "build_marketplace_stability_input",
     "build_marketplace_scarcity_input",
     "build_marketplace_opportunity_input",
     "build_portfolio_overview_input",
+    "build_portfolio_distribution_input",
     "main",
 ]

@@ -49,6 +49,12 @@ from dip.portfolio_intelligence import (
     PortfolioOverviewDiagnosticCode,
     PortfolioOverviewReasonCode,
     PortfolioReleaseMatchState,
+    PortfolioDistributionAnalysisState,
+    PortfolioDistributionCountingMode,
+    PortfolioDistributionDiagnosticCode,
+    PortfolioDistributionDimension,
+    PortfolioDistributionEvidenceCoverage,
+    PortfolioDistributionReasonCode,
 )
 from dip.marketplace_intelligence.models import (
     MarketplaceDataStatus,
@@ -120,6 +126,12 @@ _ENUM_TYPES: dict[str, type[Enum]] = {
     "dip.portfolio_intelligence.portfolio_overview.PortfolioOverviewDiagnosticCode": PortfolioOverviewDiagnosticCode,
     "dip.portfolio_intelligence.portfolio_overview.PortfolioOverviewReasonCode": PortfolioOverviewReasonCode,
     "dip.portfolio_intelligence.portfolio_overview.PortfolioReleaseMatchState": PortfolioReleaseMatchState,
+    "dip.portfolio_intelligence.portfolio_distribution.PortfolioDistributionAnalysisState": PortfolioDistributionAnalysisState,
+    "dip.portfolio_intelligence.portfolio_distribution.PortfolioDistributionCountingMode": PortfolioDistributionCountingMode,
+    "dip.portfolio_intelligence.portfolio_distribution.PortfolioDistributionDiagnosticCode": PortfolioDistributionDiagnosticCode,
+    "dip.portfolio_intelligence.portfolio_distribution.PortfolioDistributionDimension": PortfolioDistributionDimension,
+    "dip.portfolio_intelligence.portfolio_distribution.PortfolioDistributionEvidenceCoverage": PortfolioDistributionEvidenceCoverage,
+    "dip.portfolio_intelligence.portfolio_distribution.PortfolioDistributionReasonCode": PortfolioDistributionReasonCode,
     (
         "dip.decision_intelligence.marketplace_momentum."
         "ActivityIntensity"

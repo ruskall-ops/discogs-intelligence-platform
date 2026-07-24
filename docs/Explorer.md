@@ -166,12 +166,14 @@ fetch, history
 query, repository access, persistence write, comparison, sorting, filtering or
 refresh; each only renders the result captured when the Explorer was built.
 
-Portfolio Overview is intentionally not a fifteenth Collection Explorer
-destination. It is a separate top-level Portfolio destination because it
-aggregates ownership across release-level Marketplace Decision Intelligence.
-Its controller receives an already-produced Portfolio Overview result; opening
-the destination performs no collection query, provider call, intelligence
-execution, matching, aggregation, ratio calculation, or sorting.
+Portfolio Intelligence is intentionally outside Collection Explorer. The
+separate top-level Portfolio workspace contains Overview and Distribution.
+Overview aggregates Marketplace Decision Intelligence coverage while
+Distribution describes canonical collection metadata. Both controllers receive
+already-produced results; opening Portfolio or switching tabs performs no
+collection query, provider call, intelligence execution, normalization,
+matching, aggregation, ratio calculation, concentration calculation, or
+sorting.
 
 The existing direct **Open Collection Health** and **Open Hidden Gems** actions
 remain dedicated windows for compatibility and convenience. They share the

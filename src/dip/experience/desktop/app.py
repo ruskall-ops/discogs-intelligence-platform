@@ -40,7 +40,9 @@ class App(tk.Tk):
         self.collection_explorer_controller = dependencies.collection_explorer_controller
         self.hidden_gems_controller = dependencies.hidden_gems_controller
         self.portfolio_overview_controller = dependencies.portfolio_overview_controller
+        self.portfolio_controller = dependencies.portfolio_controller
         self.current_portfolio_overview_result = None
+        self.current_portfolio_distribution_result = None
         self.desktop_homepage_renderer = DesktopDashboardHomepageRenderer()
         self.current_dashboard_homepage = DashboardHomepageViewModel.loading()
         self.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -63,7 +65,7 @@ class App(tk.Tk):
         ttk.Button(toolbar, text="Export Excel", command=self.export_report).pack(side="left", padx=3)
         ttk.Button(toolbar, text="Export Intelligence Report", command=self.export_intelligence_report).pack(side="left", padx=3)
         ttk.Button(toolbar, text="Refresh View", command=self.load_table).pack(side="left", padx=3)
-        ttk.Button(toolbar, text="Portfolio Overview", command=self.open_portfolio_overview).pack(side="left", padx=3)
+        ttk.Button(toolbar, text="Portfolio", command=self.open_portfolio_overview).pack(side="left", padx=3)
 
         self.progress = ttk.Progressbar(toolbar, length=260, mode="determinate")
         self.progress.pack(side="right", padx=5)
@@ -588,40 +590,37 @@ class App(tk.Tk):
 
     def open_portfolio_overview(self):
         """Open the separate Portfolio experience from a supplied completed result."""
-        if self.portfolio_overview_controller is None:
-            messagebox.showerror("Portfolio Overview unavailable", "Portfolio Overview is not configured.")
+        if self.portfolio_controller is None:
+            messagebox.showerror("Portfolio unavailable", "Portfolio is not configured.")
             return
         try:
-            rendered = self.portfolio_overview_controller.open(
-                self.current_portfolio_overview_result
+            rendered = self.portfolio_controller.open(
+                self.current_portfolio_overview_result,
+                self.current_portfolio_distribution_result,
             )
         except Exception as exc:
             messagebox.showerror(
-                "Portfolio Overview unavailable",
-                f"Portfolio Overview could not be displayed:\n\n{exc}",
+                "Portfolio unavailable",
+                f"Portfolio could not be displayed:\n\n{exc}",
             )
             return
         window = tk.Toplevel(self)
         window.title(rendered.title)
-        window.geometry("1000x760")
+        window.geometry("1050x760")
         window.minsize(760, 540)
         window.transient(self)
-        header = ttk.Frame(window, padding=(18, 18, 18, 8))
-        header.pack(fill="x")
-        ttk.Label(header, text=rendered.headline, font=("Helvetica", 20, "bold")).pack(anchor="w")
-        ttk.Label(header, text=rendered.summary, wraplength=920, justify="left").pack(anchor="w", pady=(8, 0))
-        content = ttk.Frame(window, padding=(18, 8, 18, 12))
-        content.pack(fill="both", expand=True)
-        text = tk.Text(content, wrap="word", padx=10, pady=10)
-        scrollbar = ttk.Scrollbar(content, orient="vertical", command=text.yview)
-        text.configure(yscrollcommand=scrollbar.set)
+        notebook = ttk.Notebook(window)
+        notebook.pack(fill="both", expand=True, padx=12, pady=12)
         for section in rendered.sections:
-            text.insert("end", f"{section.title}\n", "section_heading")
-            text.insert("end", f"{section.body}\n\n")
-        text.tag_configure("section_heading", font=("Helvetica", 12, "bold"))
-        text.configure(state="disabled")
-        text.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
+            frame = ttk.Frame(notebook, padding=12)
+            notebook.add(frame, text=section.title)
+            text = tk.Text(frame, wrap="word", padx=10, pady=10)
+            scrollbar = ttk.Scrollbar(frame, orient="vertical", command=text.yview)
+            text.configure(yscrollcommand=scrollbar.set)
+            text.insert("1.0", section.body)
+            text.configure(state="disabled")
+            text.pack(side="left", fill="both", expand=True)
+            scrollbar.pack(side="right", fill="y")
         ttk.Button(window, text="Close", command=window.destroy).pack(pady=(0, 12))
 
     def load_table(self):

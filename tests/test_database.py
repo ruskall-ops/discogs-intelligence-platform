@@ -94,6 +94,32 @@ class DatabaseTestCase(unittest.TestCase):
             ((3, 1), (20, 2)),
         )
 
+    def test_owned_portfolio_metadata_rows_preserve_canonical_release_values(self) -> None:
+        self.database.conn.execute(
+            """
+            INSERT INTO releases (
+                release_id, artist, title, label, format, released
+            ) VALUES (7, 'Artist', 'Title', 'Label', 'Vinyl', '1984')
+            """
+        )
+        self.database.conn.execute(
+            "INSERT INTO collection_ownership (release_id, quantity) VALUES (7, 3)"
+        )
+
+        rows = self.database.owned_portfolio_metadata_rows()
+
+        self.assertEqual(
+            tuple(dict(value) for value in rows),
+            ({
+                "release_id": 7,
+                "quantity": 3,
+                "artist": "Artist",
+                "label": "Label",
+                "format": "Vinyl",
+                "released": "1984",
+            },),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

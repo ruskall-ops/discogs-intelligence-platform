@@ -218,6 +218,11 @@ The [Collection Intelligence Explorer](docs/Explorer.md) expands those same
 presentation models into read-only desktop drill-down sections. It does not
 query persistence or providers and does not calculate intelligence.
 
+[Portfolio Intelligence](docs/PortfolioIntelligence.md) provides separate
+Overview and Distribution views over owned holdings. Portfolio Distribution
+describes canonical artist, label, format, release-year, and decade membership
+without valuation, scoring, or diversification interpretation.
+
 ---
 
 # Long-Term Vision

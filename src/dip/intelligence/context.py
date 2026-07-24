@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from dip.decision_intelligence import MarketplaceScarcityInput
     from dip.decision_intelligence import MarketplaceOpportunityInput
     from dip.portfolio_intelligence import PortfolioOverviewInput
+    from dip.portfolio_intelligence import PortfolioDistributionInput
     from dip.marketplace_intelligence.price_changes import (
         MarketplaceSnapshotComparisonInput,
     )
@@ -43,3 +44,4 @@ class IntelligenceContext:
     marketplace_scarcity_input: MarketplaceScarcityInput | None = None
     marketplace_opportunity_input: MarketplaceOpportunityInput | None = None
     portfolio_overview_input: PortfolioOverviewInput | None = None
+    portfolio_distribution_input: PortfolioDistributionInput | None = None

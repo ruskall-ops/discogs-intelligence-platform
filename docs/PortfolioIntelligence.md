@@ -113,3 +113,81 @@ confidence probability, recommendation, ranking, target allocation,
 optimization, or rebalancing. Portfolio Decision Intelligence remains deferred.
 No schema, migration, Marketplace serializer, Marketplace History, or
 Intelligence History wire-format change is introduced.
+
+## Portfolio Distribution 1.0
+
+Portfolio Distribution is the second descriptive Portfolio Intelligence
+module. It consumes canonical collection ownership and release metadata only.
+It is independent of Portfolio Overview and consumes no Marketplace,
+Opportunity, Decision Intelligence, snapshot, listing, price, or history data.
+Its module ID and module version are `portfolio_distribution` and `1.0`; its
+rule-set version is `1.0`.
+
+### Supported metadata
+
+The collection catalogue stores one opaque canonical value for artist, label,
+and format, plus the owned release's supplied `released` value. Version 1.0
+therefore supports these dimensions in fixed order:
+
+1. artist;
+2. label;
+3. format;
+4. exact release year; and
+5. decade derived as `(year // 10) * 10`.
+
+These strings are trimmed only at the application normalization boundary.
+Joined artist, label, or format text is not split into an invented taxonomy.
+Each supported dimension is consequently single-value membership in version
+1.0.
+
+Country, genre, and style are unavailable in canonical collection metadata.
+Genre and style fields in legacy Marketplace snapshots are not collection
+facts and are deliberately excluded. Title, folder, rating, notes, acquisition
+date, catalogue number, and condition are stored but are not distribution
+dimensions in this slice.
+
+### Ownership and category accounting
+
+The execution service calls the narrow, release-ordered
+`owned_portfolio_metadata_rows` boundary once and converts adapter rows into
+immutable facts. Repeated release rows with identical metadata are normalized
+by summing quantity. Conflicting duplicate metadata excludes that identity
+rather than selecting one value silently. Unique releases count once; copy
+counts sum positive quantity; duplicate-copy count is copies minus unique
+releases.
+
+Every category exposes its canonical identity and display value, unique-release
+and copy counts, explicit portfolio denominators, exact `Decimal` ratios, and
+ascending contributing release IDs. Since all implemented dimensions are
+single-valued, category totals equal releases and copies with metadata.
+Future canonical multi-valued metadata may allow membership totals and shares
+to exceed portfolio totals, but version 1.0 does not parse such values.
+
+Missing metadata is never converted into an `Unknown` category. Each dimension
+separately exposes releases and copies with and without metadata, exact coverage
+ratios, and missing release IDs. Overall metadata coverage is:
+
+- `complete` when every implemented dimension is present for every valid release;
+- `partial` when every dimension has some usable metadata but at least one value is missing;
+- `limited` when some dimensions have no usable metadata and another remains usable;
+- `insufficient` for an empty portfolio or when no implemented dimension is usable.
+
+Coverage is evidence completeness, not confidence or portfolio quality.
+
+### Ordering, concentration, and lifecycle
+
+Dimensions use the fixed order above. Categories use release count descending,
+copy count descending, canonical display value, and category identity.
+Decades use ascending decade order. Release detail uses ascending release ID.
+Largest-category facts use the same count and canonical tie-break rules and
+report tie counts without interpretation.
+
+The top-level Portfolio desktop experience now contains Overview and
+Distribution tabs. Both receive already-produced results. Opening Portfolio or
+switching tabs performs no query, execution, normalization, aggregation,
+ratio calculation, concentration calculation, or sorting.
+
+Portfolio Distribution contains no score, valuation, recommendation,
+diversification assessment, risk statement, prediction, or target allocation.
+Portfolio Concentration Intelligence and Portfolio Decision Intelligence remain
+deferred.

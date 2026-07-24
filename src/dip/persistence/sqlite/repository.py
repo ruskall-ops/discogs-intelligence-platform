@@ -218,6 +218,26 @@ class Database:
                 ORDER BY release_id
                 """
             ).fetchall()
+
+    def owned_portfolio_metadata_rows(self) -> list[sqlite3.Row]:
+        """Return canonical ownership and release metadata in release order."""
+
+        with self._lock:
+            return self.conn.execute(
+                """
+                SELECT
+                    co.release_id,
+                    co.quantity,
+                    r.artist,
+                    r.label,
+                    r.format,
+                    r.released
+                FROM collection_ownership co
+                JOIN releases r
+                    ON r.release_id = co.release_id
+                ORDER BY co.release_id
+                """
+            ).fetchall()
         
     def start_analysis_run(
         self,
