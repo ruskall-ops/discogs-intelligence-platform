@@ -1018,7 +1018,7 @@ This supports future reporting and diagnostics.
 
 # Read-Only Application Queries
 
-Historical data is exposed to future Dashboard, Explorer and comparison callers
+Historical data is exposed to Dashboard, Explorer, and comparison callers
 through `IntelligenceHistoryQueryService`. The service depends only on the
 `IntelligenceHistoryRepository` protocol and contains no SQLite, presentation,
 comparison or write behaviour.
@@ -1178,7 +1178,7 @@ not-found error.
 
 # Comparison ViewModel Boundary
 
-Structured `ExecutionComparison` results are transformed for future interfaces
+Structured `ExecutionComparison` results are transformed for interfaces
 through the presentation-neutral Comparison ViewModel boundary under
 `dip.experience.comparison`.
 
@@ -1199,12 +1199,12 @@ ExecutionComparisonViewModel
       ┌─────┴─────┐
       ▼           ▼
 Dashboard       Explorer
- future         future
 ```
 
 The builder receives an already calculated comparison. It performs no history
 queries, persistence access, comparison calculation, scoring, or domain
-interpretation. Dashboard and Explorer components are not part of this slice.
+interpretation. Dashboard and Explorer presentation consume this boundary
+without changing those responsibilities.
 
 The immutable ViewModels expose execution-level state counts, module-level
 change classifications, and the five generic field changes. Canonical IDs are
@@ -1551,7 +1551,7 @@ The implementation should be capable of supporting future intelligence modules w
 
 ---
 
-# Future Extensions
+# Extensions and implemented consumers
 
 The foundation intentionally enables future capabilities without requiring redesign.
 
@@ -1559,7 +1559,7 @@ Examples include:
 
 ## Historical Comparison Engine
 
-Compare any two executions.
+The implemented Comparison Engine can compare two complete executions.
 
 Examples:
 
@@ -1573,7 +1573,8 @@ Examples:
 
 ## Trend Analysis
 
-Historical module trends may be visualised.
+The first Collection Trends projection and Historical Intelligence Trend
+Analysis are implemented. Richer visualisation remains future work.
 
 Examples:
 
@@ -1676,7 +1677,7 @@ The architecture remains open for extension but closed for modification.
 
 ## Dashboard Integration
 
-Dashboard widgets should consume Intelligence History through application services.
+Dashboard widgets consume Intelligence History through application services.
 
 They should never query persistence directly.
 
@@ -1744,7 +1745,7 @@ Collection Intelligence Modules
  Intelligence History
            │
            ▼
-  Future Comparison Engine
+    Comparison Engine
            │
            ▼
  Dashboard / Explorer
@@ -1760,9 +1761,11 @@ Every execution of the Intelligence Engine represents an observation made using 
 
 Those observations become part of the permanent historical record.
 
-By preserving them immutably, DIP gains the ability to explain not only its current recommendations, but how those recommendations have evolved over time.
+By preserving them immutably, DIP gains the ability to explain not only its
+current assessments, but how those assessments have evolved over time.
 
-This capability underpins future features including trend analysis, historical comparisons, explainable intelligence and methodology evolution.
+This capability underpins implemented trend analysis, historical comparisons,
+and explainable intelligence, and supports future methodology evolution.
 
 The architecture deliberately separates intelligence generation from intelligence preservation.
 
@@ -1796,8 +1799,9 @@ release/copy counts, and exact Decimal ratios. Numeric differences are
 
 Change Analysis performs no history loading, repository query, provider
 execution, recalculation, clock access, or fallback. Its output participates
-through additive history serialization registrations. Trend and Evolution
-Analysis, automatic retrieval, History Explorer, alerts, and dashboard
+through additive history serialization registrations. Trend Analysis, History
+Explorer, and Intelligence Insights are implemented downstream consumers;
+Evolution Analysis, automatic retrieval, alerts, and direct Dashboard
 integration remain future work.
 ## Intelligence Trend Analysis 1.0
 
@@ -1824,8 +1828,9 @@ The output preserves assessment and evidence history, numeric runs and deltas,
 transition frequencies, reason and diagnostic presence, dimension evolution,
 evidence, rules, diagnostics, and provenance. It does not retrieve history,
 compare snapshots, execute Change Analysis, predict a next state, generate an
-alert, calculate a score, or recommend action. Evolution Analysis, History
-Explorer, automatic retrieval, and alerting remain deferred.
+alert, calculate a score, or recommend action. Evolution Analysis, automatic
+retrieval, and alerting remain deferred; History Explorer is an implemented
+downstream presentation experience.
 ## History Explorer experience
 
 History Explorer presents historical artefacts produced elsewhere. It does not

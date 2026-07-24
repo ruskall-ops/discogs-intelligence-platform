@@ -1,462 +1,118 @@
-# Roadmap
+# Discogs Intelligence Platform Roadmap
 
-> **The Discogs Intelligence Platform roadmap defines the planned evolution of the platform from its initial engineering foundations through to its long-term vision as an explainable intelligence platform for vinyl collectors.**
+## Purpose
 
-The roadmap provides strategic direction rather than fixed delivery dates. Priorities may evolve as the platform matures, new ideas emerge and user feedback is incorporated.
+This roadmap describes product evolution rather than a backlog of historical
+implementation tasks. Release status follows the software currently present on
+`main`. Future scope is directional and remains subject to architectural
+review.
 
----
-
-# Development Philosophy
-
-The Discogs Intelligence Platform is developed incrementally.
-
-Each release should:
-
-- Deliver meaningful value.
-- Improve the overall platform.
-- Build upon a stable foundation.
-- Avoid unnecessary complexity.
-- Remain aligned with the core vision.
-
-New ideas are encouraged, but they should first be documented and evaluated before becoming scheduled work.
-
----
-
-# Platform Evolution
-
-The platform evolves through three complementary intelligence layers.
-
-## Personal Intelligence
-
-Insights focused on helping an individual collector better understand their own collection.
-
-Examples include:
-
-- Collection Health
-- Hidden Gems
-- Historical Intelligence
-- Portfolio Analytics
-- Personal Dashboards
-
----
-
-## Marketplace Intelligence
-
-Insights focused on historical behaviour within the wider Discogs marketplace.
-
-Examples include:
-
-- Market Movers
-- Supply & Demand Trends
-- Price Momentum
-- Artist Momentum
-- Label Activity
-
----
-
-## Platform Intelligence
-
-Future anonymous, aggregated intelligence derived from the collective behaviour of all users.
-
-Examples may include:
-
-- Community Trends
-- Anonymous Collection Statistics
-- Emerging Genres
-- Regional Trends
-
-Platform Intelligence is intentionally not scheduled and will only be introduced once sufficient historical data and user adoption make it meaningful.
-
----
-
-# Business Model
-
-DIP follows a freemium intelligence model.
-
-The free platform provides genuine value through collection intelligence and historical tracking.
-
-Premium subscriptions unlock deeper intelligence, automation and advanced analysis.
-
-As adoption grows, anonymous aggregate data improves platform-wide intelligence, creating a positive feedback loop between community growth and insight quality.
-
----
-
-# Current Sprint
-
-## Sprint 2
-
-### Objective
-
-Complete Version 0.2 Collection Intelligence.
-
-### Completed
-
-- Collection Intelligence Engine foundation ✅
-- Collection Health vertical slice ✅
-- Interactive Dashboard foundation ✅
-- Collection Health dashboard integration ✅
-- Hidden Gems Intelligence ✅
-- Historical Intelligence ✅
-- Desktop Dashboard Integration ✅
-- Historical Intelligence Dashboard Integration ✅
-- Collection Intelligence Explorer ✅
-- Explainable Explorer drill-down ✅
-
-### Current Development Priority
-
-- Intelligence History
-
-
-**Version 0.2 – Collection Intelligence**
-
----
-
-# Planned Releases
-
----
-
-## Version 0.1 – Core Platform
-
-**Status**
-
-✅ Released
-
-### Goal
-
-Create the engineering foundation for the entire platform.
-
-Completed deliverables:
-
-- Database Foundation
-- Import Engine
-- Historical Snapshot Engine
-- Reporting Framework
-- Configuration System
-- Database Migrations
-- Automated Test Suite
-
-This version prioritised engineering quality and stability over user-facing functionality.
-
----
-
-## Version 0.2 – Collection Intelligence
-
-**Status**
-
-🚧 In Progress
-
-### Goal
-
-Transform DIP from a collection reporting tool into a true collection intelligence platform.
-
-The focus is on producing transparent, deterministic and explainable insights that help collectors better understand their collections without making purchasing or selling decisions.
-
----
-
-### Foundation ✅
-
-The following capabilities now provide the foundation for future intelligence development:
-
-- Collection Intelligence Engine
-- Collection Health
-- Interactive Dashboard
-- Hidden Gems Intelligence
-- Historical Intelligence
-- Development Standards
-- AI Development Playbook
-
-These components establish the architecture upon which all future intelligence modules will build.
-
----
-
-# Intelligence Capabilities
-
-## Historical Intelligence
-
-**Status**
-
-✅ Initial vertical slice complete.
-
-Historical Intelligence introduces analysis of change over time.
-
-Rather than examining only the latest collection snapshot, Historical Intelligence compares historical snapshots to identify meaningful changes and trends.
-
-Future iterations will expand this capability to include:
-
-- Collection Trends
-- Collection Growth
-- Collection Value Trends
-- Artist Trends
-- Label Trends
-- Genre Trends
-- Historical Collection Summary
-
-Examples include:
-
-- Highest value increases
-- Largest value decreases
-- Fastest growing artists
-- Collection growth over time
-- Collection composition changes
-
-Historical Intelligence provides the analytical foundation for many future intelligence capabilities.
-
----
-
-## Intelligence History
-
-Historical snapshots already preserve the underlying collection.
-
-Intelligence History extends this by preserving the outputs generated by intelligence modules over time.
-
-Examples include:
-
-- Collection Health history
-- Hidden Gems history
-- Historical Intelligence history
-- Future intelligence module history
-
-Historical Intelligence analyses the collection itself.
-
-Intelligence History analyses how the platform's intelligence evolves.
-
-Together they provide a complete historical understanding of both the collection and the insights generated from it.
-
----
-
-# Explorer
-
-## Collection Intelligence Explorer
-
-The Collection Intelligence Explorer provides an enriched view of every release.
-
-Rather than simply displaying collection data, each release gradually becomes a container for the intelligence generated throughout the platform.
-
-Examples include:
-
-- Collection Health
-- Hidden Gems
-- Historical Intelligence
-- Future Market Intelligence
-- Future Portfolio Analytics
-
-The Explorer becomes the primary window into the platform's intelligence rather than merely a collection browser.
-
----
-
-## Version 0.3 – Marketplace Intelligence
-
-**Status**
-
-📅 Planned
-
-### Goal
-
-Expand intelligence beyond the user's collection into the wider Discogs marketplace.
-
-Planned capabilities include:
-
-- Market Intelligence
-- Market Movers
-- Supply Trends
-- Demand Trends
-- Marketplace Activity
-- Price Momentum
-
-This release introduces external intelligence while maintaining the platform's commitment to explainable outputs.
-
----
-
-## Version 0.4 – Decision Support
-
-**Status**
-
-📅 Planned
-
-### Goal
-
-Personalise the platform around the individual collector.
-
-Expected capabilities:
-
-- Personal Watchlists
-- Wishlist Intelligence
-- Personal Alerts
-- Custom Dashboards
-- Collection Goals
-- Personal Recommendations
-
-All recommendations will remain transparent and explainable, supporting research rather than replacing user judgement.
-
----
-
-# Developer Experience
-
-The project continues to improve its internal engineering workflow.
-
-Completed improvements include:
-
-- Development Standard
-- AI Development Playbook
-- ChatGPT Work import workflow
-- Automated testing
-- Pull Request workflow
-- Engineering documentation
-
-These improvements ensure long-term maintainability and consistent implementation quality.
-
----
-
-# Design Principles
-
-Every capability introduced should follow the project's core philosophy:
+Every release follows the same product principle:
 
 > **Automate the research, not the decision.**
 
-The platform should always:
+## Version 0.1 — Core Platform
 
-- Produce explainable intelligence.
-- Remain deterministic.
-- Avoid opaque scoring.
-- Never recommend buying or selling.
-- Support research rather than replace judgement.
+**Status: Released**
 
----
+Version 0.1 established the local desktop and data foundations:
 
-# Future Modules
+- Discogs collection CSV import;
+- Discogs Marketplace API integration;
+- SQLite collection and snapshot storage;
+- ordered schema migrations;
+- configuration and error boundaries;
+- collection search, filtering, review, and personal decision fields;
+- Markdown reporting and Excel export;
+- automated tests and the `src`-layout package structure.
 
-The following modules have been defined but are intentionally not scheduled.
+## Version 0.2 — Collection Intelligence
 
-They will be evaluated as the platform evolves.
+**Status: Released**
 
-| Module | Status |
-|----------|--------|
-| AI Collection Assistant | 🌱 Idea |
-| Alert Engine | 🌱 Idea |
-| Community Intelligence | 💭 Vision |
-| Dealer Toolkit | 🌱 Idea |
-| Market Discovery | 📝 Defined |
-| Mobile Companion | 🌱 Idea |
-| Platform Intelligence | 💭 Vision |
-| Portfolio Analytics | 📝 Defined |
-| Release Intelligence | 📝 Defined |
-| Trend Detection | 🌱 Idea |
+Version 0.2 transformed the collection tool into a deterministic intelligence
+platform:
 
----
+- versioned Intelligence Engine and registry;
+- Collection Health;
+- Hidden Gems;
+- Historical Intelligence over collection snapshots;
+- immutable Dashboard presentation;
+- Collection Health and Hidden Gems detail experiences;
+- Collection Intelligence Explorer;
+- architecture-first development standards.
 
-# Module Lifecycle
+## Version 0.3 — Marketplace Intelligence and Decision Support
 
-Future modules typically evolve through the following stages:
+**Status: Released**
 
-💭 Vision
+The current 0.3.0 release extends intelligence beyond the collection while
+preserving evidence and user control:
 
-↓
+- immutable Marketplace models, serialization, history repository, and SQLite
+  persistence;
+- Weekend Listings, Price Changes, Supply Changes, Rare Appearances, Listing
+  Lifecycle, and Marketplace Activity;
+- Marketplace Momentum, Stability, Scarcity, and Opportunity synthesis;
+- Portfolio Overview, Distribution, Concentration, and Opportunity Alignment;
+- Intelligence History, comparison, Change Analysis, Trend Analysis, History
+  Explorer, and Intelligence Insights;
+- Marketplace Workspace and the first Portfolio Workspace vertical slice;
+- Dashboard command centre with deterministic workspace navigation;
+- Project Workspace as the desktop entry point;
+- Project Management application service, repository contract, and in-memory
+  adapter.
 
-🌱 Idea
+Version 0.3 remains a decision-support release. It does not introduce forecasts,
+recommendations, alerts, automatic opportunity ranking, project persistence,
+or buying and selling automation.
 
-↓
+## Version 0.4 — Collector Workflow Foundation
 
-📝 Defined
+**Status: Planned**
 
-↓
+Version 0.4 will make the implemented intelligence workspaces usable as a
+durable collector workflow. Candidate scope is:
 
-📅 Planned
+- persistent Projects and session restoration behind the existing
+  `ProjectRepository` boundary;
+- enabled project creation and opening workflows;
+- project-scoped collection refresh orchestration;
+- completed Portfolio Workspace pages for Distribution, Concentration,
+  Opportunity Alignment, History, and Research;
+- persistent, user-owned research notes and statuses;
+- watchlists, tags, and saved research views;
+- clearer continuity between Project Workspace, Dashboard, Portfolio, and
+  Marketplace research.
 
-↓
+The milestone must reuse the existing Project Management, application service,
+repository, presentation, and workspace boundaries. It must not turn research
+state into intelligence, recommendations, or automatic decisions.
 
-🚧 In Development
+Exact 0.4 scope is not yet committed. Capabilities should enter the release only
+as complete, reviewed vertical slices.
 
-↓
+## Future vision
 
-✅ Released
+Beyond the Collector Workflow Foundation, DIP may evolve toward:
 
----
+- richer multi-period history and visual exploration;
+- broader collection, Marketplace, and portfolio evidence;
+- evidence-based alerts and scheduled research;
+- additional replaceable market-data providers;
+- transparent personalisation controlled by the collector;
+- privacy-preserving, anonymous platform intelligence when product maturity and
+  adoption justify it;
+- alternative read-only interfaces over the same application boundaries.
 
-# Decision Making
+The following remain outside the roadmap unless separately designed and
+approved:
 
-New ideas should first be classified before implementation.
+- automated buying, selling, listing, or pricing;
+- opaque investment scores or return forecasts;
+- high-frequency market automation;
+- exposing individual collection data to other users.
 
-| Type | Destination |
-|---------|-------------|
-| Architecture decision | `/docs/decisions/` |
-| Future capability | `/docs/FutureModules/` |
-| Product roadmap | `Roadmap.md` |
-| Development task | GitHub Issue |
-| Immediate bug | GitHub Issue |
-| Major engineering decision | ADR |
-
-This process ensures ideas are captured without disrupting the current development sprint.
-
----
-
-# Architectural Direction
-
-As the platform evolves, new capabilities should extend the existing intelligence architecture rather than introducing parallel systems.
-
-Every intelligence module should:
-
-- Consume an `IntelligenceContext`.
-- Produce an `IntelligenceResult`.
-- Remain deterministic.
-- Remain explainable.
-- Integrate through the Collection Intelligence Engine.
-- Avoid direct dependencies on UI or persistence layers wherever possible.
-
-Architectural consistency is one of the platform's greatest long-term strengths.
-
----
-
-# Long-Term Vision
-
-The long-term ambition is to build the leading intelligence platform for vinyl collectors.
-
-Over time, the platform becomes more valuable not simply because more features are added, but because its historical knowledge and anonymous community intelligence continually improve.
-
-The long-term competitive advantage of DIP lies in transforming historical data into transparent, explainable intelligence.
-
-Rather than acting solely as a collection manager, DIP aims to become an evidence-based decision support platform that helps collectors:
-
-- Understand their collection.
-- Understand the wider marketplace.
-- Discover emerging opportunities.
-- Preserve historical intelligence.
-- Make more informed collecting decisions.
-
-The platform will always remain faithful to its core philosophy:
-
-> **Automate the research, not the collecting decision.**
-
----
-
-# Success Criteria
-
-Success is measured by:
-
-- Platform quality
-- User value
-- Explainable intelligence
-- Reliable historical data
-- Sustainable architecture
-- Long-term maintainability
-
-rather than the speed at which features are delivered.
-
----
-
-# Guiding Principle
-
-Ideas should never be lost.
-
-Features should never be rushed.
-
-The roadmap exists to ensure the platform evolves deliberately, sustainably and consistently over time.
-
----
-
-## Document Information
-
-Version: 1.2
-
-Status: Active
-
-Owner: Russell Friend
+Long-term ideas belong in vision or future-module documents. Concrete delivery
+work belongs in reviewed milestones and issues, not in a duplicate sprint
+ledger inside this roadmap.

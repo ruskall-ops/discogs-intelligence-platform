@@ -270,19 +270,20 @@ absent result remains unavailable without degrading the other destinations.
 The wording describes observed Marketplace alignment rather than financial
 advice, value, or predicted outcomes.
 
-## First-slice limitations
+## Current limitations
 
 Search, filtering, user sorting, charts, forecasting, arbitrary date ranges,
-per-release trends,
-Protected Records, Market Movers, broader Marketplace Intelligence, automatic
-Price Changes, Marketplace Momentum, Marketplace Stability, Marketplace Scarcity, or Marketplace Opportunity execution, live Marketplace monitoring,
-background refresh, and AI summaries remain future work.
+per-release trends, Protected Records, Market Movers, automatic Marketplace
+execution, live Marketplace monitoring, background refresh, and AI-generated
+summaries remain outside the Collection Explorer. Marketplace results are
+supplied explicitly; tab navigation never executes them.
 ## Historical Intelligence desktop
 
-Historical Intelligence is a separate top-level experience with a Change
-Analysis destination. The desktop receives one already-produced comparison
-result. Opening it performs no history retrieval, comparison, calculation,
-provider execution, or sorting. Version 1 does not add a History Explorer.
+Historical Intelligence is a separate top-level experience with Change
+Analysis, Trend Analysis, History Explorer, and Intelligence Insights
+destinations. The desktop receives already-produced models. Opening or
+switching destinations performs no history retrieval, comparison, calculation,
+provider execution, or sorting.
 ## Historical Intelligence Trend Analysis
 
 The Historical Intelligence desktop now contains Change Analysis and Trend
