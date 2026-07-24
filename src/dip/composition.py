@@ -9,6 +9,7 @@ from dip.app.collection_explorer_presentation import CollectionExplorerPresentat
 from dip.app.collection_trends_presentation import CollectionTrendsPresentationService
 from dip.app.comparison_presentation import ComparisonPresentationService
 from dip.app.dashboard import DashboardHomepageService
+from dip.app.dashboard_integration_presentation import DashboardIntegrationPresentationService
 from dip.app.hidden_gems_presentation import HiddenGemsPresentationService
 from dip.app.intelligence_comparison import IntelligenceComparisonService
 from dip.app.intelligence_history import IntelligenceHistoryQueryService
@@ -56,7 +57,7 @@ from dip.config import SETTINGS
 from dip.experience.collection_health import CollectionHealthDetailViewModelBuilder
 from dip.experience.comparison import ComparisonViewModelBuilder
 from dip.experience.collection_trends import CollectionTrendsViewModelBuilder
-from dip.experience.dashboard import DashboardHomepageViewModelBuilder
+from dip.experience.dashboard import DashboardCommandCenterBuilder, DashboardHomepageViewModelBuilder
 from dip.experience.explorer import CollectionExplorerViewModelBuilder
 from dip.experience.desktop.collection_health_renderer import (
     DesktopCollectionHealthController,
@@ -153,6 +154,10 @@ from dip.experience.desktop.marketplace_workspace_renderer import (
     DesktopMarketplaceWorkspaceController,
     DesktopMarketplaceWorkspaceRenderer,
 )
+from dip.experience.desktop.dashboard_command_center_renderer import (
+    DesktopDashboardCommandCenterController,
+    DesktopDashboardCommandCenterRenderer,
+)
 from dip.experience.weekend_listings import WeekendListingsDetailViewModelBuilder
 from dip.experience.desktop.weekend_listings_renderer import (
     DesktopWeekendListingsRenderer,
@@ -211,6 +216,7 @@ class DesktopApplicationDependencies:
     intelligence_insights_presentation: IntelligenceInsightsPresentationService | None = None
     intelligence_insights_controller: DesktopIntelligenceInsightsController | None = None
     marketplace_workspace_controller: DesktopMarketplaceWorkspaceController | None = None
+    dashboard_command_center_controller: DesktopDashboardCommandCenterController | None = None
 
 
 def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
@@ -400,14 +406,15 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         portfolio_concentration_controller,
         portfolio_opportunity_alignment_controller,
     )
+    portfolio_workspace_presentation = PortfolioWorkspacePresentationService(
+        portfolio_overview_presentation,
+        portfolio_distribution_presentation,
+        portfolio_concentration_presentation,
+        portfolio_opportunity_alignment_presentation,
+        PortfolioWorkspaceStateBuilder(),
+    )
     portfolio_workspace_controller = DesktopPortfolioWorkspaceController(
-        PortfolioWorkspacePresentationService(
-            portfolio_overview_presentation,
-            portfolio_distribution_presentation,
-            portfolio_concentration_presentation,
-            portfolio_opportunity_alignment_presentation,
-            PortfolioWorkspaceStateBuilder(),
-        ),
+        portfolio_workspace_presentation,
         DesktopPortfolioWorkspaceRenderer(),
     )
     intelligence_change_analysis_controller = DesktopIntelligenceChangeAnalysisController(
@@ -418,8 +425,11 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         IntelligenceTrendAnalysisPresentationService(IntelligenceTrendAnalysisViewModelBuilder()),
         DesktopIntelligenceTrendAnalysisRenderer(),
     )
+    history_explorer_presentation = HistoryExplorerPresentationService(
+        HistoryExplorerStateBuilder()
+    )
     history_explorer_controller = DesktopHistoryExplorerController(
-        HistoryExplorerPresentationService(HistoryExplorerStateBuilder()),
+        history_explorer_presentation,
         DesktopHistoryExplorerRenderer(),
     )
     intelligence_insights_presentation = IntelligenceInsightsPresentationService(
@@ -431,6 +441,15 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
     marketplace_workspace_controller = DesktopMarketplaceWorkspaceController(
         MarketplaceWorkspacePresentationService(MarketplaceWorkspaceStateBuilder()),
         DesktopMarketplaceWorkspaceRenderer(),
+    )
+    dashboard_command_center_controller = DesktopDashboardCommandCenterController(
+        DashboardIntegrationPresentationService(
+            portfolio_workspace_presentation,
+            MarketplaceWorkspacePresentationService(MarketplaceWorkspaceStateBuilder()),
+            history_explorer_presentation,
+            DashboardCommandCenterBuilder(),
+        ),
+        DesktopDashboardCommandCenterRenderer(),
     )
 
     return DesktopApplicationDependencies(
@@ -462,6 +481,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         intelligence_insights_presentation=intelligence_insights_presentation,
         intelligence_insights_controller=intelligence_insights_controller,
         marketplace_workspace_controller=marketplace_workspace_controller,
+        dashboard_command_center_controller=dashboard_command_center_controller,
         dashboard_homepage=DashboardHomepageService(
             history_queries,
             comparison_presentation,

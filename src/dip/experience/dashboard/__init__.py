@@ -31,8 +31,22 @@ from .presenter import (
     HistoricalIntelligenceCardPresenter,
     IntelligenceDashboardPresenter,
 )
+from .command_center import DashboardCommandCenterBuilder
+from .command_center_models import (
+    DashboardCommandCardId,
+    DashboardCommandCardViewModel,
+    DashboardCommandCenterViewModel,
+    DashboardNavigationAction,
+    DashboardNavigationTarget,
+)
 
 __all__ = [
+    "DashboardCommandCardId",
+    "DashboardCommandCardViewModel",
+    "DashboardCommandCenterBuilder",
+    "DashboardCommandCenterViewModel",
+    "DashboardNavigationAction",
+    "DashboardNavigationTarget",
     "CollectionHealthCardPresenter",
     "DashboardChangeSummaryViewModel",
     "DashboardChangedModuleViewModel",

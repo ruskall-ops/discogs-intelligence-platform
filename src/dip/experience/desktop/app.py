@@ -15,7 +15,9 @@ from dip.data_sources.discogs import DiscogsClient
 from dip.experience.reporting import ReportingService, render_markdown
 from dip.experience.dashboard import (
     DashboardHomepageViewModel,
+    DashboardNavigationTarget,
 )
+from dip.experience.portfolio_workspace import PortfolioWorkspaceDestination
 from dip.experience.desktop.homepage_renderer import (
     DesktopDashboardHomepageRenderer,
 )
@@ -58,6 +60,9 @@ class App(tk.Tk):
         )
         self.marketplace_workspace_controller = getattr(
             dependencies, "marketplace_workspace_controller", None
+        )
+        self.dashboard_command_center_controller = getattr(
+            dependencies, "dashboard_command_center_controller", None
         )
         self.current_portfolio_overview_result = None
         self.current_portfolio_distribution_result = None
@@ -203,6 +208,23 @@ class App(tk.Tk):
             padx=8,
             pady=(10, 4),
         )
+        self.dashboard_command_vars = {}
+        command_cards = (
+            ("Portfolio Summary", 6, 0), ("Portfolio Health", 6, 3),
+            ("Opportunity Highlights", 7, 0), ("Collection Changes", 7, 3),
+            ("Historical Changes", 8, 0), ("Marketplace Highlights", 8, 3),
+            ("Research Summary", 9, 0), ("Quick Actions", 9, 3),
+        )
+        for title, row, column in command_cards:
+            card = ttk.LabelFrame(self.dashboard_tab, text=title, padding=14)
+            card.grid(row=row, column=column, columnspan=3, padx=8, pady=8, sticky="nsew")
+            body = tk.StringVar(value="Workspace summary is loading…")
+            ttk.Label(card, textvariable=body, wraplength=350, justify="left").pack(
+                anchor="nw", fill="both", expand=True
+            )
+            actions = ttk.Frame(card)
+            actions.pack(anchor="w", fill="x", pady=(10, 0))
+            self.dashboard_command_vars[title] = (body, actions)
 
         filters = ttk.Frame(self.review_tab)
         filters.pack(fill="x", pady=(0,8))
@@ -449,8 +471,54 @@ class App(tk.Tk):
 
         for section_id, variable in self.dashboard_homepage_vars.items():
             variable.set(rendered.get(section_id, "Dashboard information is unavailable."))
+        self._refresh_dashboard_command_center()
         self._update_collection_explorer_navigation()
         self._update_hidden_gems_navigation()
+
+    def _refresh_dashboard_command_center(self):
+        if self.dashboard_command_center_controller is None:
+            return
+        try:
+            rendered = self.dashboard_command_center_controller.open(
+                self.current_dashboard_homepage,
+                portfolio_results=(
+                    self.current_portfolio_overview_result,
+                    self.current_portfolio_distribution_result,
+                    self.current_portfolio_concentration_result,
+                    self.current_portfolio_opportunity_alignment_result,
+                ),
+                marketplace_queue=self.current_marketplace_workspace_queue,
+                history_observations=self.current_history_snapshot_view_models,
+                history_changes=self.current_history_change_view_models,
+                history_trends=self.current_history_trend_view_models,
+            )
+        except Exception as exc:
+            for body, _ in self.dashboard_command_vars.values():
+                body.set(f"Workspace summary is unavailable: {type(exc).__name__}.")
+            return
+        for card in rendered.cards:
+            body, actions = self.dashboard_command_vars[card.title]
+            body.set(card.body)
+            for child in actions.winfo_children():
+                child.destroy()
+            for action in card.actions:
+                ttk.Button(
+                    actions,
+                    text=action.label,
+                    command=lambda target=action.target: self._open_dashboard_target(target),
+                ).pack(side="left", padx=(0, 6))
+
+    def _open_dashboard_target(self, target):
+        actions = {
+            DashboardNavigationTarget.PORTFOLIO: lambda: self.open_portfolio_overview(),
+            DashboardNavigationTarget.PORTFOLIO_OPPORTUNITY_ALIGNMENT: lambda: self.open_portfolio_overview(PortfolioWorkspaceDestination.OPPORTUNITY_ALIGNMENT),
+            DashboardNavigationTarget.PORTFOLIO_HISTORY: lambda: self.open_portfolio_overview(PortfolioWorkspaceDestination.HISTORY),
+            DashboardNavigationTarget.PORTFOLIO_RESEARCH: lambda: self.open_portfolio_overview(PortfolioWorkspaceDestination.RESEARCH),
+            DashboardNavigationTarget.COLLECTION_EXPLORER: self.open_intelligence_explorer,
+            DashboardNavigationTarget.HISTORICAL_INTELLIGENCE: self.open_intelligence_change_analysis,
+            DashboardNavigationTarget.MARKETPLACE_WORKSPACE: self.open_marketplace_workspace,
+        }
+        actions[target]()
 
     def open_collection_health(self):
         try:
@@ -617,7 +685,7 @@ class App(tk.Tk):
             pady=(0, 12)
         )
 
-    def open_portfolio_overview(self):
+    def open_portfolio_overview(self, destination=None):
         """Open the separate Portfolio experience from a supplied completed result."""
         if self.portfolio_workspace_controller is None:
             messagebox.showerror("Portfolio unavailable", "Portfolio is not configured.")
@@ -629,6 +697,10 @@ class App(tk.Tk):
                 self.current_portfolio_concentration_result,
                 self.current_portfolio_opportunity_alignment_result,
             )
+            if destination is not None:
+                rendered = self.portfolio_workspace_controller.navigate(
+                    rendered.state, destination
+                )
         except Exception as exc:
             messagebox.showerror(
                 "Portfolio unavailable",

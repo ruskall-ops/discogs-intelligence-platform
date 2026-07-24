@@ -8,6 +8,7 @@ from .dashboard import (
     CollectionIntelligencePresentationService,
     DashboardHomepageService,
 )
+from .dashboard_integration_presentation import DashboardIntegrationPresentationService
 from .hidden_gems_presentation import HiddenGemsPresentationService
 from .intelligence_comparison import (
     ComparisonHistoryUnavailableError,
@@ -112,6 +113,7 @@ __all__ = [
     "ComparisonPresentationService",
     "CollectionIntelligencePresentationService",
     "DashboardHomepageService",
+    "DashboardIntegrationPresentationService",
     "HistoricalIntelligenceExecution",
     "HistoricalModuleResult",
     "HistoricalExecutionNotFoundError",

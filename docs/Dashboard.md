@@ -199,6 +199,37 @@ to propagate to the desktop error boundary.
 Filtering, drill-down, charts, multi-run trends and background refresh remain
 future work and are not implemented by this homepage slice.
 
+## Dashboard command centre
+
+The unified Dashboard command centre composes the existing Dashboard homepage,
+Portfolio Workspace, Marketplace Workspace, and History Explorer presentation
+states. Its deterministic builder exposes eight cards in fixed order:
+Portfolio Summary, Portfolio Health, Opportunity Highlights, Collection
+Changes, Historical Changes, Marketplace Highlights, Research Summary, and
+Quick Actions.
+
+Each card copies a concise summary from an existing immutable presentation
+model or supplies neutral navigation guidance. Marketplace Highlights uses the
+first item in the caller-ordered Attention Queue and does not rank or sort it.
+Explicit navigation targets open existing Portfolio, Collection, Marketplace,
+and Historical Intelligence desktop controllers. No routing framework is
+introduced.
+
+```text
+Presentation Services
+        ↓
+Workspace builders
+        ↓
+DashboardCommandCenterBuilder
+        ↓
+DesktopDashboardCommandCenterRenderer
+```
+
+The command centre performs no intelligence execution, history retrieval,
+comparison, scoring, aggregation, persistence access, networking, forecasting,
+or recommendation. Missing inputs remain visible through the existing
+workspace empty and unavailable summaries.
+
 ---
 
 # Collection Health Experience
