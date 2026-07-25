@@ -136,7 +136,8 @@ refresh lifecycle over the collection already stored in SQLite. The desktop
 supplies a temporary token and progress callback, then renders progress and the
 terminal result. The service owns lazy provider construction, deterministic
 release iteration, one UTC capture timestamp, legacy `analysis_runs`,
-`market_snapshots`, current legacy score updates, and request throttling.
+`market_snapshots`, current legacy score updates, canonical aggregate
+Marketplace capture, and request throttling.
 
 Only provider-call failures are recoverable per release. Fatal persistence,
 scoring, callback, or internal failures cause the service to attempt to fail
@@ -144,9 +145,18 @@ the parent analysis run and raise an application error with the original cause.
 Observations written before a fatal network-spanning run may remain, but their
 failed parent is excluded from completed-run queries.
 
-CSV import remains a separate optional collection-update action. This first
-slice writes neither canonical Marketplace History nor Intelligence History
-and executes no Intelligence modules. See [Collector Run](CollectorRun.md).
+After every provider attempt and successful legacy write/score lifecycle has
+finished, a pure mapper constructs one immutable aggregate
+`MarketplaceSnapshot`. `CollectorRunService` records it through the injected
+Marketplace History command boundary before writing the legacy terminal state.
+Exact and optional provider facts remain canonical; a separate legacy
+projection owns existing defaults and float conversion. Canonical failure is a
+fatal application failure. Canonical evidence may remain if the later legacy
+terminal write fails.
+
+CSV import remains a separate optional collection-update action. Collector Run
+writes no Intelligence History and executes no Intelligence modules. See
+[Collector Run](CollectorRun.md).
 
 ### Intelligence and domain services
 

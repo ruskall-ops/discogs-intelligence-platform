@@ -8,6 +8,18 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Protocol
 
+from dip.marketplace_intelligence import MarketplaceSnapshot
+
+from .marketplace_capture import (
+    MarketplaceCaptureAttempt,
+    build_marketplace_snapshot,
+    failed_capture_attempt,
+    normalize_provider_facts,
+    project_legacy_marketplace_facts,
+    successful_capture_attempt,
+    unavailable_capture_attempt,
+)
+
 
 class CollectorRunStatus(str, Enum):
     """Terminal outcome of a Collector Run refresh stage."""
@@ -210,6 +222,12 @@ class DiscogsReleaseProvider(Protocol):
     def get_release(self, release_id: int) -> Mapping[str, Any] | None: ...
 
 
+class MarketplaceSnapshotRecorder(Protocol):
+    """Canonical command boundary required by a Collector Run."""
+
+    def record_snapshot(self, snapshot: MarketplaceSnapshot) -> MarketplaceSnapshot: ...
+
+
 ProgressCallback = Callable[[CollectorRunProgress], None]
 ProviderFactory = Callable[[str], DiscogsReleaseProvider]
 ScoreCalculator = Callable[
@@ -238,6 +256,7 @@ class CollectorRunService:
         score_calculator: ScoreCalculator,
         application_version: str,
         request_delay_seconds: float,
+        snapshot_recorder: MarketplaceSnapshotRecorder,
         *,
         clock: Callable[[], datetime] = utc_now,
         wait: Callable[[float], None],
@@ -256,11 +275,14 @@ class CollectorRunService:
             raise ValueError("request_delay_seconds must be zero or greater.")
         if not callable(clock) or not callable(wait):
             raise TypeError("clock and wait must be callable.")
+        if not callable(getattr(snapshot_recorder, "record_snapshot", None)):
+            raise TypeError("snapshot_recorder must provide record_snapshot().")
         self._repository = repository
         self._provider_factory = provider_factory
         self._score_calculator = score_calculator
         self._application_version = application_version
         self._request_delay_seconds = float(request_delay_seconds)
+        self._snapshot_recorder = snapshot_recorder
         self._clock = clock
         self._wait = wait
 
@@ -306,6 +328,7 @@ class CollectorRunService:
 
         attempted = succeeded = failed = 0
         failed_ids: list[int] = []
+        capture_attempts: list[MarketplaceCaptureAttempt] = []
         try:
             self._emit(
                 progress_callback,
@@ -317,20 +340,33 @@ class CollectorRunService:
                     data = provider.get_release(release_id)
                 except Exception:
                     data = None
+                    provider_failed = True
+                else:
+                    provider_failed = False
 
-                if data is None:
+                if provider_failed:
                     failed += 1
                     failed_ids.append(release_id)
+                    capture_attempts.append(failed_capture_attempt(release_id))
+                elif data is None:
+                    failed += 1
+                    failed_ids.append(release_id)
+                    capture_attempts.append(unavailable_capture_attempt(release_id))
                 else:
+                    facts = normalize_provider_facts(data)
+                    legacy_data = project_legacy_marketplace_facts(facts)
                     previous = self._repository.previous_snapshot(
                         release_id, captured_value
                     )
                     self._repository.add_snapshot(
-                        run_id, release_id, captured_value, data
+                        run_id, release_id, captured_value, legacy_data
                     )
-                    score = self._score_calculator(data, previous)
+                    score = self._score_calculator(legacy_data, previous)
                     self._repository.upsert_score(
                         release_id, captured_value, score
+                    )
+                    capture_attempts.append(
+                        successful_capture_attempt(release_id, facts)
                     )
                     succeeded += 1
 
@@ -347,6 +383,12 @@ class CollectorRunService:
                 if position < len(release_ids) - 1:
                     self._wait(self._request_delay_seconds)
 
+            snapshot = build_marketplace_snapshot(
+                run_id,
+                captured_at,
+                tuple(capture_attempts),
+            )
+            self._snapshot_recorder.record_snapshot(snapshot)
             status = (
                 CollectorRunStatus.COMPLETED
                 if failed == 0

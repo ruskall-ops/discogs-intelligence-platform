@@ -108,6 +108,24 @@ This slice deliberately does not capture canonical aggregate Marketplace
 History, execute intelligence, record Intelligence History, import a CSV, or
 scope data by Project.
 
+### Version 0.5.2 — Canonical Marketplace Capture
+
+**Status: Implemented, unreleased**
+
+The second slice records one immutable canonical Marketplace aggregate for
+each Collector Run that finishes every provider attempt. It preserves exact
+optional provider facts, maps complete, partial and failed evidence with safe
+diagnostics, reuses the existing Marketplace History command and SQLite
+repository, and retains the legacy snapshot and scoring workflow through an
+explicit compatibility projection.
+
+Canonical capture uses deterministic `collector-run-{analysis_run_id}`
+identity without adding a relational provenance column. It occurs before the
+legacy terminal write, so immutable canonical evidence remains valid if that
+later write fails. This slice adds no schema, Project scope, Intelligence
+execution, Intelligence History, CSV reconciliation, scheduling, cancellation,
+or package-version change.
+
 Candidate follow-on slices include:
 
 - session and workspace restoration after the run lifecycle is explicit;

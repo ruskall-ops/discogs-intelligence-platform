@@ -470,27 +470,11 @@ History creates intelligence.
 
 # Marketplace Snapshot Model
 
-Suggested model:
-
-```python
-@dataclass(frozen=True)
-class MarketplaceSnapshot:
-    release_id: int
-    captured_at: datetime
-
-    lowest_price: Decimal | None
-    median_price: Decimal | None
-    highest_price: Decimal | None
-
-    num_for_sale: int | None
-    num_wanted: int | None
-
-    last_sold: date | None
-
-    currency: str
-```
-
-Additional attributes may be added over time without changing the architecture.
+The implemented snapshot is an observation-window aggregate. Earlier
+per-release sketches are superseded by `MarketplaceReleaseObservation` nested
+inside `MarketplaceSnapshot`; one aggregate can therefore preserve a coherent
+multi-release capture without treating each release as an independent capture
+window.
 
 ## Implemented foundation contract
 
@@ -852,11 +836,38 @@ history defaults to 20 snapshots and accepts explicit limits from 1 through
 preserve repository order and do not calculate intelligence, compare
 snapshots, format presentation values or contact a provider.
 
-Marketplace History performs no automatic capture or backfill and adds no
-scheduling, caching, or network behaviour. Application execution services
-consume its query boundary to prepare explicit Marketplace Intelligence
-inputs; Dashboard, Explorer, workspaces, and renderers do not query it
-directly.
+Marketplace History performs no startup capture or backfill and adds no
+scheduling, caching, or network behaviour. Its explicit Collector Run producer
+is described below. Application execution services consume its query boundary
+to prepare explicit Marketplace Intelligence inputs; Dashboard, Explorer,
+workspaces, and renderers do not query it directly.
+
+## Collector Run capture producer
+
+Version 0.5.2 gives Marketplace History one explicit production producer. A
+Collector Run that finishes every provider attempt constructs one aggregate
+snapshot and records it through `MarketplaceHistoryCommandService` before the
+legacy analysis-run terminal write. Empty collections and runs interrupted by
+legacy persistence, scoring, callback, or other fatal failures before the end
+of attempt processing create no canonical snapshot.
+
+The packaged Discogs adapter preserves fractional JSON values as `Decimal` and
+keeps absent facts absent. A pure mapper creates release observations,
+provider-neutral diagnostics, and aggregate complete, partial, or failed
+status. The mapper selects no clock and reuses the single aware Collector Run
+timestamp for `captured_at` and every `observed_at`. Listings remain empty.
+
+Snapshot identity is `collector-run-{analysis_run_id}`. This provides
+deterministic conventional provenance and repository idempotency without a
+schema-level foreign key. `source` is `discogs` and `source_version` remains
+absent. A separate legacy projection converts exact price to `float` and
+applies the established zero and empty-string defaults only when calling the
+legacy snapshot and scoring boundaries.
+
+Canonical mapping or recording failure is fatal. Earlier legacy writes may
+remain because network-spanning execution is not one transaction. Conversely,
+a canonical aggregate remains immutable if recording succeeds and the later
+legacy terminal write fails.
 
 Price Changes, Supply Changes, Rare Appearances, Listing Lifecycle, and their
 downstream application orchestration can consume stored observations through
