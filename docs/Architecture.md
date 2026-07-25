@@ -117,6 +117,7 @@ provider, or create domain conclusions.
 Application services coordinate complete use cases. Implemented examples
 include:
 
+- the Collector Run legacy Discogs refresh stage;
 - collection import and Dashboard homepage assembly;
 - Intelligence History execution and read-only queries;
 - Marketplace History commands and queries;
@@ -127,6 +128,25 @@ include:
 Application services depend on repository protocols and explicit collaborators.
 They may select inputs, validate compatibility, and coordinate an engine or
 repository. They do not instantiate concrete SQLite adapters.
+
+### Collector Run application boundary
+
+`CollectorRunService` owns the existing per-release Discogs Marketplace
+refresh lifecycle over the collection already stored in SQLite. The desktop
+supplies a temporary token and progress callback, then renders progress and the
+terminal result. The service owns lazy provider construction, deterministic
+release iteration, one UTC capture timestamp, legacy `analysis_runs`,
+`market_snapshots`, current legacy score updates, and request throttling.
+
+Only provider-call failures are recoverable per release. Fatal persistence,
+scoring, callback, or internal failures cause the service to attempt to fail
+the parent analysis run and raise an application error with the original cause.
+Observations written before a fatal network-spanning run may remain, but their
+failed parent is excluded from completed-run queries.
+
+CSV import remains a separate optional collection-update action. This first
+slice writes neither canonical Marketplace History nor Intelligence History
+and executes no Intelligence modules. See [Collector Run](CollectorRun.md).
 
 ### Intelligence and domain services
 
@@ -215,7 +235,9 @@ not.
 `dip.collection.importers` contains the Discogs CSV importer. Provider-specific
 payloads are normalised before they reach intelligence. External access is
 replaceable and does not occur from domain, presentation, workspace, or
-renderer code.
+renderer code. The composition root supplies the provider type to
+`CollectorRunService`; it does not construct a provider or make a network
+request at startup.
 
 ## Project Management architecture
 

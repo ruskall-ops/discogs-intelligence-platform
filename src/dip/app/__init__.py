@@ -1,5 +1,13 @@
 """Application bootstrap and use-case orchestration."""
 
+from .collector_run import (
+    CollectorRunExecutionError,
+    CollectorRunProgress,
+    CollectorRunResult,
+    CollectorRunService,
+    CollectorRunStatus,
+    CollectorRunUnavailableError,
+)
 from .collection_health_presentation import CollectionHealthPresentationService
 from .collection_explorer_presentation import CollectionExplorerPresentationService
 from .collection_trends_presentation import CollectionTrendsPresentationService
@@ -108,6 +116,12 @@ def main() -> None:
 
 
 __all__ = [
+    "CollectorRunExecutionError",
+    "CollectorRunProgress",
+    "CollectorRunResult",
+    "CollectorRunService",
+    "CollectorRunStatus",
+    "CollectorRunUnavailableError",
     "CollectionHealthPresentationService",
     "CollectionExplorerPresentationService",
     "CollectionTrendsPresentationService",

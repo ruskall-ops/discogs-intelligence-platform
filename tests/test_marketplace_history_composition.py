@@ -5,6 +5,7 @@ import unittest
 from unittest.mock import patch
 
 from dip.app import (
+    CollectorRunService,
     MarketplaceHistoryCommandService,
     MarketplaceHistoryQueryService,
     ProjectManagementService,
@@ -94,6 +95,7 @@ class MarketplaceHistoryCompositionTestCase(unittest.TestCase):
         self.assertIsNone(dependencies.marketplace_stability_execution)
         self.assertIsNone(dependencies.marketplace_scarcity_execution)
         self.assertIsNone(dependencies.marketplace_opportunity_execution)
+        self.assertIsNone(dependencies.collector_run)
 
     def test_composition_exposes_services_without_accessing_history_on_startup(
         self,
@@ -127,6 +129,7 @@ class MarketplaceHistoryCompositionTestCase(unittest.TestCase):
                 "dip.composition.SQLiteProjectRepository",
                 return_value=project_repository,
             ) as project_repository_type,
+            patch("dip.composition.DiscogsClient") as provider_type,
         ):
             dependencies = build_desktop_application_dependencies()
 
@@ -173,6 +176,11 @@ class MarketplaceHistoryCompositionTestCase(unittest.TestCase):
             dependencies.marketplace_opportunity_execution,
             MarketplaceOpportunityExecutionService,
         )
+        self.assertIsInstance(
+            dependencies.collector_run,
+            CollectorRunService,
+        )
+        provider_type.assert_not_called()
         self.assertEqual(repository.calls, [])
 
         self.assertIs(
