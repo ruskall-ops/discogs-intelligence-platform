@@ -1,17 +1,21 @@
 
 from __future__ import annotations
 import threading
-import time
-from datetime import datetime
 from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, simpledialog
 
+from dip.app.collector_run import (
+    CollectorRunExecutionError,
+    CollectorRunProgress,
+    CollectorRunResult,
+    CollectorRunStatus,
+    CollectorRunUnavailableError,
+)
 from dip.collection.importers import CollectionImportError
 from dip.collection.services import ImportService
 from dip.composition import build_desktop_application_dependencies
 from dip.config import SETTINGS
-from dip.data_sources.discogs import DiscogsClient
 from dip.experience.reporting import ReportingService, render_markdown
 from dip.experience.dashboard import (
     DashboardHomepageViewModel,
@@ -23,7 +27,6 @@ from dip.experience.desktop.homepage_renderer import (
     DesktopDashboardHomepageRenderer,
 )
 from dip.exports import export_excel
-from dip.intelligence.modules.opportunity_scoring import calculate
 
 class App(tk.Tk):
     def __init__(self):
@@ -68,6 +71,10 @@ class App(tk.Tk):
         self.project_workspace_controller = getattr(
             dependencies, "project_workspace_controller", None
         )
+        self.collector_run_service = getattr(
+            dependencies, "collector_run", None
+        )
+        self._collector_run_active = False
         self.current_portfolio_overview_result = None
         self.current_portfolio_distribution_result = None
         self.current_portfolio_concentration_result = None
@@ -97,7 +104,12 @@ class App(tk.Tk):
         toolbar.pack(fill="x")
 
         ttk.Button(toolbar, text="Import Collection CSV", command=self.import_csv).pack(side="left", padx=3)
-        ttk.Button(toolbar, text="Refresh Discogs Data", command=self.start_refresh).pack(side="left", padx=3)
+        self.refresh_discogs_button = ttk.Button(
+            toolbar,
+            text="Refresh Discogs Data",
+            command=self.start_refresh,
+        )
+        self.refresh_discogs_button.pack(side="left", padx=3)
         ttk.Button(toolbar, text="Export Excel", command=self.export_report).pack(side="left", padx=3)
         ttk.Button(toolbar, text="Export Intelligence Report", command=self.export_intelligence_report).pack(side="left", padx=3)
         ttk.Button(toolbar, text="Refresh View", command=self.load_table).pack(side="left", padx=3)
@@ -346,6 +358,14 @@ class App(tk.Tk):
             )
 
     def start_refresh(self):
+        if self._collector_run_active:
+            return
+        if self.collector_run_service is None:
+            messagebox.showerror(
+                "Refresh unavailable",
+                "The Collector Run service is unavailable.",
+            )
+            return
         if not self.db.release_ids():
             messagebox.showwarning("No collection", "Import your Discogs collection CSV first.")
             return
@@ -356,135 +376,108 @@ class App(tk.Tk):
         )
         if not token:
             return
-        threading.Thread(target=self.refresh_market_data, args=(token,), daemon=True).start()
+        self._collector_run_active = True
+        self.refresh_discogs_button.configure(state="disabled")
+        self.progress.configure(value=0)
+        self.status_var.set("Starting Discogs refresh…")
+        worker = threading.Thread(
+            target=self.refresh_market_data,
+            args=(token,),
+            daemon=True,
+        )
+        try:
+            worker.start()
+        except Exception as exc:
+            self._restore_refresh_controls()
+            self.status_var.set("Refresh failed")
+            messagebox.showerror(
+                "Refresh failed",
+                "Collector Run could not be started "
+                f"({type(exc).__name__}).",
+            )
 
     def refresh_market_data(self, token):
-        ids = self.db.release_ids()
-        attempted = 0
-        succeeded = 0
-        failed = 0
-
-        run_id = self.db.start_analysis_run(
-            run_type="market_refresh",
-            source="discogs",
-            application_version=SETTINGS.application_version,
-        )
-
         try:
-            client = DiscogsClient(token)
-            captured_at = datetime.now().isoformat(timespec="seconds")
-
-            self.after(
-                0,
-                lambda: self.progress.configure(maximum=len(ids)),
+            result = self.collector_run_service.run(
+                token,
+                lambda progress: self.after(
+                    0, self.update_refresh_progress, progress
+                ),
             )
-
-            for pos, release_id in enumerate(ids, start=1):
-                attempted += 1
-
-                try:
-                    data = client.get_release(release_id)
-
-                    if not data:
-                        failed += 1
-                    else:
-                        previous = self.db.previous_snapshot(
-                            release_id,
-                            captured_at,
-                        )
-
-                        self.db.add_snapshot(
-                            run_id,
-                            release_id,
-                            captured_at,
-                            data,
-                        )
-
-                        score = calculate(data, previous)
-
-                        self.db.upsert_score(
-                            release_id,
-                            captured_at,
-                            score,
-                        )
-
-                        succeeded += 1
-
-                except Exception:
-                    failed += 1
-
-                self.after(
-                    0,
-                    self.update_refresh_progress,
-                    pos,
-                    len(ids),
-                    succeeded,
-                    failed,
-                )
-
-                time.sleep(
-    SETTINGS.discogs_request_delay_seconds
-)
-
-            self.db.complete_analysis_run(
-                run_id=run_id,
-                releases_attempted=attempted,
-                releases_succeeded=succeeded,
-                releases_failed=failed,
-            )
-
-            self.after(
-                0,
-                self.finish_refresh,
-                succeeded,
-                failed,
-            )
-
+        except CollectorRunUnavailableError as exc:
+            self.after(0, self.show_refresh_unavailable, str(exc))
+        except CollectorRunExecutionError as exc:
+            self.after(0, self.show_refresh_error, str(exc))
         except Exception as exc:
-            self.db.fail_analysis_run(
-                run_id=run_id,
-                error_message=repr(exc),
-                releases_attempted=attempted,
-                releases_succeeded=succeeded,
-                releases_failed=failed,
-            )
-
             self.after(
                 0,
                 self.show_refresh_error,
-                repr(exc),
+                f"Collector Run failed unexpectedly ({type(exc).__name__}).",
             )
+        else:
+            self.after(0, self.finish_refresh, result)
+
     def update_refresh_progress(
         self,
-        position,
-        total,
-        succeeded,
-        failed,
+        progress: CollectorRunProgress,
     ):
-        self.progress["value"] = position
+        self.progress.configure(
+            maximum=progress.total_releases,
+            value=progress.attempted_releases,
+        )
         self.status_var.set(
-            f"Refreshing {position:,}/{total:,} "
-            f"— successful {succeeded:,}, errors {failed:,}"
+            f"Refreshing {progress.attempted_releases:,}/"
+            f"{progress.total_releases:,} "
+            f"— successful {progress.successful_releases:,}, "
+            f"errors {progress.failed_releases:,}"
         )
 
-    def finish_refresh(self, succeeded, failed):
+    def finish_refresh(self, result: CollectorRunResult):
+        succeeded = result.successful_releases
+        failed = result.failed_releases
+        self._restore_refresh_controls()
+        if result.status is CollectorRunStatus.FAILED:
+            self.status_var.set(
+                f"Refresh failed — 0 successful, {failed:,} errors"
+            )
+            messagebox.showerror(
+                "Refresh failed",
+                self.status_var.get(),
+            )
+            return
         self.status_var.set(
             f"Refresh complete — {succeeded:,} successful, "
             f"{failed:,} errors"
         )
         self.refresh_dashboard()
         self.load_table()
-        messagebox.showinfo(
-            "Refresh complete",
-            self.status_var.get(),
-        )
+        if result.status is CollectorRunStatus.PARTIAL:
+            messagebox.showwarning(
+                "Refresh partially complete",
+                self.status_var.get(),
+            )
+        else:
+            messagebox.showinfo(
+                "Refresh complete",
+                self.status_var.get(),
+            )
 
     def show_refresh_error(self, error_message):
+        self._restore_refresh_controls()
         self.status_var.set("Refresh failed")
         messagebox.showerror(
             "Refresh failed",
             f"An unexpected error occurred:\n\n{error_message}",
         )
+
+    def show_refresh_unavailable(self, error_message):
+        self._restore_refresh_controls()
+        self.status_var.set("Refresh unavailable")
+        messagebox.showwarning("Refresh unavailable", error_message)
+
+    def _restore_refresh_controls(self):
+        self._collector_run_active = False
+        self.refresh_discogs_button.configure(state="normal")
 
     def refresh_dashboard(self):
         row = self.db.dashboard()

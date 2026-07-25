@@ -93,6 +93,21 @@ restoration. Its initial scope assumes one collection and should connect
 collection refresh, existing intelligence execution, history recording, and
 presentation refresh through current application boundaries.
 
+### Version 0.5.1 — Collector Run Application Boundary
+
+**Status: Implemented, unreleased**
+
+The first slice extracts the existing Discogs Marketplace refresh lifecycle
+from Tkinter into `CollectorRunService`. It adds immutable progress and result
+models, lazy temporary-token provider construction, deterministic per-release
+orchestration, one run timestamp, explicit complete/partial/failed outcomes,
+and fatal-failure handling over the existing legacy `analysis_runs`,
+`market_snapshots`, and score semantics.
+
+This slice deliberately does not capture canonical aggregate Marketplace
+History, execute intelligence, record Intelligence History, import a CSV, or
+scope data by Project.
+
 Candidate follow-on slices include:
 
 - session and workspace restoration after the run lifecycle is explicit;

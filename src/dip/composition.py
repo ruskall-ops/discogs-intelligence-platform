@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 
+from dip.app.collector_run import CollectorRunService
 from dip.app.collection_health_presentation import CollectionHealthPresentationService
 from dip.app.collection_explorer_presentation import CollectionExplorerPresentationService
 from dip.app.collection_trends_presentation import CollectionTrendsPresentationService
@@ -56,6 +58,7 @@ from dip.app.marketplace_workspace_presentation import MarketplaceWorkspacePrese
 from dip.app.weekend_listings_presentation import WeekendListingsPresentationService
 from dip.comparison import ComparisonEngine
 from dip.config import SETTINGS
+from dip.data_sources.discogs import DiscogsClient
 from dip.experience.collection_health import CollectionHealthDetailViewModelBuilder
 from dip.experience.comparison import ComparisonViewModelBuilder
 from dip.experience.collection_trends import CollectionTrendsViewModelBuilder
@@ -171,6 +174,7 @@ from dip.experience.desktop.weekend_listings_renderer import (
     DesktopWeekendListingsRenderer,
 )
 from dip.intelligence import IntelligenceEngine
+from dip.intelligence.modules.opportunity_scoring import calculate
 from dip.decision_intelligence import MarketplaceMomentumModule, MarketplaceOpportunityModule, MarketplaceScarcityModule, MarketplaceStabilityModule
 from dip.portfolio_intelligence import (
     PortfolioDistributionModule,
@@ -228,6 +232,7 @@ class DesktopApplicationDependencies:
     dashboard_command_center_controller: DesktopDashboardCommandCenterController | None = None
     project_workspace_controller: DesktopProjectWorkspaceController | None = None
     project_management: ProjectManagementService | None = None
+    collector_run: CollectorRunService | None = None
 
 
 def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
@@ -478,6 +483,14 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         ),
         DesktopProjectWorkspaceRenderer(),
     )
+    collector_run = CollectorRunService(
+        database,
+        DiscogsClient,
+        calculate,
+        SETTINGS.application_version,
+        SETTINGS.discogs_request_delay_seconds,
+        wait=time.sleep,
+    )
 
     return DesktopApplicationDependencies(
         database=database,
@@ -511,6 +524,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         dashboard_command_center_controller=dashboard_command_center_controller,
         project_workspace_controller=project_workspace_controller,
         project_management=project_management,
+        collector_run=collector_run,
         dashboard_homepage=DashboardHomepageService(
             history_queries,
             comparison_presentation,

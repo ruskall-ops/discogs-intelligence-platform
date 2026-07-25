@@ -21,7 +21,11 @@ class ProjectCompositionTestCase(unittest.TestCase):
     def build(self):
         with patch(
             "dip.composition.SETTINGS",
-            SimpleNamespace(database_path=self.database_path),
+            SimpleNamespace(
+                database_path=self.database_path,
+                application_version="0.4.0",
+                discogs_request_delay_seconds=0,
+            ),
         ):
             return build_desktop_application_dependencies()
 

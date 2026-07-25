@@ -4,6 +4,28 @@ All notable changes to the Discogs Intelligence Platform will be documented here
 
 ---
 
+# Unreleased — Version 0.5
+
+## Collector Run Application Boundary
+
+- Extracted the legacy Discogs Marketplace refresh lifecycle from Tkinter into
+  a typed synchronous `CollectorRunService`.
+- Added immutable validated progress, terminal result, status, and application
+  error models.
+- Added deterministic release processing, one UTC capture timestamp, lazy
+  temporary-token provider construction, and between-attempt throttling.
+- Distinguished complete, partial, all-provider-failed, and unexpected fatal
+  outcomes while preserving legacy snapshots and scoring.
+- Rewired the desktop action to use a daemon worker and schedule presentation
+  updates back to Tkinter.
+- Added focused application, SQLite integration, composition, and desktop
+  orchestration tests.
+- Did not add canonical Marketplace History capture, Intelligence execution,
+  Project scoping, automatic CSV import, session restoration, or package
+  version changes.
+
+---
+
 # Version 0.4.0 — SQLite Project Persistence
 
 Released 24 July 2026.
