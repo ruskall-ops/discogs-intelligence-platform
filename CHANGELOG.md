@@ -6,6 +6,25 @@ All notable changes to the Discogs Intelligence Platform will be documented here
 
 # Unreleased — Version 0.5
 
+## Canonical Marketplace Capture
+
+- Added one canonical aggregate Marketplace snapshot for every Collector Run
+  that completes all provider attempts.
+- Preserved exact `Decimal` price and optional provider facts through a pure
+  provider-to-canonical mapping boundary.
+- Added deterministic complete, partial, empty, unavailable, and failed
+  release evidence with safe provider-neutral diagnostics.
+- Reused the existing Marketplace History command and SQLite repository with
+  `collector-run-{analysis_run_id}` identity and no schema change.
+- Kept existing legacy snapshots and scoring through an explicit projection
+  that owns legacy defaults and float conversion.
+- Recorded canonical history before legacy terminal state while retaining
+  existing fatal failure, progress, token-safety, and desktop boundaries.
+- Added provider, mapper, Collector Run, real SQLite, composition, and desktop
+  regression coverage.
+- Did not add Intelligence execution, Intelligence History, Project scoping,
+  CSV reconciliation, scheduling, cancellation, or package-version changes.
+
 ## Collector Run Application Boundary
 
 - Extracted the legacy Discogs Marketplace refresh lifecycle from Tkinter into
@@ -20,9 +39,9 @@ All notable changes to the Discogs Intelligence Platform will be documented here
   updates back to Tkinter.
 - Added focused application, SQLite integration, composition, and desktop
   orchestration tests.
-- Did not add canonical Marketplace History capture, Intelligence execution,
-  Project scoping, automatic CSV import, session restoration, or package
-  version changes.
+- Deferred canonical Marketplace History capture to the subsequent v0.5.2
+  slice and did not add Intelligence execution, Project scoping, automatic CSV
+  import, session restoration, or package-version changes.
 
 ---
 

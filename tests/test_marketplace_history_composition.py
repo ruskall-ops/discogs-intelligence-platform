@@ -180,6 +180,10 @@ class MarketplaceHistoryCompositionTestCase(unittest.TestCase):
             dependencies.collector_run,
             CollectorRunService,
         )
+        self.assertIs(
+            dependencies.collector_run._snapshot_recorder,
+            dependencies.marketplace_history_commands,
+        )
         provider_type.assert_not_called()
         self.assertEqual(repository.calls, [])
 

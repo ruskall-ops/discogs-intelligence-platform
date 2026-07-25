@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from dataclasses import FrozenInstanceError
 from datetime import datetime, timezone
+from decimal import Decimal
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from dip.app.collector_run import (
     CollectorRunExecutionError,
@@ -14,8 +16,13 @@ from dip.app.collector_run import (
     CollectorRunStatus,
     CollectorRunUnavailableError,
 )
+from dip.app.marketplace_history import MarketplaceHistoryCommandService
 from dip.intelligence.modules.opportunity_scoring import calculate
-from dip.persistence.sqlite import Database
+from dip.marketplace_intelligence import MarketplaceDataStatus
+from dip.persistence.sqlite import (
+    Database,
+    SQLiteMarketplaceHistoryRepository,
+)
 
 
 CAPTURED_AT = datetime(2026, 7, 25, 9, 30, 45, tzinfo=timezone.utc)
@@ -103,12 +110,24 @@ class _Repository:
         )
 
 
+class _Recorder:
+    def __init__(self, error=None):
+        self.snapshots = []
+        self.error = error
+
+    def record_snapshot(self, snapshot):
+        if self.error is not None:
+            raise self.error
+        self.snapshots.append(snapshot)
+        return snapshot
+
+
 def _facts(wants=10):
     return {
         "wants": wants,
         "haves": 5,
         "copies_for_sale": 2,
-        "lowest_price": 12.5,
+        "lowest_price": Decimal("12.5"),
         "currency": "GBP",
         "styles": "",
         "genres": "",
@@ -124,6 +143,7 @@ class CollectorRunServiceTestCase(unittest.TestCase):
         *,
         score_calculator=lambda current, previous: {"score": current["wants"]},
         callback=None,
+        recorder=None,
     ):
         repository = repository or _Repository()
         provider = _Provider(
@@ -133,6 +153,7 @@ class CollectorRunServiceTestCase(unittest.TestCase):
         factory_calls = []
         clock_calls = []
         waits = []
+        recorder = recorder or _Recorder()
 
         def factory(token):
             factory_calls.append(token)
@@ -148,6 +169,7 @@ class CollectorRunServiceTestCase(unittest.TestCase):
             score_calculator,
             "0.4.0",
             1.08,
+            recorder,
             clock=clock,
             wait=waits.append,
         )
@@ -196,6 +218,7 @@ class CollectorRunServiceTestCase(unittest.TestCase):
             lambda current, previous: {},
             "0.4.0",
             0,
+            _Recorder(),
             clock=lambda: CAPTURED_AT,
             wait=lambda seconds: None,
         )
@@ -242,6 +265,7 @@ class CollectorRunServiceTestCase(unittest.TestCase):
             lambda current, previous: {},
             "0.4.0",
             0,
+            _Recorder(),
             clock=lambda: CAPTURED_AT,
             wait=lambda seconds: None,
         )
@@ -290,6 +314,7 @@ class CollectorRunServiceTestCase(unittest.TestCase):
             lambda current, previous: {},
             "0.4.0",
             0,
+            _Recorder(),
             clock=lambda: CAPTURED_AT,
             wait=lambda seconds: None,
         )
@@ -373,10 +398,89 @@ class CollectorRunServiceTestCase(unittest.TestCase):
         self.assertEqual(waits, [1.08, 1.08])
         self.assertNotIn("secret-value", repr(result))
 
+    def test_malformed_uri_provider_failure_is_safe_and_remaining_release_continues(self):
+        repository = _Repository((1, 2))
+        recorder = _Recorder()
+        raw_detail = "raw malformed uri value"
+        service, repository, provider, _, _, _ = self.service(
+            repository,
+            {
+                1: TypeError("Discogs uri must be a string or null."),
+                2: _facts(),
+            },
+            recorder=recorder,
+        )
+
+        result = service.run(raw_detail)
+
+        self.assertEqual(provider.calls, [1, 2])
+        self.assertIs(result.status, CollectorRunStatus.PARTIAL)
+        self.assertEqual(
+            (
+                result.successful_releases,
+                result.failed_releases,
+                result.failed_release_ids,
+            ),
+            (1, 1, (1,)),
+        )
+        self.assertEqual(
+            tuple(
+                event[2]
+                for event in repository.events
+                if event[0] == "snapshot"
+            ),
+            (2,),
+        )
+        self.assertEqual(
+            tuple(
+                event[1]
+                for event in repository.events
+                if event[0] == "score"
+            ),
+            (2,),
+        )
+        snapshot = recorder.snapshots[0]
+        failed = next(
+            value
+            for value in snapshot.release_observations
+            if value.release_id == 1
+        )
+        self.assertIs(failed.status, MarketplaceDataStatus.FAILED)
+        self.assertEqual(failed.diagnostics[0].code, "provider_request_failed")
+        self.assertNotIn(raw_detail, repr(snapshot))
+        self.assertNotIn("Discogs uri", repr(snapshot))
+
+    def test_all_successful_empty_responses_keep_legacy_completed(self):
+        repository = _Repository((2, 1))
+        recorder = _Recorder()
+        service, _, _, _, _, _ = self.service(
+            repository,
+            {2: {}, 1: {}},
+            recorder=recorder,
+        )
+
+        result = service.run("temporary-token")
+
+        self.assertIs(result.status, CollectorRunStatus.COMPLETED)
+        self.assertEqual(result.successful_releases, 2)
+        self.assertEqual(result.failed_releases, 0)
+        self.assertEqual(repository.events[-1][0], "complete")
+        snapshot = recorder.snapshots[0]
+        self.assertIs(snapshot.status, MarketplaceDataStatus.PARTIAL)
+        self.assertTrue(
+            all(
+                value.status is MarketplaceDataStatus.EMPTY
+                for value in snapshot.release_observations
+            )
+        )
+
     def test_all_provider_failures_mark_run_failed_safely(self):
         repository = _Repository((1, 2))
+        recorder = _Recorder()
         service, repository, _, _, _, _ = self.service(
-            repository, {1: None, 2: RuntimeError("contains token")}
+            repository,
+            {1: None, 2: RuntimeError("contains token")},
+            recorder=recorder,
         )
 
         result = service.run("highly-secret")
@@ -388,11 +492,145 @@ class CollectorRunServiceTestCase(unittest.TestCase):
         self.assertEqual(failure[3:], (2, 0, 2))
         self.assertNotIn("highly-secret", failure[2])
         self.assertNotIn("contains token", failure[2])
+        self.assertEqual(len(recorder.snapshots), 1)
+        self.assertIs(
+            recorder.snapshots[0].status,
+            MarketplaceDataStatus.FAILED,
+        )
+        self.assertEqual(recorder.snapshots[0].release_observations, ())
+        self.assertEqual(
+            recorder.snapshots[0].snapshot_id,
+            "collector-run-41",
+        )
+
+    def test_all_success_records_complete_canonical_snapshot_before_terminal_write(self):
+        repository = _Repository((2, 1))
+        recorder = _Recorder()
+        service, _, _, _, _, _ = self.service(
+            repository,
+            recorder=recorder,
+        )
+
+        result = service.run("temporary-token")
+
+        self.assertIs(result.status, CollectorRunStatus.COMPLETED)
+        self.assertEqual(len(recorder.snapshots), 1)
+        snapshot = recorder.snapshots[0]
+        self.assertIs(snapshot.status, MarketplaceDataStatus.COMPLETE)
+        self.assertEqual(
+            tuple(value.release_id for value in snapshot.release_observations),
+            (1, 2),
+        )
+        self.assertTrue(
+            all(value.observed_at == CAPTURED_AT for value in snapshot.release_observations)
+        )
+
+    def test_incomplete_success_keeps_legacy_completed_but_canonical_partial(self):
+        repository = _Repository((1,))
+        recorder = _Recorder()
+        response = _facts()
+        response["currency"] = None
+        service, _, _, _, _, _ = self.service(
+            repository,
+            {1: response},
+            recorder=recorder,
+        )
+
+        result = service.run("temporary-token")
+
+        self.assertIs(result.status, CollectorRunStatus.COMPLETED)
+        self.assertEqual(repository.events[-1][0], "complete")
+        self.assertIs(
+            recorder.snapshots[0].status,
+            MarketplaceDataStatus.PARTIAL,
+        )
+        legacy_snapshot = next(
+            event for event in repository.events if event[0] == "snapshot"
+        )
+        self.assertEqual(legacy_snapshot[4]["lowest_price"], 0.0)
+
+    def test_canonical_mapping_failure_is_fatal_without_changing_counts(self):
+        repository = _Repository((1,))
+        recorder = _Recorder()
+        service, _, _, _, _, _ = self.service(
+            repository,
+            recorder=recorder,
+        )
+        primary = ValueError("canonical mapping detail")
+
+        with (
+            patch(
+                "dip.app.collector_run.build_marketplace_snapshot",
+                side_effect=primary,
+            ),
+            self.assertRaises(CollectorRunExecutionError) as caught,
+        ):
+            service.run("temporary-token")
+
+        self.assertIs(caught.exception.__cause__, primary)
+        self.assertEqual(
+            (
+                caught.exception.attempted_releases,
+                caught.exception.successful_releases,
+                caught.exception.failed_releases,
+            ),
+            (1, 1, 0),
+        )
+        self.assertEqual(recorder.snapshots, [])
+        self.assertEqual(repository.events[-1][0], "fail")
+
+    def test_canonical_recording_failure_is_fatal_and_preserves_primary_cause(self):
+        repository = _Repository((1,))
+        primary = OSError("canonical persistence detail")
+        recorder = _Recorder(primary)
+        service, _, _, _, _, _ = self.service(
+            repository,
+            recorder=recorder,
+        )
+
+        with self.assertRaises(CollectorRunExecutionError) as caught:
+            service.run("temporary-token")
+
+        self.assertIs(caught.exception.__cause__, primary)
+        self.assertEqual(caught.exception.attempted_releases, 1)
+        self.assertEqual(caught.exception.successful_releases, 1)
+        self.assertEqual(caught.exception.failed_releases, 0)
+        self.assertEqual(repository.events[-1][0], "fail")
+        self.assertNotIn(str(primary), str(caught.exception))
+
+    def test_terminal_write_failure_occurs_after_canonical_recording(self):
+        primary = OSError("terminal write detail")
+        repository = _Repository((1,))
+        recorder = _Recorder()
+
+        def complete(*args):
+            raise primary
+
+        repository.complete_analysis_run = complete
+        service, _, _, _, _, _ = self.service(
+            repository,
+            recorder=recorder,
+        )
+
+        with self.assertRaises(CollectorRunExecutionError) as caught:
+            service.run("temporary-token")
+
+        self.assertIs(caught.exception.__cause__, primary)
+        self.assertEqual(len(recorder.snapshots), 1)
+        self.assertIs(
+            recorder.snapshots[0].status,
+            MarketplaceDataStatus.COMPLETE,
+        )
+        self.assertEqual(repository.events[-1][0], "fail")
 
     def test_persistence_failure_is_fatal_and_preserves_cause_and_counts(self):
         repository = _Repository((1, 2))
         repository.fail_on = ("snapshot", 2)
-        service, repository, _, _, _, _ = self.service(repository)
+        recorder = _Recorder()
+        service, repository, _, _, _, _ = self.service(
+            repository,
+            recorder=recorder,
+        )
 
         with self.assertRaises(CollectorRunExecutionError) as caught:
             service.run("temporary-token")
@@ -406,6 +644,7 @@ class CollectorRunServiceTestCase(unittest.TestCase):
         self.assertEqual(failure[0], "fail")
         self.assertEqual(failure[3:], (2, 1, 0))
         self.assertEqual(failure[2], "Collector Run failed unexpectedly.")
+        self.assertEqual(recorder.snapshots, [])
 
     def test_score_calculation_failure_is_fatal(self):
         repository = _Repository((1,))
@@ -413,8 +652,11 @@ class CollectorRunServiceTestCase(unittest.TestCase):
         def broken_score(current, previous):
             raise ArithmeticError("defect")
 
+        recorder = _Recorder()
         service, repository, _, _, _, _ = self.service(
-            repository, score_calculator=broken_score
+            repository,
+            score_calculator=broken_score,
+            recorder=recorder,
         )
 
         with self.assertRaises(CollectorRunExecutionError) as caught:
@@ -422,6 +664,7 @@ class CollectorRunServiceTestCase(unittest.TestCase):
 
         self.assertIsInstance(caught.exception.__cause__, ArithmeticError)
         self.assertEqual(repository.events[-1][0], "fail")
+        self.assertEqual(recorder.snapshots, [])
 
     def test_primary_fatal_cause_survives_cleanup_failure(self):
         primary = OSError("primary storage detail")
@@ -507,7 +750,11 @@ class CollectorRunServiceTestCase(unittest.TestCase):
         callback_failure = LookupError("callback sensitive detail")
         repository = _Repository((1, 2))
         callbacks = []
-        service, repository, provider, _, _, waits = self.service(repository)
+        recorder = _Recorder()
+        service, repository, provider, _, _, waits = self.service(
+            repository,
+            recorder=recorder,
+        )
 
         def callback(progress):
             callbacks.append(progress)
@@ -532,6 +779,7 @@ class CollectorRunServiceTestCase(unittest.TestCase):
         self.assertNotIn("temporary-token", failure[2])
         self.assertNotIn(str(callback_failure), failure[2])
         self.assertEqual(len(callbacks), 2)
+        self.assertEqual(recorder.snapshots, [])
 
     def test_invalid_clock_fails_before_analysis_run(self):
         repository = _Repository((1,))
@@ -541,6 +789,7 @@ class CollectorRunServiceTestCase(unittest.TestCase):
             lambda current, previous: {},
             "0.4.0",
             0,
+            _Recorder(),
             clock=lambda: datetime(2026, 1, 1),
             wait=lambda seconds: None,
         )
@@ -625,6 +874,11 @@ class CollectorRunSQLiteIntegrationTestCase(unittest.TestCase):
                 for release_id in release_ids
             ),
         )
+
+    @staticmethod
+    def _canonical_history(database):
+        repository = SQLiteMarketplaceHistoryRepository(database)
+        return MarketplaceHistoryCommandService(repository), repository
         database.conn.executemany(
             "INSERT INTO collection_ownership (release_id, quantity) VALUES (?, 1)",
             tuple((release_id,) for release_id in release_ids),
@@ -643,12 +897,14 @@ class CollectorRunSQLiteIntegrationTestCase(unittest.TestCase):
                 ((2,), (1,)),
             )
             provider = _Provider({1: _facts(11), 2: _facts(22)})
+            recorder, history = self._canonical_history(database)
             service = CollectorRunService(
                 database,
                 lambda token: provider,
                 calculate,
                 "0.4.0",
                 0,
+                recorder,
                 clock=lambda: CAPTURED_AT,
                 wait=lambda seconds: None,
             )
@@ -668,6 +924,7 @@ class CollectorRunSQLiteIntegrationTestCase(unittest.TestCase):
             scores = database.conn.execute(
                 "SELECT release_id FROM scores ORDER BY release_id"
             ).fetchall()
+            canonical = history.latest_snapshot()
             self.assertEqual(provider.calls, [1, 2])
             self.assertEqual(result.status, CollectorRunStatus.COMPLETED)
             self.assertEqual(run["id"], result.analysis_run_id)
@@ -697,6 +954,15 @@ class CollectorRunSQLiteIntegrationTestCase(unittest.TestCase):
             self.assertEqual(
                 tuple(row["release_id"] for row in scores), (1, 2)
             )
+            self.assertEqual(
+                canonical.snapshot_id,
+                f"collector-run-{result.analysis_run_id}",
+            )
+            self.assertIs(canonical.status, MarketplaceDataStatus.COMPLETE)
+            self.assertEqual(
+                canonical.release_observations[0].lowest_price.amount,
+                Decimal("12.5"),
+            )
         finally:
             database.close()
             temporary_directory.cleanup()
@@ -714,12 +980,14 @@ class CollectorRunSQLiteIntegrationTestCase(unittest.TestCase):
                     3: None,
                 }
             )
+            recorder, history = self._canonical_history(database)
             service = CollectorRunService(
                 database,
                 lambda token: provider,
                 calculate,
                 "0.4.0",
                 0,
+                recorder,
                 clock=lambda: CAPTURED_AT,
                 wait=lambda seconds: None,
             )
@@ -739,6 +1007,7 @@ class CollectorRunSQLiteIntegrationTestCase(unittest.TestCase):
             scores = database.conn.execute(
                 "SELECT release_id FROM scores ORDER BY release_id"
             ).fetchall()
+            canonical = history.latest_snapshot()
             self.assertEqual(provider.calls, [1, 2, 3])
             self.assertEqual(result.status, CollectorRunStatus.PARTIAL)
             self.assertEqual(result.failed_release_ids, (2, 3))
@@ -763,6 +1032,18 @@ class CollectorRunSQLiteIntegrationTestCase(unittest.TestCase):
                 tuple(row["release_id"] for row in scores), (1,)
             )
             self.assertNotIn(provider_detail, repr(tuple(run)))
+            self.assertIs(canonical.status, MarketplaceDataStatus.PARTIAL)
+            self.assertEqual(
+                tuple(
+                    (value.release_id, value.status)
+                    for value in canonical.release_observations
+                ),
+                (
+                    (1, MarketplaceDataStatus.COMPLETE),
+                    (2, MarketplaceDataStatus.FAILED),
+                    (3, MarketplaceDataStatus.UNAVAILABLE),
+                ),
+            )
         finally:
             database.close()
             temporary_directory.cleanup()
@@ -777,12 +1058,14 @@ class CollectorRunSQLiteIntegrationTestCase(unittest.TestCase):
             provider = _Provider(
                 {1: RuntimeError(provider_detail), 2: None}
             )
+            recorder, history = self._canonical_history(database)
             service = CollectorRunService(
                 database,
                 lambda supplied_token: provider,
                 calculate,
                 "0.4.0",
                 0,
+                recorder,
                 clock=lambda: CAPTURED_AT,
                 wait=lambda seconds: None,
             )
@@ -798,6 +1081,7 @@ class CollectorRunSQLiteIntegrationTestCase(unittest.TestCase):
             score_count = database.conn.execute(
                 "SELECT COUNT(*) FROM scores"
             ).fetchone()[0]
+            canonical = history.latest_snapshot()
             self.assertEqual(provider.calls, [1, 2])
             self.assertEqual(result.status, CollectorRunStatus.FAILED)
             self.assertEqual(result.failed_release_ids, (1, 2))
@@ -818,6 +1102,44 @@ class CollectorRunSQLiteIntegrationTestCase(unittest.TestCase):
             self.assertEqual(score_count, 0)
             self.assertNotIn(provider_detail, run["error_message"])
             self.assertNotIn(token, run["error_message"])
+            self.assertIs(canonical.status, MarketplaceDataStatus.FAILED)
+            self.assertEqual(canonical.release_observations, ())
+        finally:
+            database.close()
+            temporary_directory.cleanup()
+
+    def test_same_time_runs_receive_distinct_canonical_identities(self):
+        temporary_directory = tempfile.TemporaryDirectory()
+        database = Database(Path(temporary_directory.name) / "same-time.db")
+        try:
+            self._seed(database, (1,))
+            recorder, history = self._canonical_history(database)
+            service = CollectorRunService(
+                database,
+                lambda token: _Provider({1: _facts()}),
+                calculate,
+                "0.4.0",
+                0,
+                recorder,
+                clock=lambda: CAPTURED_AT,
+                wait=lambda seconds: None,
+            )
+
+            first = service.run("temporary-token")
+            second = service.run("temporary-token")
+
+            snapshots = history.all_snapshots()
+            self.assertEqual(
+                tuple(value.snapshot_id for value in snapshots),
+                (
+                    f"collector-run-{first.analysis_run_id}",
+                    f"collector-run-{second.analysis_run_id}",
+                ),
+            )
+            self.assertEqual(
+                tuple(value.captured_at for value in snapshots),
+                (CAPTURED_AT, CAPTURED_AT),
+            )
         finally:
             database.close()
             temporary_directory.cleanup()

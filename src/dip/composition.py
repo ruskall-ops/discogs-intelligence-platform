@@ -489,6 +489,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         calculate,
         SETTINGS.application_version,
         SETTINGS.discogs_request_delay_seconds,
+        marketplace_history_commands,
         wait=time.sleep,
     )
 

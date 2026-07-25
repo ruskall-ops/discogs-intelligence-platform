@@ -3,8 +3,9 @@
 ## Purpose
 
 Collector Run is the application boundary for recurring collector workflows
-over the collection already stored in SQLite. Version 0.5.1 implements only
-the existing Discogs Marketplace refresh stage.
+over the collection already stored in SQLite. Version 0.5.1 established the
+Discogs Marketplace refresh stage; Version 0.5.2 adds canonical Marketplace
+capture to that same application lifecycle.
 
 Discogs CSV import remains a separate, explicit, optional collection-update
 action. Refreshing Marketplace facts does not require selecting or re-importing
@@ -18,6 +19,8 @@ Tkinter desktop
 CollectorRunService
       ├── stored collection and legacy persistence boundary
       ├── lazy Discogs provider factory
+      ├── pure canonical Marketplace mapper
+      ├── Marketplace History command boundary
       ├── existing legacy score calculator
       ├── analysis-run lifecycle
       └── immutable progress and result models
@@ -32,9 +35,10 @@ requests.
 `CollectorRunService` is application orchestration. It depends on narrow
 structural protocols and callables and imports neither Tkinter nor SQLite. The
 composition root supplies the shared `Database`, packaged `DiscogsClient`,
-existing score function, application version, configured delay, UTC clock, and
-wait function. Provider construction remains lazy and occurs only for a
-non-empty stored collection when `run()` is called.
+existing Marketplace History command service, score function, application
+version, configured delay, UTC clock, and wait function. Provider construction
+remains lazy and occurs only for a non-empty stored collection when `run()` is
+called.
 
 ## Lifecycle
 
@@ -50,13 +54,32 @@ One run:
 8. appends the legacy per-release observation, calculates the existing score,
    and upserts that current score after a successful provider response;
 9. emits progress after every attempt and waits only between attempts;
-10. completes or fails the parent legacy analysis run and returns an immutable
+10. constructs and atomically records one canonical aggregate Marketplace
+    snapshot after every attempt lifecycle has finished;
+11. completes or fails the parent legacy analysis run and returns an immutable
     terminal result.
 
 The capture timestamp is reused for every observation and score in the run.
 Release order, failed release identities, and progress order are deterministic.
 Malformed, duplicate, boolean, or non-positive release identities are rejected
 before the analysis run starts.
+
+The canonical snapshot uses `collector-run-{analysis_run_id}` identity,
+`source="discogs"`, no source version, empty listing observations, and the same
+aware run timestamp for the aggregate and every release observation. The
+requested release ID is authoritative. Exact provider prices reach canonical
+`MarketplaceMoney` as `Decimal`; absence remains absent. A separate pure legacy
+projection supplies the existing zero and empty-string defaults and converts
+valid exact price to `float` only for legacy persistence and scoring.
+
+Canonical status describes source evidence independently of the legacy
+Collector Run result. All complete releases produce `complete`; incomplete or
+empty successful observations, or mixed provider outcomes, produce `partial`;
+zero provider successes produce `failed`. Provider exceptions, unavailable
+observations, missing facts, and unusable money use fixed provider-neutral
+diagnostics containing no token, response body, or exception message. A legacy
+completed run may therefore record a partial canonical snapshot when every
+provider call returned but some canonical facts were incomplete.
 
 ## Outcomes
 
@@ -87,6 +110,15 @@ legacy observations written before a later fatal failure may therefore remain
 as historical evidence. Their parent analysis run is failed and is excluded
 from completed-run queries. This is deliberate.
 
+Canonical construction and recording occur only after all provider attempts,
+successful legacy observations and scores, and final progress emission.
+Interrupted loops create no canonical snapshot. Canonical mapping or recording
+failure is fatal and leaves earlier legacy evidence intact; the canonical
+repository itself stores the aggregate atomically or not at all. If canonical
+recording succeeds but the legacy terminal write then fails, the immutable
+canonical evidence remains. Its ID preserves conventional provenance to the
+legacy run without a relational foreign key.
+
 ## Token boundary
 
 The Discogs token is temporary. It is passed only to the lazy provider factory.
@@ -95,9 +127,9 @@ failure messages or desktop diagnostics.
 
 ## Explicitly deferred
 
-Version 0.5.1 does not create canonical aggregate `MarketplaceSnapshot`
-records, write Marketplace History, execute any Intelligence module, record
-Intelligence History, import a CSV, scope data by Project, restore sessions,
-enable Project Workspace refresh, cancel runs, schedule monitoring, or change
-legacy scoring rules. Later Collector Run slices must extend this application
-boundary without moving orchestration back into the desktop.
+Version 0.5.2 does not execute any Intelligence module, record Intelligence
+History, import or reconcile a CSV, scope data by Project, acquire listings,
+restore sessions, enable Project Workspace refresh, cancel runs, schedule
+monitoring, or change legacy scoring rules. Later Collector Run slices must
+extend this application boundary without moving orchestration back into the
+desktop.

@@ -1,5 +1,6 @@
 
 from __future__ import annotations
+from decimal import Decimal
 import time
 import requests
 
@@ -20,20 +21,25 @@ class DiscogsClient:
         for attempt in range(5):
             response = self.session.get(url, timeout=30)
             if response.status_code == 200:
-                d = response.json()
-                c = d.get("community") or {}
+                d = response.json(parse_float=Decimal)
+                community = d.get("community")
+                c = community if isinstance(community, dict) else {}
                 lp = d.get("lowest_price")
+                price = lp.get("value") if isinstance(lp, dict) else lp
+                currency = (
+                    lp.get("currency")
+                    if isinstance(lp, dict)
+                    else d.get("currency")
+                )
                 return {
-                    "wants": int(c.get("want") or 0),
-                    "haves": int(c.get("have") or 0),
-                    "copies_for_sale": int(d.get("num_for_sale") or 0),
-                    "lowest_price": float(
-                        (lp.get("value") if isinstance(lp, dict) else lp) or 0
-                    ),
-                    "currency": lp.get("currency", "") if isinstance(lp, dict) else "",
-                    "styles": ", ".join(d.get("styles") or []),
-                    "genres": ", ".join(d.get("genres") or []),
-                    "discogs_uri": d.get("uri", ""),
+                    "wants": _optional_integer(c.get("want")),
+                    "haves": _optional_integer(c.get("have")),
+                    "copies_for_sale": _optional_integer(d.get("num_for_sale")),
+                    "lowest_price": _optional_exact_price(price),
+                    "currency": currency,
+                    "styles": _optional_joined_text(d, "styles"),
+                    "genres": _optional_joined_text(d, "genres"),
+                    "discogs_uri": _optional_uri(d.get("uri")),
                 }
             if response.status_code == 429:
                 time.sleep(float(response.headers.get("Retry-After", "65")))
@@ -45,3 +51,34 @@ class DiscogsClient:
                 return None
             raise RuntimeError(f"Discogs API {response.status_code}: {response.text[:200]}")
         raise RuntimeError("Discogs API failed after repeated retries.")
+
+
+def _optional_integer(value):
+    if value is None:
+        return None
+    if type(value) is not int:
+        raise TypeError("Discogs count must be an integer or null.")
+    return value
+
+
+def _optional_exact_price(value):
+    if value is None or type(value) in {Decimal, int}:
+        return value
+    # Preserve only the unusable type classification. The canonical mapper
+    # deliberately receives no arbitrary raw provider value.
+    return object()
+
+
+def _optional_joined_text(payload, key):
+    if key not in payload or payload[key] is None:
+        return None
+    values = payload[key]
+    if not isinstance(values, list) or any(not isinstance(value, str) for value in values):
+        raise TypeError(f"Discogs {key} must be a list of strings or null.")
+    return ", ".join(values)
+
+
+def _optional_uri(value):
+    if value is None or isinstance(value, str):
+        return value
+    raise TypeError("Discogs uri must be a string or null.")
