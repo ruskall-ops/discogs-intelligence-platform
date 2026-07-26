@@ -79,6 +79,7 @@ class IntelligenceHistoryRun:
     engine_version: str | None = None
     collection_snapshot_id: int | None = None
     result_count: int = 0
+    marketplace_snapshot_id: str | None = None
 
     def __post_init__(self) -> None:
         """Validate immutable execution metadata."""
@@ -98,6 +99,17 @@ class IntelligenceHistoryRun:
             raise TypeError("collection_snapshot_id must be an integer or None.")
         if type(self.result_count) is not int or self.result_count < 0:
             raise TypeError("result_count must be a non-negative integer.")
+        if self.marketplace_snapshot_id is not None:
+            if type(self.marketplace_snapshot_id) is not str:
+                raise TypeError("marketplace_snapshot_id must be a string or None.")
+            if (
+                not self.marketplace_snapshot_id
+                or not self.marketplace_snapshot_id.strip()
+                or self.marketplace_snapshot_id != self.marketplace_snapshot_id.strip()
+            ):
+                raise ValueError(
+                    "marketplace_snapshot_id must be non-empty and trimmed."
+                )
 
 
 @dataclass(frozen=True)

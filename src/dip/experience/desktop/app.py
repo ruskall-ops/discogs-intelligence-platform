@@ -103,7 +103,12 @@ class App(tk.Tk):
         toolbar = ttk.Frame(self, padding=8)
         toolbar.pack(fill="x")
 
-        ttk.Button(toolbar, text="Import Collection CSV", command=self.import_csv).pack(side="left", padx=3)
+        self.import_csv_button = ttk.Button(
+            toolbar,
+            text="Import Collection CSV",
+            command=self.import_csv,
+        )
+        self.import_csv_button.pack(side="left", padx=3)
         self.refresh_discogs_button = ttk.Button(
             toolbar,
             text="Refresh Discogs Data",
@@ -316,6 +321,12 @@ class App(tk.Tk):
             self.open_portfolio_overview()
 
     def import_csv(self):
+        if self._collector_run_active:
+            messagebox.showwarning(
+                "Import unavailable",
+                "Collection import is unavailable while Collector Run is active.",
+            )
+            return
         path = filedialog.askopenfilename(
             title="Select Discogs collection export",
             filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
@@ -378,6 +389,7 @@ class App(tk.Tk):
             return
         self._collector_run_active = True
         self.refresh_discogs_button.configure(state="disabled")
+        self.import_csv_button.configure(state="disabled")
         self.progress.configure(value=0)
         self.status_var.set("Starting Discogs refresh…")
         worker = threading.Thread(
@@ -478,6 +490,7 @@ class App(tk.Tk):
     def _restore_refresh_controls(self):
         self._collector_run_active = False
         self.refresh_discogs_button.configure(state="normal")
+        self.import_csv_button.configure(state="normal")
 
     def refresh_dashboard(self):
         row = self.db.dashboard()

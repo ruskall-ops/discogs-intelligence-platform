@@ -14,6 +14,7 @@ from dip.intelligence_history.models import (
     IntelligenceHistoryRun,
 )
 from dip.intelligence_history.repository import IntelligenceHistoryRepository
+from dip.intelligence_history.repository import IntelligenceHistoryConflictError
 from dip.intelligence_history.serialization import (
     IntelligenceDeserializationError,
     dumps_intelligence_value,
@@ -65,25 +66,49 @@ class SQLiteIntelligenceHistoryRepository(IntelligenceHistoryRepository):
         )
 
         with self._database.transaction() as connection:
-            cursor = connection.execute(
-                """
-                INSERT INTO intelligence_runs (
-                    executed_at,
-                    executed_at_json,
-                    engine_version,
-                    collection_snapshot_id,
-                    result_count
+            try:
+                cursor = connection.execute(
+                    """
+                    INSERT INTO intelligence_runs (
+                        executed_at,
+                        executed_at_json,
+                        engine_version,
+                        collection_snapshot_id,
+                        result_count,
+                        marketplace_snapshot_id
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        self._execution_sort_value(run.executed_at),
+                        executed_at_json,
+                        run.engine_version,
+                        run.collection_snapshot_id,
+                        run.result_count,
+                        run.marketplace_snapshot_id,
+                    ),
                 )
-                VALUES (?, ?, ?, ?, ?)
-                """,
-                (
-                    self._execution_sort_value(run.executed_at),
+            except sqlite3.IntegrityError:
+                if run.marketplace_snapshot_id is None:
+                    raise
+                existing = connection.execute(
+                    """
+                    SELECT *
+                    FROM intelligence_runs
+                    WHERE marketplace_snapshot_id = ?
+                    """,
+                    (run.marketplace_snapshot_id,),
+                ).fetchone()
+                if existing is None:
+                    raise
+                return self._exact_replay(
+                    connection,
+                    existing,
+                    run,
                     executed_at_json,
-                    run.engine_version,
-                    run.collection_snapshot_id,
-                    run.result_count,
-                ),
-            )
+                    records,
+                    serialized_records,
+                )
             run_id = int(cursor.lastrowid)
 
             for record, payloads in zip(
@@ -120,6 +145,86 @@ class SQLiteIntelligenceHistoryRepository(IntelligenceHistoryRepository):
                 )
 
         return replace(run, run_id=run_id)
+
+    def _exact_replay(
+        self,
+        connection: sqlite3.Connection,
+        existing_row: sqlite3.Row,
+        proposed_run: IntelligenceHistoryRun,
+        executed_at_json: str,
+        proposed_records: Sequence[IntelligenceHistoryRecord],
+        proposed_payloads: Sequence[dict[str, str]],
+    ) -> IntelligenceHistoryRun:
+        existing_run = self._run_from_row(existing_row)
+        existing_record_rows = connection.execute(
+            """
+            SELECT *
+            FROM intelligence_results
+            WHERE run_id = ?
+            ORDER BY id ASC
+            """,
+            (existing_run.run_id,),
+        ).fetchall()
+        existing_records = tuple(
+            self._record_from_row(row) for row in existing_record_rows
+        )
+        if (
+            existing_run.result_count != len(existing_records)
+            or existing_row["executed_at"]
+            != self._execution_sort_value(existing_run.executed_at)
+        ):
+            raise IntelligenceDeserializationError(
+                "Stored Intelligence History execution is inconsistent."
+            )
+        metadata_matches = (
+            existing_row["executed_at_json"] == executed_at_json
+            and existing_run.engine_version == proposed_run.engine_version
+            and existing_run.collection_snapshot_id
+            == proposed_run.collection_snapshot_id
+            and existing_run.marketplace_snapshot_id
+            == proposed_run.marketplace_snapshot_id
+            and existing_run.result_count == proposed_run.result_count
+            and len(existing_records) == len(proposed_records)
+        )
+        records_match = metadata_matches and all(
+            self._record_matches(
+                row,
+                existing_record,
+                proposed_record,
+                proposed_payload,
+            )
+            for row, existing_record, proposed_record, proposed_payload in zip(
+                existing_record_rows,
+                existing_records,
+                proposed_records,
+                proposed_payloads,
+                strict=True,
+            )
+        )
+        if records_match:
+            return existing_run
+        raise IntelligenceHistoryConflictError(
+            "Intelligence History provenance is already stored with different "
+            "immutable content."
+        )
+
+    @staticmethod
+    def _record_matches(
+        row: sqlite3.Row,
+        existing: IntelligenceHistoryRecord,
+        proposed: IntelligenceHistoryRecord,
+        payload: dict[str, str],
+    ) -> bool:
+        return (
+            existing.module_id == proposed.module_id
+            and existing.module_version == proposed.module_version
+            and existing.summary == proposed.summary
+            and row["status_json"] == payload["status_json"]
+            and row["insights_json"] == payload["insights_json"]
+            and row["metrics_json"] == payload["metrics_json"]
+            and row["evidence_json"] == payload["evidence_json"]
+            and row["diagnostics_json"] == payload["diagnostics_json"]
+        )
 
     @staticmethod
     def _execution_sort_value(executed_at: datetime) -> str:
@@ -275,6 +380,7 @@ class SQLiteIntelligenceHistoryRepository(IntelligenceHistoryRepository):
                 engine_version=row["engine_version"],
                 collection_snapshot_id=row["collection_snapshot_id"],
                 result_count=row["result_count"],
+                marketplace_snapshot_id=row["marketplace_snapshot_id"],
             )
         except (TypeError, ValueError) as exc:
             raise IntelligenceDeserializationError(

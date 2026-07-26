@@ -20,7 +20,7 @@ class MarketplaceHistoryMigrationTestCase(unittest.TestCase):
 
         applied = run_migrations(self.connection)
 
-        self.assertEqual(tuple(item.version for item in applied), (3, 4))
+        self.assertEqual(tuple(item.version for item in applied), (3, 4, 5))
         self.assertIn("Marketplace History", applied[0].name)
         self._assert_marketplace_history_schema(self.connection)
         self.assertEqual(
@@ -55,7 +55,7 @@ class MarketplaceHistoryMigrationTestCase(unittest.TestCase):
                     "SELECT version FROM schema_migrations"
                 ).fetchall()
             },
-            {1, 2, 3, 4},
+            {1, 2, 3, 4, 5},
         )
 
         self.assertEqual(run_migrations(self.connection), [])
@@ -170,6 +170,23 @@ class MarketplaceHistoryMigrationTestCase(unittest.TestCase):
         )
         if not marker:
             raise AssertionError("Unable to locate Marketplace History schema")
+        version_two_schema = version_two_schema.replace(
+            """,
+    marketplace_snapshot_id TEXT
+        REFERENCES marketplace_snapshots(snapshot_id)
+        ON UPDATE RESTRICT
+        ON DELETE RESTRICT
+""",
+            "\n",
+        ).replace(
+            """
+CREATE UNIQUE INDEX IF NOT EXISTS idx_intelligence_runs_marketplace_snapshot
+ON intelligence_runs(marketplace_snapshot_id)
+WHERE marketplace_snapshot_id IS NOT NULL;
+
+""",
+            "",
+        )
         connection.executescript(version_two_schema)
         connection.executemany(
             "INSERT OR IGNORE INTO schema_migrations(version) VALUES (?)",

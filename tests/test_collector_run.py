@@ -16,11 +16,23 @@ from dip.app.collector_run import (
     CollectorRunStatus,
     CollectorRunUnavailableError,
 )
-from dip.app.marketplace_history import MarketplaceHistoryCommandService
+from dip.app.collection_intelligence import CollectionIntelligenceExecutionService
+from dip.app.intelligence_context import IntelligenceContextFactory
+from dip.app.marketplace_history import (
+    MarketplaceHistoryCommandService,
+    MarketplaceHistoryQueryService,
+)
+from dip.intelligence import (
+    COLLECTION_INTELLIGENCE_ENGINE_VERSION,
+    IntelligenceEngine,
+    IntelligenceStatus,
+    build_v02_intelligence_registry,
+)
 from dip.intelligence.modules.opportunity_scoring import calculate
 from dip.marketplace_intelligence import MarketplaceDataStatus
 from dip.persistence.sqlite import (
     Database,
+    SQLiteIntelligenceHistoryRepository,
     SQLiteMarketplaceHistoryRepository,
 )
 
@@ -122,6 +134,18 @@ class _Recorder:
         return snapshot
 
 
+class _IntelligenceExecutor:
+    def __init__(self, error=None):
+        self.calls = []
+        self.error = error
+
+    def execute_collector_run(self, **values):
+        self.calls.append(values)
+        if self.error is not None:
+            raise self.error
+        return object()
+
+
 def _facts(wants=10):
     return {
         "wants": wants,
@@ -144,6 +168,7 @@ class CollectorRunServiceTestCase(unittest.TestCase):
         score_calculator=lambda current, previous: {"score": current["wants"]},
         callback=None,
         recorder=None,
+        intelligence_executor=None,
     ):
         repository = repository or _Repository()
         provider = _Provider(
@@ -154,6 +179,7 @@ class CollectorRunServiceTestCase(unittest.TestCase):
         clock_calls = []
         waits = []
         recorder = recorder or _Recorder()
+        intelligence_executor = intelligence_executor or _IntelligenceExecutor()
 
         def factory(token):
             factory_calls.append(token)
@@ -170,10 +196,55 @@ class CollectorRunServiceTestCase(unittest.TestCase):
             "0.4.0",
             1.08,
             recorder,
+            intelligence_executor,
             clock=clock,
             wait=waits.append,
         )
         return service, repository, provider, factory_calls, clock_calls, waits
+
+    def test_eligible_capture_executes_intelligence_before_terminal_write(self):
+        executor = _IntelligenceExecutor()
+        service, repository, _, _, _, _ = self.service(
+            repository=_Repository((1,)),
+            intelligence_executor=executor,
+        )
+
+        result = service.run("temporary-token")
+
+        self.assertEqual(len(executor.calls), 1)
+        call = executor.calls[0]
+        self.assertEqual(call["analysis_run_id"], result.analysis_run_id)
+        self.assertEqual(call["release_ids"], (1,))
+        self.assertEqual(call["executed_at"], CAPTURED_AT)
+        self.assertEqual(call["marketplace_snapshot"].captured_at, CAPTURED_AT)
+        self.assertEqual(repository.events[-1][0], "complete")
+
+    def test_intelligence_failure_is_fatal_with_counts_and_primary_cause(self):
+        primary = RuntimeError("serialized payload and SQL detail")
+        executor = _IntelligenceExecutor(primary)
+        recorder = _Recorder()
+        service, repository, _, _, _, _ = self.service(
+            repository=_Repository((1, 2)),
+            recorder=recorder,
+            intelligence_executor=executor,
+        )
+
+        with self.assertRaises(CollectorRunExecutionError) as caught:
+            service.run("temporary-token")
+
+        self.assertIs(caught.exception.__cause__, primary)
+        self.assertEqual(
+            (
+                caught.exception.attempted_releases,
+                caught.exception.successful_releases,
+                caught.exception.failed_releases,
+            ),
+            (2, 2, 0),
+        )
+        self.assertEqual(len(recorder.snapshots), 1)
+        self.assertEqual(repository.events[-1][0], "fail")
+        self.assertNotIn(str(primary), repository.events[-1][2])
+        self.assertNotIn(str(primary), str(caught.exception))
 
     def test_empty_collection_fails_before_provider_or_mutation(self):
         repository = _Repository(())
@@ -219,6 +290,7 @@ class CollectorRunServiceTestCase(unittest.TestCase):
             "0.4.0",
             0,
             _Recorder(),
+            _IntelligenceExecutor(),
             clock=lambda: CAPTURED_AT,
             wait=lambda seconds: None,
         )
@@ -266,6 +338,7 @@ class CollectorRunServiceTestCase(unittest.TestCase):
             "0.4.0",
             0,
             _Recorder(),
+            _IntelligenceExecutor(),
             clock=lambda: CAPTURED_AT,
             wait=lambda seconds: None,
         )
@@ -315,6 +388,7 @@ class CollectorRunServiceTestCase(unittest.TestCase):
             "0.4.0",
             0,
             _Recorder(),
+            _IntelligenceExecutor(),
             clock=lambda: CAPTURED_AT,
             wait=lambda seconds: None,
         )
@@ -790,6 +864,7 @@ class CollectorRunServiceTestCase(unittest.TestCase):
             "0.4.0",
             0,
             _Recorder(),
+            _IntelligenceExecutor(),
             clock=lambda: datetime(2026, 1, 1),
             wait=lambda seconds: None,
         )
@@ -874,15 +949,146 @@ class CollectorRunSQLiteIntegrationTestCase(unittest.TestCase):
                 for release_id in release_ids
             ),
         )
+        database.conn.executemany(
+            "INSERT INTO collection_ownership (release_id, quantity) VALUES (?, 1)",
+            tuple((release_id,) for release_id in release_ids),
+        )
 
     @staticmethod
     def _canonical_history(database):
         repository = SQLiteMarketplaceHistoryRepository(database)
         return MarketplaceHistoryCommandService(repository), repository
-        database.conn.executemany(
-            "INSERT INTO collection_ownership (release_id, quantity) VALUES (?, 1)",
-            tuple((release_id,) for release_id in release_ids),
+
+    @staticmethod
+    def _intelligence(database, marketplace_repository):
+        history = SQLiteIntelligenceHistoryRepository(database)
+        executor = CollectionIntelligenceExecutionService(
+            IntelligenceEngine(build_v02_intelligence_registry()),
+            history,
+            IntelligenceContextFactory(
+                database,
+                MarketplaceHistoryQueryService(marketplace_repository),
+            ),
+            engine_version=COLLECTION_INTELLIGENCE_ENGINE_VERSION,
         )
+        return executor, history
+
+    def test_complete_run_records_three_modules_with_canonical_provenance(self):
+        temporary_directory = tempfile.TemporaryDirectory()
+        database = Database(Path(temporary_directory.name) / "coherent-run.db")
+        try:
+            self._seed(database, (2, 1))
+            recorder, marketplace_history = self._canonical_history(database)
+            executor, intelligence_history = self._intelligence(
+                database, marketplace_history
+            )
+            service = CollectorRunService(
+                database,
+                lambda token: _Provider({1: _facts(11), 2: _facts(22)}),
+                calculate,
+                "0.4.0",
+                0,
+                recorder,
+                executor,
+                clock=lambda: CAPTURED_AT,
+                wait=lambda seconds: None,
+            )
+
+            result = service.run("temporary-token")
+
+            run = intelligence_history.latest_run()
+            records = intelligence_history.records_for_run(run.run_id)
+            self.assertEqual(result.status, CollectorRunStatus.COMPLETED)
+            self.assertEqual(run.executed_at, CAPTURED_AT)
+            self.assertEqual(
+                run.marketplace_snapshot_id,
+                f"collector-run-{result.analysis_run_id}",
+            )
+            self.assertEqual(
+                run.engine_version,
+                COLLECTION_INTELLIGENCE_ENGINE_VERSION,
+            )
+            self.assertEqual(
+                tuple(record.module_id for record in records),
+                (
+                    "collection_health",
+                    "hidden_gems",
+                    "historical_intelligence",
+                ),
+            )
+            self.assertEqual(
+                tuple(record.module_version for record in records),
+                ("1.0", "1.0", "0.2"),
+            )
+            self.assertEqual(
+                tuple(record.status for record in records),
+                (
+                    IntelligenceStatus.COMPLETED,
+                    IntelligenceStatus.COMPLETED,
+                    IntelligenceStatus.SKIPPED,
+                ),
+            )
+            self.assertEqual(
+                database.conn.execute(
+                    "SELECT status FROM analysis_runs WHERE id = ?",
+                    (result.analysis_run_id,),
+                ).fetchone()["status"],
+                "completed",
+            )
+        finally:
+            database.close()
+            temporary_directory.cleanup()
+
+    def test_terminal_failure_retains_canonical_and_intelligence_history(self):
+        temporary_directory = tempfile.TemporaryDirectory()
+        database = Database(Path(temporary_directory.name) / "retained-history.db")
+        try:
+            self._seed(database, (1,))
+            recorder, marketplace_history = self._canonical_history(database)
+            executor, intelligence_history = self._intelligence(
+                database, marketplace_history
+            )
+            primary = OSError("terminal SQL and filesystem detail")
+            original_complete = database.complete_analysis_run
+
+            def fail_terminal(*args):
+                raise primary
+
+            database.complete_analysis_run = fail_terminal
+            service = CollectorRunService(
+                database,
+                lambda token: _Provider({1: _facts()}),
+                calculate,
+                "0.4.0",
+                0,
+                recorder,
+                executor,
+                clock=lambda: CAPTURED_AT,
+                wait=lambda seconds: None,
+            )
+
+            with self.assertRaises(CollectorRunExecutionError) as caught:
+                service.run("temporary-token")
+
+            self.assertIs(caught.exception.__cause__, primary)
+            self.assertNotIn(str(primary), str(caught.exception))
+            canonical = marketplace_history.latest_snapshot()
+            run = intelligence_history.latest_run()
+            records = intelligence_history.records_for_run(run.run_id)
+            self.assertEqual(run.marketplace_snapshot_id, canonical.snapshot_id)
+            self.assertEqual(len(records), 3)
+            legacy = database.conn.execute(
+                "SELECT status, error_message FROM analysis_runs"
+            ).fetchone()
+            self.assertEqual(legacy["status"], "failed")
+            self.assertEqual(
+                legacy["error_message"],
+                "Collector Run failed unexpectedly.",
+            )
+            database.complete_analysis_run = original_complete
+        finally:
+            database.close()
+            temporary_directory.cleanup()
 
     def test_run_persists_legacy_run_snapshots_and_scores(self):
         temporary_directory = tempfile.TemporaryDirectory()
@@ -905,6 +1111,7 @@ class CollectorRunSQLiteIntegrationTestCase(unittest.TestCase):
                 "0.4.0",
                 0,
                 recorder,
+                _IntelligenceExecutor(),
                 clock=lambda: CAPTURED_AT,
                 wait=lambda seconds: None,
             )
@@ -981,6 +1188,7 @@ class CollectorRunSQLiteIntegrationTestCase(unittest.TestCase):
                 }
             )
             recorder, history = self._canonical_history(database)
+            executor, intelligence_history = self._intelligence(database, history)
             service = CollectorRunService(
                 database,
                 lambda token: provider,
@@ -988,6 +1196,7 @@ class CollectorRunSQLiteIntegrationTestCase(unittest.TestCase):
                 "0.4.0",
                 0,
                 recorder,
+                executor,
                 clock=lambda: CAPTURED_AT,
                 wait=lambda seconds: None,
             )
@@ -1044,6 +1253,24 @@ class CollectorRunSQLiteIntegrationTestCase(unittest.TestCase):
                     (3, MarketplaceDataStatus.UNAVAILABLE),
                 ),
             )
+            intelligence_run = intelligence_history.latest_run()
+            self.assertEqual(
+                intelligence_run.marketplace_snapshot_id,
+                canonical.snapshot_id,
+            )
+            self.assertEqual(
+                tuple(
+                    record.status
+                    for record in intelligence_history.records_for_run(
+                        intelligence_run.run_id
+                    )
+                ),
+                (
+                    IntelligenceStatus.COMPLETED,
+                    IntelligenceStatus.COMPLETED,
+                    IntelligenceStatus.SKIPPED,
+                ),
+            )
         finally:
             database.close()
             temporary_directory.cleanup()
@@ -1059,6 +1286,7 @@ class CollectorRunSQLiteIntegrationTestCase(unittest.TestCase):
                 {1: RuntimeError(provider_detail), 2: None}
             )
             recorder, history = self._canonical_history(database)
+            executor, intelligence_history = self._intelligence(database, history)
             service = CollectorRunService(
                 database,
                 lambda supplied_token: provider,
@@ -1066,6 +1294,7 @@ class CollectorRunSQLiteIntegrationTestCase(unittest.TestCase):
                 "0.4.0",
                 0,
                 recorder,
+                executor,
                 clock=lambda: CAPTURED_AT,
                 wait=lambda seconds: None,
             )
@@ -1104,6 +1333,7 @@ class CollectorRunSQLiteIntegrationTestCase(unittest.TestCase):
             self.assertNotIn(token, run["error_message"])
             self.assertIs(canonical.status, MarketplaceDataStatus.FAILED)
             self.assertEqual(canonical.release_observations, ())
+            self.assertIsNone(intelligence_history.latest_run())
         finally:
             database.close()
             temporary_directory.cleanup()
@@ -1121,6 +1351,7 @@ class CollectorRunSQLiteIntegrationTestCase(unittest.TestCase):
                 "0.4.0",
                 0,
                 recorder,
+                _IntelligenceExecutor(),
                 clock=lambda: CAPTURED_AT,
                 wait=lambda seconds: None,
             )

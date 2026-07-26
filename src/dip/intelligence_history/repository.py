@@ -6,6 +6,10 @@ from typing import Protocol
 from .models import IntelligenceHistoryRecord, IntelligenceHistoryRun
 
 
+class IntelligenceHistoryConflictError(RuntimeError):
+    """Raised when immutable provenance is reused for different content."""
+
+
 class IntelligenceHistoryRepository(Protocol):
     """Store and retrieve historical intelligence without storage coupling."""
 

@@ -122,7 +122,11 @@ CREATE TABLE IF NOT EXISTS intelligence_runs (
     executed_at_json TEXT NOT NULL,
     engine_version TEXT,
     collection_snapshot_id INTEGER,
-    result_count INTEGER NOT NULL CHECK (result_count >= 0)
+    result_count INTEGER NOT NULL CHECK (result_count >= 0),
+    marketplace_snapshot_id TEXT
+        REFERENCES marketplace_snapshots(snapshot_id)
+        ON UPDATE RESTRICT
+        ON DELETE RESTRICT
 );
 
 CREATE TABLE IF NOT EXISTS intelligence_results (
@@ -147,6 +151,10 @@ ON intelligence_runs(executed_at DESC, id DESC);
 
 CREATE INDEX IF NOT EXISTS idx_intelligence_results_module_run
 ON intelligence_results(module_id, run_id DESC);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_intelligence_runs_marketplace_snapshot
+ON intelligence_runs(marketplace_snapshot_id)
+WHERE marketplace_snapshot_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS marketplace_snapshots (
     snapshot_id TEXT PRIMARY KEY NOT NULL,

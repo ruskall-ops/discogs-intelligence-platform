@@ -676,18 +676,20 @@ def _deserialize(value: Any, *, path: str, approved_model: bool) -> Any:
             ) from exc
 
     if tag == _RUN_TYPE:
-        _require_keys(
-            value,
-            {
-                _TYPE_KEY,
-                "run_id",
-                "executed_at",
-                "engine_version",
-                "collection_snapshot_id",
-                "result_count",
-            },
-            path,
-        )
+        required = {
+            _TYPE_KEY,
+            "run_id",
+            "executed_at",
+            "engine_version",
+            "collection_snapshot_id",
+            "result_count",
+        }
+        supplied = set(value)
+        if supplied == required:
+            value = dict(value)
+            value["marketplace_snapshot_id"] = None
+        else:
+            _require_keys(value, required | {"marketplace_snapshot_id"}, path)
         fields = _deserialize_model_fields(value, path)
         _validate_run_fields(fields, path)
         try:
@@ -747,6 +749,10 @@ def _validate_run_fields(fields: dict[str, Any], path: str) -> None:
     _require_optional_int(
         fields["collection_snapshot_id"],
         f"{path}.collection_snapshot_id",
+    )
+    _require_optional_string(
+        fields["marketplace_snapshot_id"],
+        f"{path}.marketplace_snapshot_id",
     )
     result_count = _require_int(fields["result_count"], f"{path}.result_count")
     if result_count < 0:

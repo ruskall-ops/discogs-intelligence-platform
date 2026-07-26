@@ -6,9 +6,8 @@ Historical Intelligence explains how a prepared collection snapshot changed
 from its immediately preceding snapshot. It supports research only and never
 recommends buying, selling or keeping a release.
 
-The first vertical slice compares exactly two snapshots. It does not provide
-custom ranges, arbitrary selection, charts, time-series aggregation,
-forecasting or persisted intelligence results.
+The module compares exactly two snapshots. It does not provide custom ranges,
+arbitrary selection, charts, time-series aggregation or forecasting.
 
 ## Architecture
 
@@ -16,7 +15,13 @@ forecasting or persisted intelligence results.
 contract, consumes only `IntelligenceContext.history`, and returns a standard
 `IntelligenceResult`. It performs no SQLite, Discogs, dashboard or desktop
 calls. The Version 0.2 registry exposes it after Collection Health and Hidden
-Gems without changing desktop behaviour.
+Gems. Collector Run context preparation supplies the current canonical
+Marketplace snapshot and nearest eligible same-source predecessor.
+The module itself performs no persistence or orchestration. Under Version
+0.5.3, `CollectionIntelligenceExecutionService` persists its completed or
+legitimately skipped result as part of one coherent Intelligence History
+execution. Historical Intelligence still owns no repository access, UI, or
+buying or selling recommendation.
 
 Public output is structured as frozen dataclasses:
 
@@ -45,6 +50,13 @@ Selection is deterministic:
 Empty snapshot sequences are valid collection states. Identical timestamps
 use the snapshot identifier as an explicit tie-breaker. Elapsed time is
 reported only when both selected timestamps are valid.
+
+Canonical context preparation retains rows for complete, partial, empty,
+failed, and unavailable observations. Missing facts remain `None`; an
+unavailable identity therefore remains in scope and cannot be misclassified as
+a removal. With only the current eligible snapshot, the module legitimately
+returns `SKIPPED`, and that result is persisted with the rest of the complete
+engine execution.
 
 ## Release matching
 

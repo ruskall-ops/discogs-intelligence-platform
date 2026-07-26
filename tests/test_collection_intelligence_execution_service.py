@@ -3,6 +3,7 @@ from __future__ import annotations
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import Mock
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -22,6 +23,11 @@ from dip.intelligence import (
 from dip.intelligence_history import (
     IntelligenceHistoryRecord,
     IntelligenceHistoryRun,
+)
+from dip.marketplace_intelligence import (
+    MarketplaceDataStatus,
+    MarketplaceReleaseObservation,
+    MarketplaceSnapshot,
 )
 from dip.persistence.sqlite import Database, SQLiteIntelligenceHistoryRepository
 
@@ -65,7 +71,18 @@ class _HistoryRepository:
             engine_version=run.engine_version,
             collection_snapshot_id=run.collection_snapshot_id,
             result_count=run.result_count,
+            marketplace_snapshot_id=run.marketplace_snapshot_id,
         )
+
+
+class _ContextFactory:
+    def __init__(self, context: IntelligenceContext) -> None:
+        self.context = context
+        self.calls = []
+
+    def build_collector_run(self, **values) -> IntelligenceContext:
+        self.calls.append(values)
+        return self.context
 
 
 class CollectionIntelligenceExecutionServiceTestCase(unittest.TestCase):
@@ -242,6 +259,161 @@ class CollectionIntelligenceExecutionServiceTestCase(unittest.TestCase):
 
         self.assertIs(raised.exception, failure)
         self.assertEqual(len(repository.saved), 1)
+
+    def test_collector_run_persists_completed_and_skipped_in_registry_order(self):
+        skipped = IntelligenceResult(
+            module_id="historical_intelligence",
+            module_version="0.2",
+            status=IntelligenceStatus.SKIPPED,
+            summary="A predecessor is not yet available.",
+            metrics={"snapshot_count": 1},
+            evidence=("Current canonical snapshot retained.",),
+            diagnostics=("Two snapshots are required.",),
+        )
+        execution = IntelligenceExecution((self.results[0], skipped))
+        repository = _HistoryRepository()
+        context = IntelligenceContext()
+        factory = _ContextFactory(context)
+        clock = Mock(side_effect=AssertionError("collector execution used clock"))
+        service = CollectionIntelligenceExecutionService(
+            _Engine(execution),
+            repository,
+            factory,
+            engine_version="0.2",
+            clock=clock,
+        )
+        snapshot = MarketplaceSnapshot(
+            "collector-run-7",
+            self.executed_at,
+            "discogs",
+            MarketplaceDataStatus.COMPLETE,
+            (
+                MarketplaceReleaseObservation(
+                    1,
+                    self.executed_at,
+                    MarketplaceDataStatus.COMPLETE,
+                    num_wanted=0,
+                ),
+            ),
+        )
+
+        outcome = service.execute_collector_run(
+            analysis_run_id=7,
+            marketplace_snapshot=snapshot,
+            release_ids=(1,),
+            executed_at=self.executed_at,
+        )
+
+        clock.assert_not_called()
+        self.assertEqual(factory.calls[0]["captured_at"], self.executed_at)
+        run, records = repository.saved[0]
+        self.assertEqual(run.marketplace_snapshot_id, "collector-run-7")
+        self.assertEqual(run.executed_at, self.executed_at)
+        self.assertEqual(run.engine_version, "0.2")
+        self.assertEqual(
+            tuple(record.status for record in records),
+            (IntelligenceStatus.COMPLETED, IntelligenceStatus.SKIPPED),
+        )
+        self.assertEqual(records[1].metrics["snapshot_count"], 1)
+        self.assertEqual(records[1].evidence, skipped.evidence)
+        self.assertEqual(records[1].diagnostics, skipped.diagnostics)
+        self.assertEqual(
+            outcome.history_run.marketplace_snapshot_id,
+            "collector-run-7",
+        )
+
+    def test_collector_run_all_skipped_persists_but_failed_does_not(self):
+        snapshot = MarketplaceSnapshot(
+            "collector-run-7",
+            self.executed_at,
+            "discogs",
+            MarketplaceDataStatus.COMPLETE,
+            (
+                MarketplaceReleaseObservation(
+                    1,
+                    self.executed_at,
+                    MarketplaceDataStatus.COMPLETE,
+                    num_wanted=0,
+                ),
+            ),
+        )
+        skipped = IntelligenceResult(
+            module_id="historical_intelligence",
+            module_version="0.2",
+            status=IntelligenceStatus.SKIPPED,
+            summary="Skipped.",
+        )
+        repository = _HistoryRepository()
+        service = CollectionIntelligenceExecutionService(
+            _Engine(IntelligenceExecution((skipped,))),
+            repository,
+            _ContextFactory(IntelligenceContext()),
+        )
+        service.execute_collector_run(
+            analysis_run_id=7,
+            marketplace_snapshot=snapshot,
+            release_ids=(1,),
+            executed_at=self.executed_at,
+        )
+        self.assertEqual(len(repository.saved), 1)
+
+        failed = IntelligenceResult(
+            module_id="collection_health",
+            module_version="1.0",
+            status=IntelligenceStatus.FAILED,
+            summary="Failed.",
+            diagnostics=("Safe failure.",),
+        )
+        repository = _HistoryRepository()
+        service = CollectionIntelligenceExecutionService(
+            _Engine(IntelligenceExecution((skipped, failed))),
+            repository,
+            _ContextFactory(IntelligenceContext()),
+        )
+        with self.assertRaises(IntelligenceExecutionIncompleteError):
+            service.execute_collector_run(
+                analysis_run_id=7,
+                marketplace_snapshot=snapshot,
+                release_ids=(1,),
+                executed_at=self.executed_at,
+            )
+        self.assertEqual(repository.saved, [])
+
+    def test_collector_run_invalid_status_rejects_without_history_mutation(self):
+        snapshot = MarketplaceSnapshot(
+            "collector-run-7",
+            self.executed_at,
+            "discogs",
+            MarketplaceDataStatus.COMPLETE,
+            (
+                MarketplaceReleaseObservation(
+                    1,
+                    self.executed_at,
+                    MarketplaceDataStatus.COMPLETE,
+                    num_wanted=0,
+                ),
+            ),
+        )
+        invalid = IntelligenceResult(
+            module_id="collection_health",
+            module_version="1.0",
+            status="not-a-status",
+            summary="Invalid.",
+        )
+        repository = _HistoryRepository()
+        service = CollectionIntelligenceExecutionService(
+            _Engine(IntelligenceExecution((invalid,))),
+            repository,
+            _ContextFactory(IntelligenceContext()),
+        )
+        with self.assertRaises(ValueError):
+            service.execute_collector_run(
+                analysis_run_id=7,
+                marketplace_snapshot=snapshot,
+                release_ids=(1,),
+                executed_at=self.executed_at,
+            )
+        self.assertEqual(repository.saved, [])
 
 
 class CollectionIntelligenceExecutionSQLiteTestCase(unittest.TestCase):

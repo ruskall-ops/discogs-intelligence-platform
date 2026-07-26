@@ -1326,11 +1326,24 @@ IntelligenceResult
 Intelligence History
 ```
 
-No special Intelligence History repository behaviour is required. Marketplace
-History preserves what the source reported; Intelligence History preserves
-what a versioned module concluded from supplied evidence. Links between those
-observations may be introduced by future orchestration without conflating the
-two stores.
+Marketplace History preserves what the source reported; Intelligence History
+preserves what a versioned module concluded from supplied evidence. Collector
+Run now links each eligible Collection Intelligence execution to its canonical
+Marketplace snapshot through nullable `marketplace_snapshot_id` provenance.
+The link does not copy raw snapshot payloads into Intelligence History or
+conflate the two stores.
+
+Migration 5 adds the nullable column with restricted update/delete actions and
+a partial unique index. Existing and standalone executions remain `NULL`.
+Non-null exact replay returns the existing run and record identities without
+mutation; different immutable metadata, record order, or serialized record
+content raises `IntelligenceHistoryConflictError`. Corrupt stored content still
+raises the existing integrity/deserialization error.
+
+One complete History execution means that every intended registry result was
+atomically persisted. Individual results may truthfully be `SKIPPED`. Collector
+Run accepts completed and skipped results, but rejects any failed result before
+History mutation.
 
 Marketplace Intelligence should integrate naturally through the existing IntelligenceResult contract.
 

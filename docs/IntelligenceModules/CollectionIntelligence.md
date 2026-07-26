@@ -346,10 +346,11 @@ An empty collection returns a standard skipped result with a score of 0,
 zero-valued components and a clear improvement opportunity. It does not raise
 an exception or fail the wider engine execution.
 
-The module is exported from `dip.intelligence.modules` and can be registered
-with `IntelligenceRegistry`. It is deliberately not registered in the current
-desktop application, preserving existing Version 0.1 behaviour until a future
-dashboard integration slice is implemented.
+The module is exported from `dip.intelligence.modules` and is first in the
+default Version 0.2 registry. Eligible Collector Runs execute that registry
+after canonical Marketplace capture and persist the resulting History
+execution. The desktop and Dashboard remain consumers rather than calculation
+boundaries.
 
 ## Dashboard Consumption
 

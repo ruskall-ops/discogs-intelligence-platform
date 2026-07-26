@@ -138,6 +138,9 @@ terminal result. The service owns lazy provider construction, deterministic
 release iteration, one UTC capture timestamp, legacy `analysis_runs`,
 `market_snapshots`, current legacy score updates, canonical aggregate
 Marketplace capture, and request throttling.
+Eligible canonical evidence then passes to the injected Collection Intelligence
+execution service, which builds an explicit context, runs the default registry,
+and records Intelligence History.
 
 Only provider-call failures are recoverable per release. Fatal persistence,
 scoring, callback, or internal failures cause the service to attempt to fail
@@ -155,8 +158,12 @@ fatal application failure. Canonical evidence may remain if the later legacy
 terminal write fails.
 
 CSV import remains a separate optional collection-update action. Collector Run
-writes no Intelligence History and executes no Intelligence modules. See
-[Collector Run](CollectorRun.md).
+disables and guards that mutation while active. Complete and partial canonical
+captures produce one provenance-linked Intelligence History execution.
+Completed and legitimately skipped results are persisted atomically in registry
+order; any failed module or downstream context/history failure makes the run
+fatal without discarding canonical evidence already recorded. See [Collector
+Run](CollectorRun.md).
 
 ### Intelligence and domain services
 

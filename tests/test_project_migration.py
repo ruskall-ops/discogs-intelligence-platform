@@ -25,7 +25,7 @@ class ProjectMigrationTestCase(unittest.TestCase):
 
         applied = run_migrations(self.connection)
 
-        self.assertEqual(tuple(item.version for item in applied), (4,))
+        self.assertEqual(tuple(item.version for item in applied), (4, 5))
         self.assertEqual(applied[0].name, "Add Project persistence")
         self._assert_schema(self.connection)
         self.assertEqual(
@@ -38,7 +38,7 @@ class ProjectMigrationTestCase(unittest.TestCase):
             self.connection.execute(
                 "SELECT version FROM schema_migrations ORDER BY version"
             ).fetchall()[-1]["version"],
-            4,
+            5,
         )
         self.assertEqual(run_migrations(self.connection), [])
 

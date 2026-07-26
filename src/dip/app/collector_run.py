@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Protocol
 
-from dip.marketplace_intelligence import MarketplaceSnapshot
+from dip.marketplace_intelligence import MarketplaceDataStatus, MarketplaceSnapshot
 
 from .marketplace_capture import (
     MarketplaceCaptureAttempt,
@@ -228,6 +228,19 @@ class MarketplaceSnapshotRecorder(Protocol):
     def record_snapshot(self, snapshot: MarketplaceSnapshot) -> MarketplaceSnapshot: ...
 
 
+class CollectorRunIntelligenceExecutor(Protocol):
+    """Downstream Collection Intelligence boundary for eligible evidence."""
+
+    def execute_collector_run(
+        self,
+        *,
+        analysis_run_id: int,
+        marketplace_snapshot: MarketplaceSnapshot,
+        release_ids: tuple[int, ...],
+        executed_at: datetime,
+    ) -> object: ...
+
+
 ProgressCallback = Callable[[CollectorRunProgress], None]
 ProviderFactory = Callable[[str], DiscogsReleaseProvider]
 ScoreCalculator = Callable[
@@ -257,6 +270,7 @@ class CollectorRunService:
         application_version: str,
         request_delay_seconds: float,
         snapshot_recorder: MarketplaceSnapshotRecorder,
+        intelligence_executor: CollectorRunIntelligenceExecutor,
         *,
         clock: Callable[[], datetime] = utc_now,
         wait: Callable[[float], None],
@@ -283,6 +297,13 @@ class CollectorRunService:
         self._application_version = application_version
         self._request_delay_seconds = float(request_delay_seconds)
         self._snapshot_recorder = snapshot_recorder
+        if not callable(
+            getattr(intelligence_executor, "execute_collector_run", None)
+        ):
+            raise TypeError(
+                "intelligence_executor must provide execute_collector_run()."
+            )
+        self._intelligence_executor = intelligence_executor
         self._clock = clock
         self._wait = wait
 
@@ -389,6 +410,16 @@ class CollectorRunService:
                 tuple(capture_attempts),
             )
             self._snapshot_recorder.record_snapshot(snapshot)
+            if snapshot.status in {
+                MarketplaceDataStatus.COMPLETE,
+                MarketplaceDataStatus.PARTIAL,
+            }:
+                self._intelligence_executor.execute_collector_run(
+                    analysis_run_id=run_id,
+                    marketplace_snapshot=snapshot,
+                    release_ids=release_ids,
+                    executed_at=captured_at,
+                )
             status = (
                 CollectorRunStatus.COMPLETED
                 if failed == 0

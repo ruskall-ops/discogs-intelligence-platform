@@ -13,6 +13,9 @@ from .modules import (
 from .registry import IntelligenceRegistry
 
 
+COLLECTION_INTELLIGENCE_ENGINE_VERSION = "0.2"
+
+
 def build_v02_intelligence_registry(
     *,
     collection_health_config: CollectionHealthConfig | None = None,

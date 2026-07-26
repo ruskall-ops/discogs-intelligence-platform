@@ -32,7 +32,9 @@ class IntelligenceContext:
 
     collection: Sequence[Mapping[str, Any]] = field(default_factory=tuple)
     marketplace: Mapping[int, Mapping[str, Any]] = field(default_factory=dict)
-    history: Mapping[int, Sequence[Mapping[str, Any]]] = field(default_factory=dict)
+    history: Mapping[int | str, Sequence[Mapping[str, Any]]] = field(
+        default_factory=dict
+    )
     user_context: Mapping[str, Any] = field(default_factory=dict)
     filters: Mapping[str, Any] = field(default_factory=dict)
     analysis_run_id: int | None = None

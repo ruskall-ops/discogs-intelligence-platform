@@ -6,6 +6,22 @@ All notable changes to the Discogs Intelligence Platform will be documented here
 
 # Unreleased — Version 0.5
 
+## Coherent Intelligence Execution and History
+
+- Extended eligible complete and partial Collector Runs through the existing
+  Collection Intelligence execution service and default Version 0.2 registry.
+- Built an explicit immutable context from fixed collection evidence, the
+  just-recorded canonical Marketplace snapshot, and its nearest eligible
+  canonical predecessor.
+- Preserved absence as `None`, persisted completed and legitimately skipped
+  module results atomically, and made any failed module fatal.
+- Added migration 5 with nullable canonical Marketplace provenance, restricted
+  referential integrity, a partial unique index, exact replay, and immutable
+  conflict detection.
+- Reused the single run timestamp and production engine version `0.2`, and
+  disabled and guarded CSV import during active Collector Runs.
+- Kept package/runtime version `0.4.0`; v0.5.3 is implemented but unreleased.
+
 ## Canonical Marketplace Capture
 
 - Added one canonical aggregate Marketplace snapshot for every Collector Run
@@ -22,8 +38,8 @@ All notable changes to the Discogs Intelligence Platform will be documented here
   existing fatal failure, progress, token-safety, and desktop boundaries.
 - Added provider, mapper, Collector Run, real SQLite, composition, and desktop
   regression coverage.
-- Did not add Intelligence execution, Intelligence History, Project scoping,
-  CSV reconciliation, scheduling, cancellation, or package-version changes.
+- Did not add Project scoping, CSV reconciliation, scheduling, cancellation,
+  or package-version changes.
 
 ## Collector Run Application Boundary
 

@@ -160,6 +160,11 @@ The first Dashboard homepage is a read-only presentation and integration
 boundary over completed Intelligence History. It does not run intelligence,
 query SQLite, compare executions or rank candidates.
 
+Collector Run is now the production writer for provenance-linked Collection
+Intelligence executions. The Dashboard remains a reader through application
+query and presentation services; a persisted `SKIPPED` module result is
+truthful completed execution evidence, not a partially written History run.
+
 ```text
 IntelligenceHistoryQueryService     ComparisonPresentationService
                 │                               │
