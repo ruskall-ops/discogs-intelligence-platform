@@ -16,6 +16,7 @@ from dip.app import (
     ListingLifecycleExecutionService,
     PriceChangesExecutionService,
 )
+from dip.app.collection_intelligence import CollectionIntelligenceExecutionService
 from dip.composition import (
     DesktopApplicationDependencies,
     build_desktop_application_dependencies,
@@ -183,6 +184,26 @@ class MarketplaceHistoryCompositionTestCase(unittest.TestCase):
         self.assertIs(
             dependencies.collector_run._snapshot_recorder,
             dependencies.marketplace_history_commands,
+        )
+        self.assertIsInstance(
+            dependencies.collection_intelligence_execution,
+            CollectionIntelligenceExecutionService,
+        )
+        self.assertIs(
+            dependencies.collector_run._intelligence_executor,
+            dependencies.collection_intelligence_execution,
+        )
+        self.assertEqual(
+            dependencies.collection_intelligence_execution._engine_version,
+            "0.2",
+        )
+        self.assertEqual(
+            dependencies.collection_intelligence_execution._engine.registry.module_ids,
+            (
+                "collection_health",
+                "hidden_gems",
+                "historical_intelligence",
+            ),
         )
         provider_type.assert_not_called()
         self.assertEqual(repository.calls, [])

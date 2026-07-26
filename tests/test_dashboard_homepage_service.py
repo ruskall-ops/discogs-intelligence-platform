@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+from pathlib import Path
+import tempfile
 import unittest
 
 from dip.app import (
@@ -7,10 +10,17 @@ from dip.app import (
     ComparisonHistoryUnavailableError,
     DashboardHomepageService,
 )
+from dip.app.intelligence_history import IntelligenceHistoryQueryService
 from dip.experience.dashboard import (
     DashboardHomepageViewModelBuilder,
     DashboardSectionState,
 )
+from dip.intelligence import IntelligenceStatus
+from dip.intelligence_history import (
+    IntelligenceHistoryRecord,
+    IntelligenceHistoryRun,
+)
+from dip.persistence.sqlite import Database, SQLiteIntelligenceHistoryRepository
 
 from tests.test_dashboard_homepage import (
     comparison_view_model,
@@ -129,6 +139,112 @@ class DashboardHomepageServiceTestCase(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "corrupt history"):
             failure_service.homepage()
+
+    def test_real_history_with_skipped_module_builds_complete_homepage(self):
+        temporary = tempfile.TemporaryDirectory()
+        database = Database(Path(temporary.name) / "dashboard-history.db")
+        try:
+            repository = SQLiteIntelligenceHistoryRepository(database)
+            executed_at = datetime(2026, 7, 26, 9, tzinfo=timezone.utc)
+            run = IntelligenceHistoryRun(
+                None,
+                executed_at,
+                "0.2",
+                None,
+                3,
+            )
+            records = (
+                IntelligenceHistoryRecord(
+                    None,
+                    None,
+                    "collection_health",
+                    "1.0",
+                    IntelligenceStatus.COMPLETED,
+                    "Collection Health completed.",
+                    metrics={
+                        "overall_health_score": 80.0,
+                        "component_scores": {
+                            "metadata_completeness": 80.0,
+                            "marketplace_coverage": 80.0,
+                            "demand_strength": 80.0,
+                            "valuation_coverage": 80.0,
+                        },
+                        "strengths": (),
+                        "improvement_opportunities": (),
+                        "collection_release_count": 4,
+                    },
+                ),
+                IntelligenceHistoryRecord(
+                    None,
+                    None,
+                    "hidden_gems",
+                    "1.0",
+                    IntelligenceStatus.COMPLETED,
+                    "No candidates.",
+                    metrics={
+                        "candidate_count": 0,
+                        "ranked_candidates": (),
+                        "collection_release_count": 4,
+                    },
+                ),
+                IntelligenceHistoryRecord(
+                    None,
+                    None,
+                    "historical_intelligence",
+                    "0.2",
+                    IntelligenceStatus.SKIPPED,
+                    "A predecessor is not yet available.",
+                    metrics={"comparable_snapshot_count": 1},
+                    evidence=("One canonical snapshot was available.",),
+                    diagnostics=("Two snapshots are required.",),
+                ),
+            )
+            repository.save_execution(run, records)
+            queries = IntelligenceHistoryQueryService(repository)
+            service = DashboardHomepageService(
+                queries,
+                _ComparisonPresentation(
+                    error=ComparisonHistoryUnavailableError("one execution")
+                ),
+                DashboardHomepageViewModelBuilder(),
+            )
+
+            reconstructed = queries.latest_execution()
+            homepage = service.homepage()
+
+            self.assertEqual(len(reconstructed.records), 3)
+            skipped = reconstructed.records[2]
+            self.assertIs(skipped.status, IntelligenceStatus.SKIPPED)
+            self.assertEqual(
+                skipped.summary,
+                "A predecessor is not yet available.",
+            )
+            self.assertEqual(
+                skipped.evidence,
+                ("One canonical snapshot was available.",),
+            )
+            self.assertIs(
+                homepage.section_for("collection_health").state,
+                DashboardSectionState.AVAILABLE,
+            )
+            self.assertIs(
+                homepage.section_for("hidden_gems").state,
+                DashboardSectionState.EMPTY,
+            )
+            overview = homepage.section_for("collection_overview")
+            self.assertIs(
+                overview.current_status,
+                IntelligenceStatus.SKIPPED,
+            )
+            latest = homepage.section_for("latest_execution")
+            self.assertIs(latest.state, DashboardSectionState.AVAILABLE)
+            self.assertNotIn(
+                "No completed intelligence execution",
+                latest.summary,
+            )
+        finally:
+            database.close()
+            temporary.cleanup()
 
 
 class CollectionIntelligencePresentationServiceTestCase(unittest.TestCase):

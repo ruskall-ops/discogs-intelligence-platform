@@ -5,7 +5,8 @@
 Collector Run is the application boundary for recurring collector workflows
 over the collection already stored in SQLite. Version 0.5.1 established the
 Discogs Marketplace refresh stage; Version 0.5.2 adds canonical Marketplace
-capture to that same application lifecycle.
+capture to that same application lifecycle. Version 0.5.3 adds coherent
+Collection Intelligence execution and Intelligence History recording.
 
 Discogs CSV import remains a separate, explicit, optional collection-update
 action. Refreshing Marketplace facts does not require selecting or re-importing
@@ -21,6 +22,9 @@ CollectorRunService
       ├── lazy Discogs provider factory
       ├── pure canonical Marketplace mapper
       ├── Marketplace History command boundary
+      ├── explicit canonical Intelligence context factory
+      ├── Collection Intelligence execution boundary
+      ├── Intelligence History repository boundary
       ├── existing legacy score calculator
       ├── analysis-run lifecycle
       └── immutable progress and result models
@@ -56,7 +60,10 @@ One run:
 9. emits progress after every attempt and waits only between attempts;
 10. constructs and atomically records one canonical aggregate Marketplace
     snapshot after every attempt lifecycle has finished;
-11. completes or fails the parent legacy analysis run and returns an immutable
+11. for complete or partial evidence, constructs the explicit context, executes
+    the Version 0.2 registry, and atomically records completed and legitimately
+    skipped module results;
+12. completes or fails the parent legacy analysis run and returns an immutable
     terminal result.
 
 The capture timestamp is reused for every observation and score in the run.
@@ -119,6 +126,30 @@ recording succeeds but the legacy terminal write then fails, the immutable
 canonical evidence remains. Its ID preserves conventional provenance to the
 legacy run without a relational foreign key.
 
+## Coherent Intelligence boundary
+
+The context queries only the release identities fixed at run start and contains
+no score, decision, note, or zero-filled Marketplace evidence. Current
+Marketplace coverage includes only complete and partial observations.
+Historical scope retains every canonical release observation so unavailable
+evidence is not misread as a collection removal.
+
+The nearest earlier complete or partial same-source snapshot containing release
+observations is the predecessor. Failed, empty, and source-incompatible
+snapshots are skipped. With no eligible predecessor, Historical Intelligence
+truthfully returns `SKIPPED`; that result remains part of the atomically
+persisted complete engine execution.
+
+Intelligence History links to canonical evidence through nullable restricted
+Marketplace provenance. Exact replay is idempotent; different immutable content
+for the same provenance is a conflict. Any module `FAILED` result, context
+defect, serialization failure, conflict, or History write failure is fatal.
+Canonical evidence already recorded remains durable. If only the later legacy
+terminal write fails, both canonical and Intelligence History remain.
+
+The desktop disables CSV import during the run, and `import_csv()` independently
+guards programmatic invocation until the run terminates.
+
 ## Token boundary
 
 The Discogs token is temporary. It is passed only to the lazy provider factory.
@@ -127,9 +158,7 @@ failure messages or desktop diagnostics.
 
 ## Explicitly deferred
 
-Version 0.5.2 does not execute any Intelligence module, record Intelligence
-History, import or reconcile a CSV, scope data by Project, acquire listings,
+Version 0.5.3 does not automatically import or reconcile a CSV, scope data by
+Project, acquire listings,
 restore sessions, enable Project Workspace refresh, cancel runs, schedule
-monitoring, or change legacy scoring rules. Later Collector Run slices must
-extend this application boundary without moving orchestration back into the
-desktop.
+monitoring, or change legacy scoring rules.

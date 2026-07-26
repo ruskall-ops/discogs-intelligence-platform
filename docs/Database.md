@@ -62,6 +62,12 @@ atomically, preserves engine and module versions, and reconstructs typed values
 through the approved deterministic serializer. Stored corruption is rejected,
 not silently repaired.
 
+`intelligence_runs.marketplace_snapshot_id` is nullable for older and
+standalone executions. Non-null values reference `marketplace_snapshots` with
+restricted update/delete actions and are unique through a partial index.
+Identical repeated saves replay the existing execution; different immutable
+content for the same provenance raises a conflict.
+
 ### Marketplace History
 
 `marketplace_snapshots` stores stable snapshot metadata plus the exact canonical
@@ -92,6 +98,11 @@ Migration version 4 creates both tables and the singleton state row. Fresh and
 migrated schemas are equivalent. First desktop startup creates
 `Current Collection` only when absent and makes it active only when no active
 Project exists.
+
+Migration version 5 adds Intelligence History Marketplace provenance and its
+partial unique index. Existing runs remain `NULL`; unlimited standalone
+`NULL`-provenance executions remain valid. Fresh and upgraded schemas are
+equivalent.
 
 ## Connection and transaction boundary
 

@@ -1,7 +1,7 @@
 """Immutable, deterministic foundations for Intelligence History."""
 
 from .models import IntelligenceHistoryRecord, IntelligenceHistoryRun
-from .repository import IntelligenceHistoryRepository
+from .repository import IntelligenceHistoryConflictError, IntelligenceHistoryRepository
 from .serialization import (
     IntelligenceDeserializationError,
     IntelligenceSerializationError,
@@ -15,6 +15,7 @@ from .serialization import (
 __all__ = [
     "IntelligenceDeserializationError",
     "IntelligenceHistoryRecord",
+    "IntelligenceHistoryConflictError",
     "IntelligenceHistoryRepository",
     "IntelligenceHistoryRun",
     "IntelligenceSerializationError",

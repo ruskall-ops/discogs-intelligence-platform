@@ -6,6 +6,8 @@ import time
 from dataclasses import dataclass
 
 from dip.app.collector_run import CollectorRunService
+from dip.app.collection_intelligence import CollectionIntelligenceExecutionService
+from dip.app.intelligence_context import IntelligenceContextFactory
 from dip.app.collection_health_presentation import CollectionHealthPresentationService
 from dip.app.collection_explorer_presentation import CollectionExplorerPresentationService
 from dip.app.collection_trends_presentation import CollectionTrendsPresentationService
@@ -173,7 +175,11 @@ from dip.experience.weekend_listings import WeekendListingsDetailViewModelBuilde
 from dip.experience.desktop.weekend_listings_renderer import (
     DesktopWeekendListingsRenderer,
 )
-from dip.intelligence import IntelligenceEngine
+from dip.intelligence import (
+    COLLECTION_INTELLIGENCE_ENGINE_VERSION,
+    IntelligenceEngine,
+    build_v02_intelligence_registry,
+)
 from dip.intelligence.modules.opportunity_scoring import calculate
 from dip.decision_intelligence import MarketplaceMomentumModule, MarketplaceOpportunityModule, MarketplaceScarcityModule, MarketplaceStabilityModule
 from dip.portfolio_intelligence import (
@@ -233,6 +239,7 @@ class DesktopApplicationDependencies:
     project_workspace_controller: DesktopProjectWorkspaceController | None = None
     project_management: ProjectManagementService | None = None
     collector_run: CollectorRunService | None = None
+    collection_intelligence_execution: CollectionIntelligenceExecutionService | None = None
 
 
 def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
@@ -324,6 +331,12 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
     )
     history_repository = SQLiteIntelligenceHistoryRepository(database)
     history_queries = IntelligenceHistoryQueryService(history_repository)
+    collection_intelligence_execution = CollectionIntelligenceExecutionService(
+        IntelligenceEngine(build_v02_intelligence_registry()),
+        history_repository,
+        IntelligenceContextFactory(database, marketplace_history_queries),
+        engine_version=COLLECTION_INTELLIGENCE_ENGINE_VERSION,
+    )
     comparison_service = IntelligenceComparisonService(
         history_queries,
         ComparisonEngine(),
@@ -490,6 +503,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         SETTINGS.application_version,
         SETTINGS.discogs_request_delay_seconds,
         marketplace_history_commands,
+        collection_intelligence_execution,
         wait=time.sleep,
     )
 
@@ -526,6 +540,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         project_workspace_controller=project_workspace_controller,
         project_management=project_management,
         collector_run=collector_run,
+        collection_intelligence_execution=collection_intelligence_execution,
         dashboard_homepage=DashboardHomepageService(
             history_queries,
             comparison_presentation,

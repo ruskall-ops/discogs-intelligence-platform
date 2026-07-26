@@ -86,7 +86,7 @@ collection.
 
 ## Version 0.5 — Collector Run Pipeline
 
-**Status: Planned**
+**Status: In progress — v0.5.1 through v0.5.3 implemented, unreleased**
 
 Version 0.5 will establish the collector run lifecycle before adding session
 restoration. Its initial scope assumes one collection and should connect
@@ -120,11 +120,27 @@ repository, and retains the legacy snapshot and scoring workflow through an
 explicit compatibility projection.
 
 Canonical capture uses deterministic `collector-run-{analysis_run_id}`
-identity without adding a relational provenance column. It occurs before the
+identity. It occurs before the
 legacy terminal write, so immutable canonical evidence remains valid if that
-later write fails. This slice adds no schema, Project scope, Intelligence
+later write fails. This slice added no schema, Project scope, Intelligence
 execution, Intelligence History, CSV reconciliation, scheduling, cancellation,
 or package-version change.
+
+### Version 0.5.3 — Coherent Intelligence Execution and History
+
+**Status: Implemented, unreleased**
+
+The third slice extends complete and partial canonical Collector Runs through
+the existing default Collection Intelligence registry. It builds an explicit
+immutable context from fixed collection evidence and canonical Marketplace
+history, preserves absence, records completed and legitimate skipped results
+atomically, and rejects failed-module executions.
+
+Migration 5 adds nullable canonical Marketplace provenance to Intelligence
+History with restricted referential integrity and exact replay/conflict
+semantics. CSV import is disabled and guarded during a run. Package/runtime
+version remains `0.4.0`; Project scoping, session restoration, scheduling,
+collection-history architecture, and scoring changes remain deferred.
 
 Candidate follow-on slices include:
 

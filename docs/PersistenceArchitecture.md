@@ -329,6 +329,18 @@ Either the complete execution is persisted or none of it is.
 
 Partial historical executions must not remain.
 
+For Collector Run executions, “complete” means all intended registry records
+were atomically stored; an individual record may truthfully have status
+`SKIPPED`. Any `FAILED` module result is rejected before repository mutation.
+
+Nullable `marketplace_snapshot_id` provenance references canonical Marketplace
+History with restricted update/delete actions. A partial unique index permits
+unlimited `NULL` standalone executions while enforcing one execution per
+non-null snapshot. The repository treats byte-for-byte canonical exact replay
+as idempotent and different immutable content as a storage-independent
+conflict. Migration 5 adds and validates this boundary while preserving older
+rows as `NULL`.
+
 ---
 
 # Pre-Transaction Work

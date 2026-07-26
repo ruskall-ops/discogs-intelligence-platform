@@ -16,7 +16,31 @@ class IntelligenceHistoryModelTestCase(unittest.TestCase):
 
         self.assertIsNone(run.engine_version)
         self.assertIsNone(run.collection_snapshot_id)
+        self.assertIsNone(run.marketplace_snapshot_id)
         self.assertEqual(run.result_count, 0)
+
+    def test_run_validates_optional_marketplace_provenance(self) -> None:
+        executed_at = datetime(2026, 7, 21, 12, 30, tzinfo=timezone.utc)
+        run = IntelligenceHistoryRun(
+            None,
+            executed_at,
+            marketplace_snapshot_id="snapshot-arbitrary",
+        )
+        self.assertEqual(run.marketplace_snapshot_id, "snapshot-arbitrary")
+        for invalid in ("", " ", " snapshot", "snapshot "):
+            with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                IntelligenceHistoryRun(
+                    None,
+                    executed_at,
+                    marketplace_snapshot_id=invalid,
+                )
+        for invalid in (True, 4):
+            with self.subTest(invalid=invalid), self.assertRaises(TypeError):
+                IntelligenceHistoryRun(
+                    None,
+                    executed_at,
+                    marketplace_snapshot_id=invalid,
+                )
 
     def test_run_is_immutable_and_has_value_equality(self) -> None:
         executed_at = datetime(2026, 7, 21, 12, 30)

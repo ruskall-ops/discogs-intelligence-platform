@@ -12,6 +12,9 @@ from .connection import create_connection
 from .schema import initialise_schema
 
 
+_COLLECTION_EVIDENCE_BATCH_SIZE = 900
+
+
 class Database:
     """Persistence layer for the Discogs Intelligence Platform."""
 
@@ -210,6 +213,74 @@ class Database:
             ).fetchall()
 
         return [int(row["release_id"]) for row in rows]
+
+    def collection_evidence_rows(
+        self,
+        release_ids: tuple[int, ...],
+    ) -> tuple[dict[str, Any], ...]:
+        """Return score-free collection evidence for an exact fixed scope."""
+
+        if type(release_ids) is not tuple or not release_ids:
+            raise ValueError("release_ids must be a non-empty tuple.")
+        seen: set[int] = set()
+        validated: list[int] = []
+        for index, value in enumerate(release_ids):
+            if type(value) is not int:
+                raise TypeError(f"release_ids[{index}] must be an integer.")
+            if value <= 0:
+                raise ValueError(f"release_ids[{index}] must be positive.")
+            if value in seen:
+                raise ValueError("release_ids must not contain duplicates.")
+            seen.add(value)
+            validated.append(value)
+
+        requested = set(validated)
+        collected: dict[int, dict[str, Any]] = {}
+        with self._lock:
+            for offset in range(0, len(validated), _COLLECTION_EVIDENCE_BATCH_SIZE):
+                batch = validated[
+                    offset : offset + _COLLECTION_EVIDENCE_BATCH_SIZE
+                ]
+                placeholders = ", ".join("?" for _ in batch)
+                statement = (
+                    """
+                    SELECT
+                        r.release_id,
+                        r.artist,
+                        r.title,
+                        r.label,
+                        co.quantity
+                    FROM releases r
+                    JOIN collection_ownership co
+                        ON co.release_id = r.release_id
+                    WHERE r.release_id IN (
+                    """
+                    + placeholders
+                    + """
+                    )
+                    ORDER BY r.release_id
+                    """
+                )
+                rows = self.conn.execute(
+                    statement,
+                    batch,
+                ).fetchall()
+                for row in rows:
+                    detached = dict(row)
+                    release_id = detached.get("release_id")
+                    if (
+                        type(release_id) is not int
+                        or release_id not in requested
+                    ):
+                        raise ValueError(
+                            "Collection evidence returned an unexpected identity."
+                        )
+                    if release_id in collected:
+                        raise ValueError(
+                            "Collection evidence returned a duplicate identity."
+                        )
+                    collected[release_id] = detached
+        return tuple(collected[value] for value in sorted(collected))
 
     def owned_portfolio_rows(self) -> list[sqlite3.Row]:
         """Return canonical ownership facts in deterministic release order."""

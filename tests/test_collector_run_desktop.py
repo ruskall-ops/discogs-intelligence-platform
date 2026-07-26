@@ -55,11 +55,27 @@ def _app():
     app.collector_run_service = None
     app.db = SimpleNamespace(release_ids=Mock(return_value=[3, 4]))
     app.refresh_discogs_button = Mock()
+    app.import_csv_button = Mock()
     app.progress = Mock()
     app.status_var = Mock()
     app.refresh_dashboard = Mock()
     app.load_table = Mock()
     return app
+
+
+def _assert_import_available(app):
+    with (
+        patch(
+            "dip.experience.desktop.app.filedialog.askopenfilename",
+            return_value="",
+        ) as chooser,
+        patch(
+            "dip.experience.desktop.app.messagebox.showwarning"
+        ) as warning,
+    ):
+        app.import_csv()
+    chooser.assert_called_once()
+    warning.assert_not_called()
 
 
 class CollectorRunDesktopTestCase(unittest.TestCase):
@@ -93,12 +109,29 @@ class CollectorRunDesktopTestCase(unittest.TestCase):
         app.refresh_discogs_button.configure.assert_called_once_with(
             state="disabled"
         )
+        app.import_csv_button.configure.assert_called_once_with(state="disabled")
         thread_type.assert_called_once_with(
             target=app.refresh_market_data,
             args=("temporary-token",),
             daemon=True,
         )
         worker.start.assert_called_once_with()
+
+    def test_import_is_guarded_while_collector_run_is_active(self):
+        app = _app()
+        app._collector_run_active = True
+        with (
+            patch(
+                "dip.experience.desktop.app.messagebox.showwarning"
+            ) as warning,
+            patch(
+                "dip.experience.desktop.app.filedialog.askopenfilename"
+            ) as chooser,
+        ):
+            app.import_csv()
+
+        warning.assert_called_once()
+        chooser.assert_not_called()
 
     def test_worker_schedules_progress_and_terminal_result(self):
         app = _app()
@@ -121,6 +154,7 @@ class CollectorRunDesktopTestCase(unittest.TestCase):
             ],
         )
         self.assertEqual(scheduled[-1][2], (result,))
+        app.import_csv_button.configure.assert_not_called()
 
     def test_worker_start_failure_restores_controls(self):
         app = _app()
@@ -144,7 +178,9 @@ class CollectorRunDesktopTestCase(unittest.TestCase):
 
         self.assertFalse(app._collector_run_active)
         app.refresh_discogs_button.configure.assert_called_with(state="normal")
+        app.import_csv_button.configure.assert_called_with(state="normal")
         message.assert_called_once()
+        _assert_import_available(app)
 
     def test_worker_schedules_unexpected_error_without_token(self):
         app = _app()
@@ -161,6 +197,12 @@ class CollectorRunDesktopTestCase(unittest.TestCase):
         self.assertEqual(scheduled[0][0], app.show_refresh_error)
         self.assertNotIn("temporary-token", scheduled[0][1][0])
         self.assertIn("RuntimeError", scheduled[0][1][0])
+        app.import_csv_button.configure.assert_not_called()
+        callback, args = scheduled[0]
+        with patch("dip.experience.desktop.app.messagebox.showerror"):
+            callback(*args)
+        app.import_csv_button.configure.assert_called_with(state="normal")
+        _assert_import_available(app)
 
     def test_unavailable_error_is_scheduled_and_restores_for_another_run(self):
         app = _app()
@@ -189,6 +231,7 @@ class CollectorRunDesktopTestCase(unittest.TestCase):
                 [(app.show_refresh_unavailable, ("No stored collection.",))],
             )
             app.refresh_discogs_button.configure.assert_not_called()
+            app.import_csv_button.configure.assert_not_called()
             app.status_var.set.assert_not_called()
             warning.assert_not_called()
             error.assert_not_called()
@@ -200,10 +243,12 @@ class CollectorRunDesktopTestCase(unittest.TestCase):
             app.refresh_discogs_button.configure.assert_called_with(
                 state="normal"
             )
+            app.import_csv_button.configure.assert_called_with(state="normal")
             app.refresh_dashboard.assert_not_called()
             app.load_table.assert_not_called()
             warning.assert_called_once()
             error.assert_not_called()
+            _assert_import_available(app)
 
         with (
             patch(
@@ -245,6 +290,7 @@ class CollectorRunDesktopTestCase(unittest.TestCase):
                 [(app.show_refresh_error, (str(application_error),))],
             )
             app.refresh_discogs_button.configure.assert_not_called()
+            app.import_csv_button.configure.assert_not_called()
             app.status_var.set.assert_not_called()
             warning.assert_not_called()
             error.assert_not_called()
@@ -256,10 +302,12 @@ class CollectorRunDesktopTestCase(unittest.TestCase):
             app.refresh_discogs_button.configure.assert_called_with(
                 state="normal"
             )
+            app.import_csv_button.configure.assert_called_with(state="normal")
             app.refresh_dashboard.assert_not_called()
             app.load_table.assert_not_called()
             error.assert_called_once()
             warning.assert_not_called()
+            _assert_import_available(app)
 
         with (
             patch(
@@ -292,9 +340,13 @@ class CollectorRunDesktopTestCase(unittest.TestCase):
                 app.refresh_discogs_button.configure.assert_called_with(
                     state="normal"
                 )
+                app.import_csv_button.configure.assert_called_with(
+                    state="normal"
+                )
                 app.refresh_dashboard.assert_called_once_with()
                 app.load_table.assert_called_once_with()
                 message.assert_called_once()
+                _assert_import_available(app)
 
     def test_failed_and_unexpected_outcomes_restore_controls(self):
         app = _app()
@@ -305,14 +357,18 @@ class CollectorRunDesktopTestCase(unittest.TestCase):
             app.finish_refresh(_result(CollectorRunStatus.FAILED))
 
         self.assertFalse(app._collector_run_active)
+        app.import_csv_button.configure.assert_called_with(state="normal")
         app.refresh_dashboard.assert_not_called()
         app.load_table.assert_not_called()
         message.assert_called_once()
+        _assert_import_available(app)
 
         app._collector_run_active = True
         with patch("dip.experience.desktop.app.messagebox.showerror"):
             app.show_refresh_error("safe error")
         self.assertFalse(app._collector_run_active)
+        app.import_csv_button.configure.assert_called_with(state="normal")
+        _assert_import_available(app)
 
 
 if __name__ == "__main__":
