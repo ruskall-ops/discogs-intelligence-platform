@@ -62,9 +62,11 @@ holdings, and Historical Intelligence compares already-calculated results.
 ### Presentation and workspaces
 
 Presentation Services project completed results into immutable view models.
-The Dashboard, Collection Explorer, Portfolio Workspace, Marketplace Workspace,
-History Explorer, and Project Workspace compose those models for research and
-navigation. They do not calculate intelligence or query persistence.
+The production desktop currently wires the Dashboard, Collection Explorer,
+Collector Review, and Project Workspace navigation. Portfolio, Marketplace,
+and Historical workspace foundations remain visible but are disabled because
+the production desktop does not yet supply their completed presentation
+models. Workspaces do not calculate intelligence or query persistence.
 
 ### User-owned state
 
@@ -82,13 +84,18 @@ Normal desktop execution persists those Projects, last-opened order, and active
 identity through SQLite. From there, the collector can open the Dashboard
 command centre or Portfolio Workspace.
 
-The Dashboard summarises existing Portfolio, Collection, Marketplace, and
-Historical presentation state and opens their established desktop
-destinations. Portfolio Workspace currently implements Overview only; its
-other navigation destinations are visible placeholders. Marketplace Workspace
-implements its six research panes. Collection Review exposes calculated
-Observations, the Weekend Review Queue, and the separate Collection Decisions
-editor.
+The Dashboard presents production-wired Collection information and What
+Changed. Its Portfolio, Opportunity, Historical, Marketplace, and Research
+cards remain visible but state that they are not available in this release.
+Portfolio, Marketplace, and Historical desktop entry points are disabled.
+Collection Review exposes calculated Observations, the Weekend Review Queue,
+and the separate Collection Decisions editor.
+
+The primary desktop session safely restores normal window geometry, navigation,
+filters, and valid persisted selections. A user-initiated database backup uses
+SQLite's supported backup API, independent verification, and atomic
+publication. Backup scheduling, retention, and restore remain manual and
+outside the application.
 
 ## Extensibility
 

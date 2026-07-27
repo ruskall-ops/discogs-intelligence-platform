@@ -24,6 +24,12 @@ idempotent `Current Collection` bootstrap to the Marketplace, Portfolio,
 Historical, Workspace, Dashboard, and Project Management foundations delivered
 through version 0.3.
 
+The implemented but unreleased v0.5.1–v0.5.6 development line adds Collector
+Run orchestration, canonical capture, coherent Intelligence History, Collector
+Review, session restoration, verified personal database backup, safe primary
+diagnostics, and truthful availability. Package/runtime remains 0.4.0 until a
+separate reviewed 0.5.0 release procedure.
+
 ## Implemented capabilities
 
 ### Core platform
@@ -94,14 +100,12 @@ recalculate the original modules or predict a future state.
   Dashboard and Portfolio Workspace.
 - **Dashboard** is the command centre. Eight summary cards answer what changed,
   what deserves attention, and where to investigate next.
-- **Portfolio Workspace** provides an implemented Overview that composes
-  Portfolio Overview, Distribution, Concentration, and Opportunity Alignment.
-  Distribution, Concentration, Opportunity Alignment, History, and Research
-  remain visible placeholder destinations in the workspace navigation.
-- **Marketplace Workspace** provides Attention Queue, Opportunity Detail,
-  Evidence, Marketplace History, Portfolio Context, and Research Status.
-- **Collection Explorer** and the Historical Intelligence desktop provide
-  detailed collection, Marketplace, change, trend, history, and insight views.
+- **Collection Explorer** provides production-wired Overview, Collection
+  Health, Hidden Gems, and Collection Trends.
+- Portfolio, secondary Historical Intelligence, Marketplace Workspace, and
+  Marketplace-oriented Explorer destinations retain architectural foundations
+  but are visibly disabled as **Not available in this release** until a real
+  production data path supplies them.
 
 Workspace builders compose immutable presentation models. They do not execute
 intelligence, query persistence, or duplicate application and presentation
@@ -201,9 +205,10 @@ src/dip/
 - **0.3 — Marketplace Intelligence and Decision Support:** released.
 - **0.4 — SQLite Project Persistence:** released; current package version is
   0.4.0.
-- **0.5 — Collector Workflow Foundation:** v0.5.1 through v0.5.5 implemented
+- **0.5 — Collector Workflow Foundation:** v0.5.1 through v0.5.6 implemented
   but unreleased, covering Collector Run, canonical capture, coherent
-  Intelligence History, Collector Review, and primary session restoration.
+  Intelligence History, Collector Review, primary session restoration, and
+  personal-use release hardening.
 
 See the [Roadmap](docs/Roadmap.md) for release scope and future direction.
 
@@ -211,6 +216,9 @@ See the [Roadmap](docs/Roadmap.md) for release scope and future direction.
 
 - [Vision](docs/Vision.md)
 - [Session Restoration](docs/SessionRestoration.md)
+- [Backup and Recovery](docs/BackupAndRecovery.md)
+- [Current Product State](docs/CurrentProductState.md)
+- [Release Checklist](docs/ReleaseChecklist.md)
 - [Architecture](docs/Architecture.md)
 - [Roadmap](docs/Roadmap.md)
 - [Configuration](docs/Configuration.md)
@@ -239,6 +247,29 @@ capability.
 - XlsxWriter;
 - pytest;
 - Git and GitHub.
+
+## Install and launch
+
+DIP requires Python 3.11 or later.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .[dev]
+dip
+```
+
+`python -m dip` and the root `python app.py` compatibility launcher are also
+supported. The SQLite database uses `DIP_DATABASE_FILENAME` when supplied and
+otherwise defaults to `discogs_intelligence.db` in the launch directory.
+
+macOS is the primary personal-use platform after manual release smoke testing.
+Linux receives automated headless compatibility validation. Windows is not yet
+supported or verified.
+
+Use **Back Up Database…** for an explicit complete SQLite backup. DIP does not
+schedule, retain, upload, or restore backups automatically; see
+[Backup and Recovery](docs/BackupAndRecovery.md).
 
 ## Development
 

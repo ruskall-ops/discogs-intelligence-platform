@@ -1,5 +1,17 @@
 # Dashboard
 
+## Current desktop availability
+
+Collection summaries, What Changed, Collection Health, Hidden Gems, and
+Collection Explorer navigation use real production history and remain enabled,
+including truthful empty and insufficient-history states.
+
+The command-centre Portfolio, Opportunity, secondary History, Marketplace, and
+Research cards remain visible but disabled as **Not available in this
+release**. Their presentation foundations do not yet receive production data.
+The former `Portfolio Health` label is `Collection Health` because it presents
+the Collection Health result.
+
 ## Purpose
 
 The Dashboard is the application's command centre. It retains the Version 0.2
@@ -233,21 +245,16 @@ that refresh cycle, so card count and drill-down cannot disagree.
 The unified Dashboard command centre composes the existing Dashboard homepage,
 Portfolio Workspace, Marketplace Workspace, and History Explorer presentation
 states. Its deterministic builder exposes eight cards in fixed order:
-Portfolio Summary, Portfolio Health, Opportunity Highlights, Collection
+Portfolio Summary, Collection Health, Opportunity Highlights, Collection
 Changes, Historical Changes, Marketplace Highlights, Research Summary, and
 Quick Actions.
 
-Each card copies a concise summary from an existing immutable presentation
-model or supplies neutral navigation guidance. Marketplace Highlights uses the
-first caller-supplied opportunity and does not rank or sort it.
-Explicit navigation targets open existing Portfolio, Collection, Marketplace,
-and Historical Intelligence desktop controllers. No routing framework is
-introduced.
-
-The command centre actions for Portfolio Opportunity Alignment, Portfolio
-History, and Portfolio Research currently navigate to visible placeholder
-destinations in the first Portfolio Workspace slice. The actions and
-transitions are implemented; those destination pages are not.
+Each card is built from immutable presentation state. In the production
+desktop, only Collection actions dispatch. Portfolio, Opportunity, Historical,
+Marketplace, and Research cards remain visible with **Not available in this
+release** copy, but their disabled actions do not invoke controllers or open
+placeholder windows. Their builders and controllers remain reusable
+presentation foundations. No routing framework is introduced.
 
 ```text
 Presentation Services

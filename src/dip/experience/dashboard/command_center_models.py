@@ -29,12 +29,15 @@ class DashboardNavigationTarget(str, Enum):
 class DashboardNavigationAction:
     label: str
     target: DashboardNavigationTarget
+    enabled: bool = True
 
     def __post_init__(self):
         if type(self.label) is not str or not self.label:
             raise TypeError("label must be a non-empty string.")
         if type(self.target) is not DashboardNavigationTarget:
             raise TypeError("target must be DashboardNavigationTarget.")
+        if type(self.enabled) is not bool:
+            raise TypeError("enabled must be a boolean.")
 
 
 @dataclass(frozen=True)

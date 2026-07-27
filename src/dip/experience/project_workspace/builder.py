@@ -26,9 +26,9 @@ _ACTIONS = (
         "Open Dashboard", ProjectWorkspaceNavigationTarget.DASHBOARD, True
     ),
     ProjectWorkspaceAction(
-        "Open Portfolio Workspace",
+        "Open Portfolio Workspace — Not available in this release",
         ProjectWorkspaceNavigationTarget.PORTFOLIO,
-        True,
+        False,
     ),
 )
 
@@ -42,9 +42,10 @@ class ProjectWorkspaceBuilder:
                 "Collector working environment",
                 (
                     "Dashboard, Portfolio, Marketplace, and Historical Intelligence "
-                    "remain available through existing workspaces.",
+                    "describe the platform direction; unavailable destinations "
+                    "are clearly marked in this release.",
                     "Project identity and active state are stored in SQLite; "
-                    "session and workspace restoration are not implemented.",
+                    "primary desktop session restoration is enabled.",
                 ),
             )
         return ProjectWorkspaceViewModel(active, recent, summary, _ACTIONS)

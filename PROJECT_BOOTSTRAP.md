@@ -15,20 +15,21 @@ and explainable intelligence, and helps the collector decide where to
 investigate. It does not automate buying, selling, pricing, or collecting
 decisions.
 
-## Current release
+## Current release and development state
 
 **Version 0.4.0 — SQLite Project Persistence**
 
 Version 0.4 adds durable Project identity, active state, deterministic recent
 ordering, schema migration 4, and idempotent `Current Collection` bootstrap.
-It persists Project metadata only. Collection, Marketplace, intelligence,
-history, and research data are not yet partitioned by Project, so the practical
-workflow remains one collection.
+The implemented but unreleased v0.5.1–v0.5.6 development line adds the
+single-collection Collector Run, canonical Marketplace and Intelligence
+History integration, Collector Review, primary desktop session restoration,
+and explicit verified database backup. Package/runtime version remains 0.4.0.
 
 Project creation/opening UI, Project-scoped refresh, multi-project workflows,
-and session restoration are not implemented. The next planned foundation is a
-single-collection Collector Run Pipeline; session restoration follows that
-lifecycle rather than preceding it.
+automatic backup, and in-app restore are not implemented. Collection,
+Marketplace, intelligence, history, and research data are not yet partitioned
+by Project, so the practical workflow remains one collection.
 
 ## Implemented architecture
 

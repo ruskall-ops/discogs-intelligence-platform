@@ -588,7 +588,18 @@ A new database is created from the current `schema.sql`.
 
 ## Existing Database
 
-An existing database is upgraded through ordered migrations.
+An existing database is upgraded through ordered migrations only. The current
+`schema.sql` is never re-executed against it as a repair mechanism. After
+migration, a non-mutating schema validation compares the durable tables,
+columns, constraints, foreign keys, and indexes with the canonical current
+schema. A recorded migration whose object is missing or materially different
+is an integrity failure, not permission to recreate that object.
+
+Application objects without a coherent migration baseline are an inconsistent
+partial database, not a fresh database, and initialization fails safely.
+Where an unrecorded migration-owned object is already exactly compatible, that
+migration may validate and register it through its normal ordered migration
+boundary.
 
 Both paths must produce equivalent current schemas.
 
@@ -858,11 +869,32 @@ Optimization must not weaken transaction guarantees or domain validation.
 
 SQLite database files should remain portable and recoverable.
 
-Future backup features should coordinate with active transactions and avoid copying inconsistent database state.
+## Personal-use database backup
 
-This may use SQLite-supported backup mechanisms rather than raw file copying while the database is active.
+The implemented v0.5.6 backup follows this boundary:
 
-Backup implementation is outside the current scope.
+```text
+Desktop action
+    ↓
+DatabaseBackupService
+    ↓
+SQLiteDatabaseBackupAdapter
+    ↓
+Database.locked_connection()
+    ↓
+SQLite backup API
+```
+
+The adapter captures the source manifest and creates a consistent temporary
+SQLite database during one uninterrupted acquisition of the shared lock. It
+fails immediately if a source transaction is active and neither commits nor
+rolls it back. SQLite-specific independent verification checks integrity,
+foreign keys, migration versions, source-derived table names, and transaction
+state in the adapter. The application service owns destination validation,
+temporary-file lifecycle, revalidation, and same-directory atomic publication.
+Backup does not mutate domain state, save the desktop session, schedule future
+work, or create persistence metadata. Recovery remains a documented manual
+process; see [Backup and Recovery](BackupAndRecovery.md).
 
 ---
 

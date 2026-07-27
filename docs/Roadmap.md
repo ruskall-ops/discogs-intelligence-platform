@@ -86,7 +86,7 @@ collection.
 
 ## Version 0.5 — Collector Run Pipeline
 
-**Status: In progress — v0.5.1 through v0.5.5 implemented, unreleased**
+**Status: Release candidate — v0.5.1 through v0.5.6 implemented, unreleased**
 
 Version 0.5 establishes the collector run lifecycle and then adds limited
 session restoration. Its scope assumes one collection and connects collection
@@ -176,6 +176,22 @@ choice when session saving fails, and refuses close during Collector Run.
 Search text, drafts, calculated models, secrets, secondary windows, non-normal
 window states, Project partitioning, and resumable Collector Runs remain
 excluded. See [Session Restoration](SessionRestoration.md).
+
+### Version 0.5.6 — Personal-Use Release Hardening
+
+**Status: Implemented, unreleased release candidate**
+
+The sixth slice adds an explicit verified SQLite backup, manual recovery
+documentation, fixed safe diagnostics for primary workflows, and truthful
+disabled presentation for destinations without a production data path. It also
+adds Linux and macOS CI, a frozen released-v0.4.0 upgrade test, fresh-install
+and packaging validation, and release-candidate documentation.
+
+It adds no schema migration: migrations remain 1–7. Package/runtime remains
+0.4.0. Automatic backup, retention, in-app restore, Windows support, and a
+0.5.0 release tag remain outside this implementation. A separate release step
+may establish 0.5.0 only after the manual macOS and controlled real-Discogs
+gates pass.
 
 Candidate follow-on slices include:
 

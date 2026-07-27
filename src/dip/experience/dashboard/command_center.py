@@ -44,19 +44,20 @@ class DashboardCommandCenterBuilder:
         cards = (
             _card(
                 DashboardCommandCardId.PORTFOLIO_SUMMARY, "Portfolio Summary",
-                overview.overview.summary_text, "Open Portfolio Workspace",
-                DashboardNavigationTarget.PORTFOLIO,
+                "Not available in this release", "Open Portfolio Workspace",
+                DashboardNavigationTarget.PORTFOLIO, enabled=False,
             ),
             _card(
-                DashboardCommandCardId.PORTFOLIO_HEALTH, "Portfolio Health",
+                DashboardCommandCardId.PORTFOLIO_HEALTH, "Collection Health",
                 health.card.summary if health.card is not None else "Collection Health is unavailable.",
                 "Open Collection Workspace", DashboardNavigationTarget.COLLECTION_EXPLORER,
             ),
             _card(
                 DashboardCommandCardId.OPPORTUNITY_HIGHLIGHTS, "Opportunity Highlights",
-                overview.opportunity_alignment.summary_text,
+                "Not available in this release",
                 "Open Portfolio → Opportunity Alignment",
                 DashboardNavigationTarget.PORTFOLIO_OPPORTUNITY_ALIGNMENT,
+                enabled=False,
             ),
             _card(
                 DashboardCommandCardId.COLLECTION_CHANGES, "Collection Changes",
@@ -65,39 +66,43 @@ class DashboardCommandCenterBuilder:
             ),
             _card(
                 DashboardCommandCardId.HISTORICAL_CHANGES, "Historical Changes",
-                latest_change.summary_text if latest_change is not None else "No historical changes have been supplied.",
+                "Not available in this release",
                 "Open Historical Intelligence",
                 DashboardNavigationTarget.HISTORICAL_INTELLIGENCE,
+                enabled=False,
             ),
             _card(
                 DashboardCommandCardId.MARKETPLACE_HIGHLIGHTS, "Marketplace Highlights",
-                first_marketplace.insight_summary if first_marketplace is not None else "No Marketplace opportunities have been supplied.",
+                "Not available in this release",
                 "Open Marketplace Workspace",
                 DashboardNavigationTarget.MARKETPLACE_WORKSPACE,
+                enabled=False,
             ),
             _card(
                 DashboardCommandCardId.RESEARCH_SUMMARY, "Research Summary",
-                "Portfolio Research is ready for evidence-led investigation.",
+                "Not available in this release",
                 "Open Portfolio → Research",
                 DashboardNavigationTarget.PORTFOLIO_RESEARCH,
+                enabled=False,
             ),
             DashboardCommandCardViewModel(
                 DashboardCommandCardId.QUICK_ACTIONS,
                 "Quick Actions",
                 "Open an existing workspace without executing intelligence.",
                 (
-                    DashboardNavigationAction("Portfolio", DashboardNavigationTarget.PORTFOLIO),
-                    DashboardNavigationAction("Portfolio History", DashboardNavigationTarget.PORTFOLIO_HISTORY),
-                    DashboardNavigationAction("Marketplace", DashboardNavigationTarget.MARKETPLACE_WORKSPACE),
+                    DashboardNavigationAction("Portfolio", DashboardNavigationTarget.PORTFOLIO, False),
+                    DashboardNavigationAction("Portfolio History", DashboardNavigationTarget.PORTFOLIO_HISTORY, False),
+                    DashboardNavigationAction("Marketplace", DashboardNavigationTarget.MARKETPLACE_WORKSPACE, False),
                 ),
             ),
         )
         return DashboardCommandCenterViewModel(cards)
 
 
-def _card(card_id, title, summary, label, target):
+def _card(card_id, title, summary, label, target, *, enabled=True):
     return DashboardCommandCardViewModel(
-        card_id, title, summary, (DashboardNavigationAction(label, target),)
+        card_id, title, summary,
+        (DashboardNavigationAction(label, target, enabled),),
     )
 
 

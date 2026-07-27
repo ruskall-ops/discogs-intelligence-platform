@@ -6,6 +6,7 @@ import time
 from dataclasses import dataclass
 
 from dip.app.collector_run import CollectorRunService
+from dip.app.database_backup import DatabaseBackupService
 from dip.app.collector_review import (
     WeekendObservationService,
     WeekendReviewService,
@@ -199,6 +200,7 @@ from dip.marketplace_intelligence import ListingLifecycleModule, MarketplaceActi
 from dip.persistence.sqlite import (
     Database,
     SQLiteHotNowCalculatedStateRepository,
+    SQLiteDatabaseBackupAdapter,
     SQLiteIntelligenceHistoryRepository,
     SQLiteMarketplaceHistoryRepository,
     SQLiteProjectRepository,
@@ -251,12 +253,16 @@ class DesktopApplicationDependencies:
     collector_review_observations: WeekendObservationService | None = None
     collector_review: WeekendReviewService | None = None
     session_restoration: SessionRestorationService | None = None
+    database_backup: DatabaseBackupService | None = None
 
 
 def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
     """Construct concrete adapters at the application's composition boundary."""
 
     database = Database(SETTINGS.database_path)
+    database_backup = DatabaseBackupService(
+        SQLiteDatabaseBackupAdapter(database)
+    )
     marketplace_history_repository = SQLiteMarketplaceHistoryRepository(database)
     marketplace_history_commands = MarketplaceHistoryCommandService(
         marketplace_history_repository
@@ -570,6 +576,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         collector_review_observations=collector_review_observations,
         collector_review=collector_review,
         session_restoration=session_restoration,
+        database_backup=database_backup,
         dashboard_homepage=DashboardHomepageService(
             history_queries,
             comparison_presentation,

@@ -133,6 +133,19 @@ outer transaction.
 
 Fresh databases are built from the current schema. Existing databases advance
 through ordered, atomic migrations. Both paths must remain schema-equivalent.
+Existing databases never receive a second application of the current
+`schema.sql`. They run pending migrations and then undergo non-mutating exact
+schema validation. Missing or altered objects owned by recorded migrations
+fail as schema-integrity errors rather than being recreated. A database with
+partial application objects and no coherent migration baseline is not treated
+as fresh.
+
+Schema version 7 is current and is distinct from application version 0.4.0.
+The v0.5.6 hardening slice adds no migration 8.
+
+Complete user-initiated backup uses SQLite's backup API and independent
+verification without adding a schema table. See
+[Backup and Recovery](BackupAndRecovery.md).
 
 ## Integrity rules
 

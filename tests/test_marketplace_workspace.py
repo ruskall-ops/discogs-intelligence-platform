@@ -118,13 +118,16 @@ class MarketplaceWorkspaceTestCase(unittest.TestCase):
         controller = DesktopMarketplaceWorkspaceController(self.presentation)
         empty = controller.open()
         self.assertIs(empty.availability, MarketplaceWorkspaceAvailability.EMPTY)
-        self.assertEqual(empty.sections[0].body, "No opportunities supplied.")
+        self.assertEqual(empty.sections[0].body, "Not available in this release")
         self.assertEqual(empty.sections[2].body, "No evidence.")
         self.assertEqual(empty.sections[3].body, "No history.")
         self.assertEqual(empty.sections[4].body, "No portfolio context.")
         unavailable = controller.open(available=False)
         self.assertIs(unavailable.availability, MarketplaceWorkspaceAvailability.UNAVAILABLE)
-        self.assertEqual(unavailable.sections[0].body, "Workspace unavailable.")
+        self.assertEqual(
+            unavailable.sections[0].body,
+            "Not available in this release",
+        )
 
 
 if __name__ == "__main__":

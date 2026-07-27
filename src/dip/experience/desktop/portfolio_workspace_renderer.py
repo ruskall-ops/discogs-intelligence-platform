@@ -73,7 +73,7 @@ class DesktopPortfolioWorkspaceRenderer:
                 state.navigation,
                 state.current_destination,
                 title,
-                f"{title} is not implemented in Portfolio Workspace 1.0.",
+                "Not available in this release",
                 state,
             )
         overview = state.overview

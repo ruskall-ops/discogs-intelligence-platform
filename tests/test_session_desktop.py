@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import unittest
 import tkinter as tk
+import tempfile
 from datetime import datetime, timezone
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+from dip.app.session_restoration import SessionRestorationService
 from dip.app.collector_run import CollectorRunStatus
 from dip.collector_review import (
     ObservationIdentity,
@@ -22,6 +25,8 @@ from dip.experience.desktop.app import (
     _sanitize_geometry,
     _valid_normal_geometry,
 )
+from dip.persistence.sqlite import Database
+from dip.persistence.sqlite.session import SQLiteSessionRepository
 from dip.session import (
     CollectionReviewDestination,
     DecisionPriorityFilter,
@@ -59,6 +64,26 @@ def session(**changes):
     }
     values.update(changes)
     return DesktopSession(**values)
+
+
+class _Notebook:
+    def __init__(self, widgets, selected):
+        self._tokens = {
+            widget: f"tab-{index}"
+            for index, widget in enumerate(widgets)
+        }
+        self._widgets = {
+            token: widget for widget, token in self._tokens.items()
+        }
+        self._selected = self._tokens[selected]
+
+    def select(self, widget=None):
+        if widget is not None:
+            self._selected = self._tokens[widget]
+        return self._selected
+
+    def nametowidget(self, token):
+        return self._widgets[token]
 
 
 class SessionGeometryTestCase(unittest.TestCase):
@@ -408,6 +433,40 @@ class SessionDesktopLifecycleTestCase(unittest.TestCase):
         message.assert_called_once()
         app.destroy.assert_not_called()
 
+    def test_macos_application_quit_uses_graceful_close_boundary(self):
+        app = App.__new__(App)
+        app.protocol = Mock()
+        app.tk = Mock()
+        app.tk.call.return_value = "aqua"
+        app.createcommand = Mock()
+        app.on_close = Mock()
+
+        app._register_close_handlers()
+
+        app.protocol.assert_called_once_with(
+            "WM_DELETE_WINDOW",
+            app.on_close,
+        )
+        app.createcommand.assert_called_once_with(
+            "::tk::mac::Quit",
+            app.on_close,
+        )
+        app.createcommand.call_args.args[1]()
+        app.on_close.assert_called_once_with()
+
+    def test_non_aqua_close_registration_does_not_add_application_quit(self):
+        app = App.__new__(App)
+        app.protocol = Mock()
+        app.tk = Mock()
+        app.tk.call.return_value = "x11"
+        app.createcommand = Mock()
+        app.on_close = Mock()
+
+        app._register_close_handlers()
+
+        app.protocol.assert_called_once()
+        app.createcommand.assert_not_called()
+
     def test_dirty_note_cancel_blocks_capture_and_close(self):
         app = App.__new__(App)
         app._collector_run_active = False
@@ -517,6 +576,21 @@ class SessionMappingAndCaptureTestCase(unittest.TestCase):
         app.tree.selection.return_value = ()
         return app
 
+    def _use_real_notebooks(
+        self,
+        app,
+        top_level,
+        collection_review,
+    ):
+        app.tabs = _Notebook(
+            (app.project_tab, app.dashboard_tab, app.review_tab),
+            top_level,
+        )
+        app.collection_review_tabs = _Notebook(
+            (app.observations_tab, app.queue_tab, app.decisions_tab),
+            collection_review,
+        )
+
     def test_all_label_mappings_are_complete_and_reversible(self):
         for mapping in (
             _SOURCE_LABELS,
@@ -576,6 +650,128 @@ class SessionMappingAndCaptureTestCase(unittest.TestCase):
         )
         self.assertEqual(captured.selected_queue_item_id, 8)
         self.assertEqual(captured.selected_decision_release_id, 9)
+
+    def test_graceful_capture_reads_nondefault_and_every_review_destination(self):
+        app = self._capture_app()
+        for review_widget, expected in (
+            (
+                app.observations_tab,
+                CollectionReviewDestination.OBSERVATIONS,
+            ),
+            (
+                app.queue_tab,
+                CollectionReviewDestination.WEEKEND_REVIEW_QUEUE,
+            ),
+            (
+                app.decisions_tab,
+                CollectionReviewDestination.COLLECTION_DECISIONS,
+            ),
+        ):
+            with self.subTest(destination=expected):
+                self._use_real_notebooks(
+                    app,
+                    app.review_tab,
+                    review_widget,
+                )
+                captured = app._capture_session()
+                self.assertIs(
+                    captured.top_level_destination,
+                    TopLevelDestination.COLLECTION_REVIEW,
+                )
+                self.assertIs(
+                    captured.collection_review_destination,
+                    expected,
+                )
+
+    def test_real_sqlite_restart_applies_navigation_after_query_callbacks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            database_path = Path(directory) / "session.sqlite3"
+            first_database = Database(database_path)
+            first_app = self._capture_app()
+            self._use_real_notebooks(
+                first_app,
+                first_app.review_tab,
+                first_app.decisions_tab,
+            )
+            first_app.session_restoration_service = (
+                SessionRestorationService(
+                    SQLiteSessionRepository(first_database)
+                )
+            )
+            first_app.db = first_database
+            first_app._collector_run_active = False
+            first_app._confirm_unsaved_queue_note = Mock(return_value=True)
+            first_app.destroy = Mock()
+
+            first_app.on_close()
+
+            first_app.destroy.assert_called_once_with()
+            second_database = Database(database_path)
+            try:
+                restored = SessionRestorationService(
+                    SQLiteSessionRepository(second_database)
+                ).load()
+                self.assertIsNotNone(restored)
+                self.assertIs(
+                    restored.top_level_destination,
+                    TopLevelDestination.COLLECTION_REVIEW,
+                )
+                self.assertIs(
+                    restored.collection_review_destination,
+                    CollectionReviewDestination.COLLECTION_DECISIONS,
+                )
+
+                second_app = self._capture_app()
+                self._use_real_notebooks(
+                    second_app,
+                    second_app.project_tab,
+                    second_app.observations_tab,
+                )
+                second_app.session_restoration_service = (
+                    SessionRestorationService(
+                        SQLiteSessionRepository(second_database)
+                    )
+                )
+                second_app._apply_session_geometry = Mock()
+                second_app._record_normal_geometry = Mock()
+                second_app.status_var = Mock()
+                second_app.search_var = Mock()
+                second_app._last_queue_filter = "Active"
+                second_app.refresh_dashboard = Mock(
+                    side_effect=lambda: second_app.tabs.select(
+                        second_app.project_tab
+                    )
+                )
+                second_app.refresh_weekend_review_queue = Mock(
+                    side_effect=lambda _identity: (
+                        second_app.collection_review_tabs.select(
+                            second_app.observations_tab
+                        )
+                    )
+                )
+                second_app.load_table = Mock()
+                second_app._restore_session_selections = Mock()
+                second_app.start_refresh = Mock()
+                second_app.edit_selected = Mock()
+
+                second_app._restore_session_and_load()
+
+                self.assertIs(
+                    second_app._top_level_destination(),
+                    TopLevelDestination.COLLECTION_REVIEW,
+                )
+                self.assertIs(
+                    second_app._collection_review_destination(),
+                    CollectionReviewDestination.COLLECTION_DECISIONS,
+                )
+                self.assertEqual(
+                    second_app.queue_filter_var.get(),
+                    "Active",
+                )
+                second_app.start_refresh.assert_not_called()
+                second_app.edit_selected.assert_not_called()
+            finally:
+                second_database.close()
 
     def test_stale_cached_state_without_tree_selection_is_not_captured(self):
         app = self._capture_app()

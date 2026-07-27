@@ -17,6 +17,12 @@ workflows. Its governing principle is:
 The platform does not automate buying, selling, pricing, or collecting
 decisions.
 
+The v0.5.6 personal-use release candidate also applies a product-truthfulness
+rule: a desktop capability requires a real production execution and data path,
+not merely models, builders, renderers, or fixtures. Foundation-only
+destinations remain visible but disabled with **Not available in this
+release**. See [Current Product State](CurrentProductState.md).
+
 ## Implemented architecture
 
 The implementation uses a `src`-layout package, a Tkinter desktop shell, SQLite
@@ -305,11 +311,13 @@ Project-scoped data boundaries.
 
 ### Dashboard
 
-The Dashboard command centre composes existing Dashboard, Portfolio,
-Marketplace, and Historical presentation state into eight deterministic cards:
-Portfolio Summary, Portfolio Health, Opportunity Highlights, Collection
+The Dashboard command centre composes existing presentation foundations into
+eight deterministic cards:
+Portfolio Summary, Collection Health, Opportunity Highlights, Collection
 Changes, Historical Changes, Marketplace Highlights, Research Summary, and
-Quick Actions. Its actions open existing workspace controllers.
+Quick Actions. Production-wired Collection actions remain enabled. Portfolio,
+Opportunity, Historical, Marketplace, and Research actions are disabled and
+do not invoke their reusable controllers or open placeholder windows.
 
 The earlier Collection Intelligence Dashboard homepage and its dedicated
 Collection Health and Hidden Gems detail views remain active presentation
@@ -319,28 +327,26 @@ same calculated rows.
 
 ### Portfolio Workspace
 
-Portfolio Workspace provides left navigation for Overview, Distribution,
-Concentration, Opportunity Alignment, History, and Research. In the implemented
-first slice, only Overview is complete; it composes all four existing Portfolio
-presentation models. The other five destinations render explicit placeholders.
-Navigation state is immutable, but the navigation model still marks those
-destinations as unimplemented.
+Portfolio Workspace retains presentation models and renderers for Overview,
+Distribution, Concentration, Opportunity Alignment, History, and Research.
+The production desktop entry points are disabled because no production
+execution and data-supply path currently provides these pages. Collectors
+cannot operate their placeholder navigation in this release.
 
 ### Marketplace Workspace
 
-Marketplace Workspace composes caller-supplied Opportunities, Opportunity
-Detail, Evidence, Marketplace History, Portfolio Context, and Research Status.
-Opportunity order comes from the caller and never implies ranking or a
-recommendation. Research status is user-owned workflow metadata and is not
-persisted by this slice.
+Marketplace Workspace retains reusable presentation foundations for supplied
+Opportunities, Evidence, History, Portfolio Context, and Research Status. Its
+production desktop entry point is disabled and does not open a placeholder
+window because no production supplier currently provides the required state.
 
 ### Collection and Historical experiences
 
-Collection Explorer presents Collection Health, Hidden Gems, Collection Trends,
-and the implemented Marketplace Intelligence and Marketplace Decision
-Intelligence destinations. Historical Intelligence presents Change Analysis,
-Trend Analysis, History Explorer, and Intelligence Insights from
-already-produced models.
+Collection Explorer keeps Collection Health, Hidden Gems, and Collection
+Trends enabled, including truthful empty and insufficient-history states.
+Marketplace and Decision Intelligence destinations remain visible but disabled.
+Historical Intelligence presentation foundations exist, but their production
+desktop entry point is disabled.
 
 Collection Review contains three deliberately separate destinations:
 calculated **Observations**, the user-owned **Weekend Review Queue**, and

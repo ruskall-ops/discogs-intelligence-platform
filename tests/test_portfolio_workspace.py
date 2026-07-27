@@ -156,7 +156,7 @@ class PortfolioWorkspaceTestCase(unittest.TestCase):
             with self.subTest(destination=destination):
                 rendered = controller.navigate(opened.state, destination)
                 self.assertIs(rendered.current_destination, destination)
-                self.assertIn("is not implemented in Portfolio Workspace 1.0", rendered.body)
+                self.assertEqual(rendered.body, "Not available in this release")
         unavailable = controller.open(available=False)
         self.assertIs(
             unavailable.availability, PortfolioWorkspaceAvailability.UNAVAILABLE

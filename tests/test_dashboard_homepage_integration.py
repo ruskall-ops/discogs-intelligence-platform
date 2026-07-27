@@ -86,7 +86,8 @@ class DashboardHomepageRendererTestCase(unittest.TestCase):
         for path in presentation_files:
             source = path.read_text(encoding="utf-8")
             self.assertNotIn("dip.persistence", source)
-            self.assertNotIn("sqlite3", source)
+            self.assertNotIn("import sqlite3", source)
+            self.assertNotIn("from sqlite3", source)
             self.assertNotIn("IntelligenceHistoryRepository", source)
 
 
