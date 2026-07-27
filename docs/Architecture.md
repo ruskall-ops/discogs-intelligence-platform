@@ -244,8 +244,10 @@ Fresh schema creation and ordered migrations are kept equivalent.
 Normal desktop composition uses `SQLiteProjectRepository`.
 `InMemoryProjectRepository` remains a deterministic alternative and test
 adapter. Project content, insertion and last-opened order, and the active
-Project identity persist across database reopen. Session and workspace state do
-not.
+Project identity persist across database reopen. The limited desktop session
+defined in [Session Restoration](SessionRestoration.md) persists normal
+geometry, primary navigation, filters, source, and stable selections. It does
+not persist calculated workspace models, drafts, processes, or secrets.
 
 ### External providers
 
@@ -289,8 +291,9 @@ the active identity through the repository.
 
 Open Project, Create Project, and Refresh Collection remain disabled UI
 placeholders; only navigation to Dashboard and Portfolio Workspace is wired.
-Filesystem selection, collection refresh, and session or workspace restoration
-remain future work.
+Filesystem selection, collection refresh, and secondary-workspace restoration
+remain future work. The primary desktop session is implemented separately from
+Project persistence and uses active identity only as a compatibility guard.
 
 Project persistence currently stores Project metadata only. Collection,
 Marketplace, intelligence, history, and research records are not partitioned
@@ -402,7 +405,8 @@ The current architecture does not implement:
 - automated purchasing, selling, listing, bidding, or pricing;
 - forecasts or investment-return predictions;
 - opaque overall decision scores;
-- session or workspace restoration;
+- secondary-workspace, draft, or process restoration beyond the implemented
+  primary desktop session;
 - complete Portfolio Workspace destination pages;
 - saved research notes, watchlists, or alerts;
 - background scheduling or live monitoring;

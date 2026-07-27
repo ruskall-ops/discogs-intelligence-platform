@@ -10,6 +10,7 @@ from dip.composition import build_desktop_application_dependencies
 from dip.app.collector_review import WeekendObservationService, WeekendReviewService
 from dip.persistence.sqlite import (
     SQLiteProjectRepository,
+    SQLiteSessionRepository,
     SQLiteWeekendReviewQueueRepository,
 )
 
@@ -106,6 +107,28 @@ class ProjectCompositionTestCase(unittest.TestCase):
             self.assertIsInstance(
                 dependencies.collector_review,
                 WeekendReviewService,
+            )
+        finally:
+            dependencies.database.close()
+
+    def test_session_composition_is_lazy_and_uses_sqlite_repository(self) -> None:
+        with (
+            patch.object(
+                SQLiteSessionRepository,
+                "get",
+                side_effect=AssertionError("composition loaded session"),
+            ),
+            patch.object(
+                SQLiteSessionRepository,
+                "save",
+                side_effect=AssertionError("composition saved session"),
+            ),
+        ):
+            dependencies = self.build()
+        try:
+            self.assertIsInstance(
+                dependencies.session_restoration._repository,
+                SQLiteSessionRepository,
             )
         finally:
             dependencies.database.close()

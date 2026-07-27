@@ -94,8 +94,10 @@ editor.
 
 Future data providers and durable research workflows should enter through the
 existing provider, application-service, and repository boundaries. Project
-creation UI, collection refresh, and session or workspace restoration should
-extend the implemented Project boundary. Alternative interfaces should consume
+creation UI and broader workspace restoration should extend the implemented
+Project boundary. The primary desktop session uses Project identity only as a
+compatibility guard; see [Session Restoration](SessionRestoration.md).
+Alternative interfaces should consume
 the same presentation or application boundaries rather than reproducing
 intelligence.
 

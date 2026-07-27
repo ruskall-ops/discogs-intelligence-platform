@@ -224,7 +224,8 @@ Repositories isolate database access from the rest of the application.
 
 A collector's named working environment and the root of the desktop
 experience. Project identity, description, last-opened order, and active state
-are persisted; workspace and session state are not.
+are persisted. The limited primary desktop session uses active Project identity
+only as a compatibility guard.
 
 ---
 
@@ -232,6 +233,17 @@ are persisted; workspace and session state are not.
 
 The application service that lists, creates, opens, and selects Projects
 through `ProjectRepository`. It contains no SQLite knowledge.
+
+---
+
+# Session State
+
+A minimal database-scoped set of primary desktop preferences restored after a
+graceful restart. It includes normal geometry, primary navigation, filters,
+source, and optional stable selection identities. Session state is not durable
+domain data, a calculated presentation cache, an unsaved draft, Collector Run
+state, or secret storage. See
+[Session Restoration](SessionRestoration.md).
 
 ---
 

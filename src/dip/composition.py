@@ -20,6 +20,7 @@ from dip.app.dashboard import DashboardHomepageService
 from dip.app.dashboard_integration_presentation import DashboardIntegrationPresentationService
 from dip.app.project_workspace_presentation import ProjectWorkspacePresentationService
 from dip.app.project_management import ProjectManagementService
+from dip.app.session_restoration import SessionRestorationService
 from dip.app.hidden_gems_presentation import HiddenGemsPresentationService
 from dip.app.intelligence_comparison import IntelligenceComparisonService
 from dip.app.intelligence_history import IntelligenceHistoryQueryService
@@ -201,6 +202,7 @@ from dip.persistence.sqlite import (
     SQLiteIntelligenceHistoryRepository,
     SQLiteMarketplaceHistoryRepository,
     SQLiteProjectRepository,
+    SQLiteSessionRepository,
     SQLiteWeekendReviewQueueRepository,
 )
 
@@ -248,6 +250,7 @@ class DesktopApplicationDependencies:
     collection_intelligence_execution: CollectionIntelligenceExecutionService | None = None
     collector_review_observations: WeekendObservationService | None = None
     collector_review: WeekendReviewService | None = None
+    session_restoration: SessionRestorationService | None = None
 
 
 def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
@@ -510,6 +513,9 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         )
     )
     project_management = ProjectManagementService(project_repository)
+    session_restoration = SessionRestorationService(
+        SQLiteSessionRepository(database)
+    )
     project_workspace_controller = DesktopProjectWorkspaceController(
         ProjectWorkspacePresentationService(
             project_management, ProjectWorkspaceBuilder()
@@ -563,6 +569,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         collection_intelligence_execution=collection_intelligence_execution,
         collector_review_observations=collector_review_observations,
         collector_review=collector_review,
+        session_restoration=session_restoration,
         dashboard_homepage=DashboardHomepageService(
             history_queries,
             comparison_presentation,

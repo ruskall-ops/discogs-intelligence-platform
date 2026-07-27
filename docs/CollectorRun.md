@@ -159,6 +159,11 @@ failure messages or desktop diagnostics.
 ## Explicitly deferred
 
 Version 0.5.3 does not automatically import or reconcile a CSV, scope data by
-Project, acquire listings,
-restore sessions, enable Project Workspace refresh, cancel runs, schedule
+Project, acquire listings, enable Project Workspace refresh, cancel runs, schedule
 monitoring, or change legacy scoring rules.
+
+The v0.5.5 desktop refuses graceful close while Collector Run is active so the
+daemon worker retains its Tk and shared-database boundaries. This is close
+prevention only: no cancellation, waiting, resumption, stale-run cleanup, or
+process recovery is introduced. Session state never records run or progress
+state. See [Session Restoration](SessionRestoration.md).

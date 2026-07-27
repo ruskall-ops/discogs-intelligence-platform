@@ -6,6 +6,18 @@ All notable changes to the Discogs Intelligence Platform will be documented here
 
 # Unreleased — Version 0.5
 
+## Session Restoration
+
+- Added database-scoped restoration of normal main-window geometry, primary
+  navigation, review filters, observation source, and exact visible
+  selections.
+- Added the immutable session application boundary, SQLite repository, and
+  migration 7 singleton table.
+- Added Project compatibility guarding, safe invalidation, atomic graceful
+  close persistence, and close prevention during Collector Run.
+- Kept search text, drafts, calculated models, secrets, process state,
+  secondary windows, and non-normal window states outside session storage.
+
 ## Collector Review Workflow and Weekend Review Queue
 
 - Added an immutable calculated-observation workspace for separate Hot now and

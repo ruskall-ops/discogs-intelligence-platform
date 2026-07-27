@@ -277,6 +277,12 @@ per-release trends, Protected Records, Market Movers, automatic Marketplace
 execution, live Marketplace monitoring, background refresh, and AI-generated
 summaries remain outside the Collection Explorer. Marketplace results are
 supplied explicitly; tab navigation never executes them.
+
+The v0.5.5 session restores only primary desktop and Collection Review state.
+It does not reopen Collection Explorer or persist its selected destination,
+models, trends, ranges, or window geometry. See
+[Session Restoration](SessionRestoration.md).
+
 ## Historical Intelligence desktop
 
 Historical Intelligence is a separate top-level experience with Change

@@ -91,9 +91,12 @@ atomically updates last-opened and active state.
 ## Future extensions
 
 Future milestones may introduce file selection, project creation UI, a
-Project-scoped collector run pipeline, and session or workspace restoration.
-The run pipeline must precede restoration so restored state refers to a
-well-defined collection workflow. Project persistence alone does not implement
-any of those capabilities. They must remain outside the presentation builder
-and desktop renderer and use the existing application and repository
+Project-scoped collector run pipeline, and broader workspace restoration.
+The implemented primary desktop session uses the already-active Project only
+as a compatibility guard; it never selects or mutates a Project and does not
+make platform data Project-scoped. See
+[Session Restoration](SessionRestoration.md). Project persistence alone does
+not implement file selection, Project creation UI, data partitioning, or
+broader restoration. Those capabilities must remain outside the presentation
+builder and desktop renderer and use the existing application and repository
 boundaries.

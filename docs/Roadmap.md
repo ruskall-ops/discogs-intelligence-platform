@@ -86,12 +86,13 @@ collection.
 
 ## Version 0.5 — Collector Run Pipeline
 
-**Status: In progress — v0.5.1 through v0.5.4 implemented, unreleased**
+**Status: In progress — v0.5.1 through v0.5.5 implemented, unreleased**
 
-Version 0.5 will establish the collector run lifecycle before adding session
-restoration. Its initial scope assumes one collection and should connect
-collection refresh, existing intelligence execution, history recording, and
-presentation refresh through current application boundaries.
+Version 0.5 establishes the collector run lifecycle and then adds limited
+session restoration. Its scope assumes one collection and connects collection
+refresh, existing intelligence execution, history recording, presentation
+refresh, Collector Review, and primary desktop continuity through current
+application boundaries.
 
 ### Version 0.5.1 — Collector Run Application Boundary
 
@@ -157,9 +158,27 @@ states, reopen, confirmed removal, and optimistic conflict detection. Queue
 population is never automatic and Collection Decisions remain separate.
 Package/runtime version remains `0.4.0`.
 
+### Version 0.5.5 — Session Restoration
+
+**Status: Implemented, unreleased**
+
+The fifth slice restores a deliberately small database-scoped desktop session:
+normal main-window geometry, primary and Collection Review navigation, stable
+filters and observation source, and exact visible observation, queue, and
+decision selections. Migration 7 adds an empty singleton session table behind
+a storage-independent repository and application service.
+
+Restoration queries fresh state before applying selections, uses the active
+Project only as a compatibility guard, and falls back without mutation.
+Graceful close preserves the Review-note draft lifecycle, offers an explicit
+choice when session saving fails, and refuses close during Collector Run.
+
+Search text, drafts, calculated models, secrets, secondary windows, non-normal
+window states, Project partitioning, and resumable Collector Runs remain
+excluded. See [Session Restoration](SessionRestoration.md).
+
 Candidate follow-on slices include:
 
-- session and workspace restoration after the run lifecycle is explicit;
 - enabled project creation and opening only after platform data can be
   partitioned safely by Project;
 - completed Portfolio Workspace destination pages;

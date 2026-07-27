@@ -3,6 +3,7 @@
 from .intelligence_history import SQLiteIntelligenceHistoryRepository
 from .marketplace_history import SQLiteMarketplaceHistoryRepository
 from .projects import SQLiteProjectRepository
+from .session import SQLiteSessionRepository
 from .collector_review import (
     SQLiteHotNowCalculatedStateRepository,
     SQLiteWeekendReviewQueueRepository,
@@ -15,5 +16,6 @@ __all__ = [
     "SQLiteHotNowCalculatedStateRepository",
     "SQLiteMarketplaceHistoryRepository",
     "SQLiteProjectRepository",
+    "SQLiteSessionRepository",
     "SQLiteWeekendReviewQueueRepository",
 ]

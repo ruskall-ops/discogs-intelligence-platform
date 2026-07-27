@@ -32,6 +32,7 @@ The current schema in `src/dip/persistence/sqlite/schema.sql` contains:
 | `projects` | Normalized immutable Project application fields and deterministic order |
 | `project_state` | Singleton active-project identity |
 | `weekend_review_queue` | Explicit user-owned review items with frozen source evidence |
+| `desktop_session` | One optional versioned primary-desktop preference snapshot |
 
 `market_snapshots` and `marketplace_snapshots` are intentionally different
 contracts. The former supports the original per-release refresh workflow; the
@@ -115,6 +116,13 @@ release membership, restricted release/Intelligence/Marketplace provenance,
 timestamp and lifecycle checks, and deterministic status-order index. It does
 not backfill calculated observations. Fresh and genuine v5-to-v6 upgraded
 schemas are equivalent.
+
+Migration version 7 creates an empty `desktop_session` singleton table. It has
+no Project foreign key or additional index and creates no default row. It
+stores only normal geometry, primary navigation, filters, source, stable
+selection identities, an optional Project compatibility identifier, format
+version, and save timestamp. See
+[Session Restoration](SessionRestoration.md).
 
 ## Connection and transaction boundary
 
