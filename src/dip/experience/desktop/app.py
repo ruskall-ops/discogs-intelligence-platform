@@ -40,6 +40,47 @@ from dip.experience.desktop.homepage_renderer import (
     DesktopDashboardHomepageRenderer,
 )
 from dip.exports import export_excel
+from dip.session import (
+    CollectionReviewDestination,
+    DecisionPriorityFilter,
+    DecisionStateFilter,
+    DesktopSessionCapture,
+    MAX_COORDINATE,
+    MAX_WINDOW_DIMENSION,
+    MIN_COORDINATE,
+    MIN_WINDOW_HEIGHT,
+    MIN_WINDOW_WIDTH,
+    QueueStatusFilter,
+    SessionValidationError,
+    TopLevelDestination,
+)
+
+
+_SOURCE_LABELS = {
+    WeekendObservationSource.HOT_NOW: "Hot now",
+    WeekendObservationSource.HIDDEN_GEM: "Hidden Gems",
+}
+_QUEUE_FILTER_LABELS = {
+    QueueStatusFilter.ACTIVE: "Active",
+    QueueStatusFilter.RESOLVED: "Resolved",
+    QueueStatusFilter.ALL: "All",
+}
+_PRIORITY_FILTER_LABELS = {
+    DecisionPriorityFilter.ALL: "All",
+    DecisionPriorityFilter.HIGH_PRIORITY_REVIEW: "High-priority review",
+    DecisionPriorityFilter.WORTH_REVIEWING: "Worth reviewing",
+    DecisionPriorityFilter.POSSIBLE_CANDIDATE: "Possible candidate",
+    DecisionPriorityFilter.LOW_PRIORITY: "Low priority",
+    DecisionPriorityFilter.NOT_SCORED: "Not scored",
+}
+_DECISION_FILTER_LABELS = {
+    DecisionStateFilter.ALL: "All",
+    DecisionStateFilter.REVIEW: "Review",
+    DecisionStateFilter.KEEP: "Keep",
+    DecisionStateFilter.LIST_FOR_SALE: "List for sale",
+    DecisionStateFilter.MAYBE: "Maybe",
+    DecisionStateFilter.IGNORE: "Ignore",
+}
 
 class App(tk.Tk):
     def __init__(self):
@@ -93,7 +134,14 @@ class App(tk.Tk):
         self.collector_review_service = getattr(
             dependencies, "collector_review", None
         )
+        self.project_management = getattr(
+            dependencies, "project_management", None
+        )
+        self.session_restoration_service = getattr(
+            dependencies, "session_restoration", None
+        )
         self._collector_run_active = False
+        self._session_restoring = True
         self.current_observation_workspace = (
             WeekendObservationWorkspace.unavailable(
                 "Collector Review observations are loading."
@@ -123,10 +171,16 @@ class App(tk.Tk):
         self.search_var = tk.StringVar()
         self.priority_var = tk.StringVar(value="All")
         self.decision_filter_var = tk.StringVar(value="All")
+        self._last_normal_geometry = (
+            SETTINGS.window_width,
+            SETTINGS.window_height,
+            0,
+            0,
+        )
 
         self.build_ui()
-        self.refresh_dashboard()
-        self.load_table()
+        self.bind("<Configure>", self._record_normal_geometry)
+        self._restore_session_and_load()
 
     def build_ui(self):
         toolbar = ttk.Frame(self, padding=8)
@@ -574,10 +628,9 @@ class App(tk.Tk):
         self._set_queue_controls_enabled(False)
 
     def _observation_source(self):
-        return (
-            WeekendObservationSource.HIDDEN_GEM
-            if self.observation_source_var.get() == "Hidden Gems"
-            else WeekendObservationSource.HOT_NOW
+        return _enum_for_label(
+            self.observation_source_var.get(),
+            _SOURCE_LABELS,
         )
 
     def _observation_section(self):
@@ -641,11 +694,16 @@ class App(tk.Tk):
         selection = self.observation_tree.selection()
         if not selection:
             return None
-        source, release_id = selection[0].split(":", 1)
-        return ObservationIdentity(
-            WeekendObservationSource(source),
-            int(release_id),
-        )
+        try:
+            source, release_id = selection[0].split(":", 1)
+            return ObservationIdentity(
+                WeekendObservationSource(source),
+                int(release_id),
+            )
+        except Exception as exc:
+            raise SessionValidationError(
+                "Desktop session selection cannot be captured."
+            ) from exc
 
     def _selected_observation(self):
         identity = self._selected_observation_identity()
@@ -864,6 +922,8 @@ class App(tk.Tk):
         )
 
     def _change_queue_filter(self):
+        if self.__dict__.get("_session_restoring", False):
+            return
         if not self._confirm_unsaved_queue_note():
             self.queue_filter_var.set(self._last_queue_filter)
             return
@@ -1245,7 +1305,10 @@ class App(tk.Tk):
         return True
 
     def _on_collection_review_destination_changed(self, _event=None):
-        if self._review_tab_change_guard:
+        if (
+            self._review_tab_change_guard
+            or self.__dict__.get("_session_restoring", False)
+        ):
             return
         selected = self.collection_review_tabs.nametowidget(
             self.collection_review_tabs.select()
@@ -2050,11 +2113,406 @@ class App(tk.Tk):
         export_excel(Path(path), rows)
         messagebox.showinfo("Export complete", f"Saved:\n{path}")
 
+    def _restore_session_and_load(self):
+        self._session_restoring = True
+        session = None
+        load_failed = False
+        try:
+            try:
+                if self.session_restoration_service is not None:
+                    session = self.session_restoration_service.load()
+            except Exception:
+                load_failed = True
+
+            navigation_compatible = False
+            if session is not None:
+                navigation_compatible = self._session_project_matches(session)
+                self._apply_session_geometry(session)
+                if navigation_compatible:
+                    self.observation_source_var.set(
+                        _SOURCE_LABELS[session.observation_source]
+                    )
+                    self.queue_filter_var.set(
+                        _QUEUE_FILTER_LABELS[session.queue_filter]
+                    )
+                    self._last_queue_filter = self.queue_filter_var.get()
+                    self.priority_var.set(
+                        _PRIORITY_FILTER_LABELS[
+                            session.decision_priority_filter
+                        ]
+                    )
+                    self.decision_filter_var.set(
+                        _DECISION_FILTER_LABELS[session.decision_state_filter]
+                    )
+
+            self.search_var.set("")
+            self.refresh_dashboard()
+            queue_identity = (
+                session.selected_queue_item_id
+                if session is not None and navigation_compatible
+                else None
+            )
+            self.refresh_weekend_review_queue(queue_identity)
+            self.load_table()
+
+            if session is not None and navigation_compatible:
+                self._restore_session_navigation(session)
+                self._restore_session_selections(session)
+            if load_failed:
+                self.status_var.set(
+                    "Previous session settings could not be restored."
+                )
+        finally:
+            self._session_restoring = False
+            self._record_normal_geometry()
+
+    def _session_project_matches(self, session):
+        if (
+            session.active_project_id is None
+            or self.project_management is None
+        ):
+            return False
+        try:
+            active = self.project_management.active_project()
+        except Exception:
+            return False
+        return (
+            active is not None
+            and active.project_id == session.active_project_id
+        )
+
+    def _restore_session_selections(self, session):
+        selected_observation = session.selected_observation
+        section = self._observation_section()
+        if (
+            selected_observation is not None
+            and selected_observation.source is session.observation_source
+            and section.status is ObservationSectionStatus.AVAILABLE
+        ):
+            self._render_observations(selected_observation)
+        else:
+            self.observation_tree.selection_remove(
+                *self.observation_tree.selection()
+            )
+            self._show_observation_detail(None)
+
+        queue_item_id = session.selected_queue_item_id
+        if (
+            queue_item_id is not None
+            and self.queue_tree.exists(str(queue_item_id))
+        ):
+            self.queue_tree.selection_set(str(queue_item_id))
+            self.queue_tree.see(str(queue_item_id))
+            try:
+                item = self.collector_review_service.get(queue_item_id)
+            except Exception:
+                item = None
+            if item is not None:
+                self._load_queue_item(item)
+            else:
+                self.queue_tree.selection_remove(
+                    *self.queue_tree.selection()
+                )
+                self._load_queue_item(None)
+        elif self.queue_tree.selection():
+            self.queue_tree.selection_remove(*self.queue_tree.selection())
+            self._load_queue_item(None)
+
+        release_id = session.selected_decision_release_id
+        if release_id is not None and self.tree.exists(str(release_id)):
+            self.tree.selection_set(str(release_id))
+            self.tree.see(str(release_id))
+        elif self.tree.selection():
+            self.tree.selection_remove(*self.tree.selection())
+
+    def _restore_session_navigation(self, session):
+        review_tabs = {
+            CollectionReviewDestination.OBSERVATIONS: self.observations_tab,
+            CollectionReviewDestination.WEEKEND_REVIEW_QUEUE: self.queue_tab,
+            CollectionReviewDestination.COLLECTION_DECISIONS:
+                self.decisions_tab,
+        }
+        review_tab = review_tabs[session.collection_review_destination]
+        self.collection_review_tabs.select(review_tab)
+        self._last_collection_review_destination = review_tab
+        top_tabs = {
+            TopLevelDestination.PROJECT: self.project_tab,
+            TopLevelDestination.DASHBOARD: self.dashboard_tab,
+            TopLevelDestination.COLLECTION_REVIEW: self.review_tab,
+        }
+        self.tabs.select(top_tabs[session.top_level_destination])
+
+    def _apply_session_geometry(self, session):
+        try:
+            self.update_idletasks()
+            bounds = (
+                self.winfo_vrootx(),
+                self.winfo_vrooty(),
+                self.winfo_vrootwidth(),
+                self.winfo_vrootheight(),
+            )
+        except tk.TclError:
+            bounds = None
+        width, height, x, y = _sanitize_geometry(
+            session.window_width,
+            session.window_height,
+            session.window_x,
+            session.window_y,
+            bounds,
+        )
+        if x is None or y is None:
+            geometry_values = (f"{width}x{height}",)
+        else:
+            geometry_values = (
+                f"{width}x{height}{x:+d}{y:+d}",
+                f"{width}x{height}",
+            )
+        for geometry_value in geometry_values:
+            try:
+                self.geometry(geometry_value)
+            except tk.TclError:
+                continue
+            self._last_normal_geometry = (
+                width,
+                height,
+                session.window_x if x is None else x,
+                session.window_y if y is None else y,
+            )
+            break
+
+    def _record_normal_geometry(self, event=None):
+        if event is not None and getattr(event, "widget", self) is not self:
+            return
+        try:
+            if self.state() != "normal":
+                return
+            try:
+                full_screen = bool(self.attributes("-fullscreen"))
+            except tk.TclError:
+                full_screen = False
+            if full_screen:
+                return
+            self.update_idletasks()
+            candidate = (
+                self.winfo_width(),
+                self.winfo_height(),
+                self.winfo_x(),
+                self.winfo_y(),
+            )
+        except tk.TclError:
+            return
+        if _valid_normal_geometry(candidate):
+            self._last_normal_geometry = candidate
+
+    def _capture_session(self):
+        self._record_normal_geometry()
+        width, height, x, y = self._last_normal_geometry
+        active_project_id = None
+        if self.project_management is not None:
+            try:
+                active = self.project_management.active_project()
+            except Exception:
+                active = None
+            if active is not None:
+                active_project_id = active.project_id
+        return DesktopSessionCapture(
+            active_project_id,
+            width,
+            height,
+            x,
+            y,
+            self._top_level_destination(),
+            self._collection_review_destination(),
+            self._observation_source(),
+            _enum_for_label(
+                self.queue_filter_var.get(),
+                _QUEUE_FILTER_LABELS,
+            ),
+            _enum_for_label(
+                self.priority_var.get(),
+                _PRIORITY_FILTER_LABELS,
+            ),
+            _enum_for_label(
+                self.decision_filter_var.get(),
+                _DECISION_FILTER_LABELS,
+            ),
+            self._selected_observation_identity(),
+            _selected_positive_tree_id(self.queue_tree),
+            _selected_positive_tree_id(self.tree),
+        )
+
+    def _top_level_destination(self):
+        selected = _selected_notebook_widget(self.tabs)
+        if selected is self.dashboard_tab:
+            return TopLevelDestination.DASHBOARD
+        if selected is self.review_tab:
+            return TopLevelDestination.COLLECTION_REVIEW
+        if selected is self.project_tab:
+            return TopLevelDestination.PROJECT
+        raise SessionValidationError(
+            "Desktop session destination cannot be captured."
+        )
+
+    def _collection_review_destination(self):
+        selected = _selected_notebook_widget(self.collection_review_tabs)
+        if selected is self.queue_tab:
+            return CollectionReviewDestination.WEEKEND_REVIEW_QUEUE
+        if selected is self.decisions_tab:
+            return CollectionReviewDestination.COLLECTION_DECISIONS
+        if selected is self.observations_tab:
+            return CollectionReviewDestination.OBSERVATIONS
+        raise SessionValidationError(
+            "Desktop session destination cannot be captured."
+        )
+
+    def _confirm_close_without_session(self):
+        result = {"close": False}
+        dialog = tk.Toplevel(self)
+        dialog.title("Session could not be saved")
+        dialog.transient(self)
+        dialog.resizable(False, False)
+        ttk.Label(
+            dialog,
+            text=(
+                "The current window and navigation state could not be saved."
+            ),
+            padding=18,
+        ).pack()
+        actions = ttk.Frame(dialog, padding=(18, 0, 18, 18))
+        actions.pack(fill="x")
+
+        def close_without_saving():
+            result["close"] = True
+            dialog.destroy()
+
+        ttk.Button(
+            actions,
+            text="Close Without Saving",
+            command=close_without_saving,
+        ).pack(side="left", padx=(0, 8))
+        ttk.Button(
+            actions,
+            text="Stay Open",
+            command=dialog.destroy,
+        ).pack(side="left")
+        dialog.protocol("WM_DELETE_WINDOW", dialog.destroy)
+        dialog.grab_set()
+        self.wait_window(dialog)
+        return result["close"]
+
+    def _close_database_and_root(self):
+        try:
+            self.db.close()
+        except Exception:
+            messagebox.showerror(
+                "Unable to close",
+                "The application database could not be closed. "
+                "The application will remain open.",
+            )
+            return False
+        self.destroy()
+        return True
+
     def on_close(self):
+        if self.__dict__.get("_collector_run_active", False):
+            messagebox.showinfo(
+                "Collector Run active",
+                "The Collector Run must finish before the application can close.",
+            )
+            return
         if not self._confirm_unsaved_queue_note():
             return
-        self.db.close()
-        self.destroy()
+        service = self.__dict__.get("session_restoration_service")
+        if service is not None:
+            try:
+                service.save(self._capture_session())
+            except Exception:
+                if not self._confirm_close_without_session():
+                    return
+        self._close_database_and_root()
+
+
+def _sanitize_geometry(width, height, x, y, bounds):
+    width = min(max(width, MIN_WINDOW_WIDTH), MAX_WINDOW_DIMENSION)
+    height = min(max(height, MIN_WINDOW_HEIGHT), MAX_WINDOW_DIMENSION)
+    if (
+        bounds is None
+        or len(bounds) != 4
+        or any(type(value) is not int for value in bounds)
+        or bounds[2] <= 0
+        or bounds[3] <= 0
+    ):
+        return width, height, None, None
+    root_x, root_y, root_width, root_height = bounds
+    width = max(MIN_WINDOW_WIDTH, min(width, root_width))
+    height = max(MIN_WINDOW_HEIGHT, min(height, root_height))
+    root_right = root_x + root_width
+    root_bottom = root_y + root_height
+    visible_width = max(0, min(x + width, root_right) - max(x, root_x))
+    visible_height = max(0, min(y + height, root_bottom) - max(y, root_y))
+    if visible_width < 160 or visible_height < 64:
+        x = root_x + (root_width - width) // 2
+        y = root_y + (root_height - height) // 2
+    return width, height, x, y
+
+
+def _valid_normal_geometry(value):
+    width, height, x, y = value
+    return (
+        type(width) is int
+        and MIN_WINDOW_WIDTH <= width <= MAX_WINDOW_DIMENSION
+        and type(height) is int
+        and MIN_WINDOW_HEIGHT <= height <= MAX_WINDOW_DIMENSION
+        and type(x) is int
+        and MIN_COORDINATE <= x <= MAX_COORDINATE
+        and type(y) is int
+        and MIN_COORDINATE <= y <= MAX_COORDINATE
+    )
+
+
+def _enum_for_label(label, mapping):
+    matches = tuple(
+        enum_value for enum_value, value in mapping.items() if value == label
+    )
+    if len(matches) != 1:
+        raise SessionValidationError(
+            "Desktop session selection cannot be captured."
+        )
+    return matches[0]
+
+
+def _selected_notebook_widget(notebook):
+    try:
+        selected = notebook.select()
+        if not selected:
+            raise SessionValidationError(
+                "Desktop session destination cannot be captured."
+            )
+        return notebook.nametowidget(selected)
+    except SessionValidationError:
+        raise
+    except Exception as exc:
+        raise SessionValidationError(
+            "Desktop session destination cannot be captured."
+        ) from exc
+
+
+def _selected_positive_tree_id(tree):
+    selection = tree.selection()
+    if not selection:
+        return None
+    try:
+        value = int(selection[0])
+    except Exception as exc:
+        raise SessionValidationError(
+            "Desktop session selection cannot be captured."
+        ) from exc
+    if value <= 0:
+        raise SessionValidationError(
+            "Desktop session selection cannot be captured."
+        )
+    return value
+
 
 if __name__ == "__main__":
     App().mainloop()

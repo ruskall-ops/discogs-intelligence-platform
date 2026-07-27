@@ -19,6 +19,7 @@ from .dashboard import (
 from .dashboard_integration_presentation import DashboardIntegrationPresentationService
 from .project_workspace_presentation import ProjectWorkspacePresentationService
 from .project_management import ProjectManagementService
+from .session_restoration import SessionRestorationService
 from .hidden_gems_presentation import HiddenGemsPresentationService
 from .intelligence_comparison import (
     ComparisonHistoryUnavailableError,
@@ -132,6 +133,7 @@ __all__ = [
     "DashboardIntegrationPresentationService",
     "ProjectWorkspacePresentationService",
     "ProjectManagementService",
+    "SessionRestorationService",
     "HistoricalIntelligenceExecution",
     "HistoricalModuleResult",
     "HistoricalExecutionNotFoundError",

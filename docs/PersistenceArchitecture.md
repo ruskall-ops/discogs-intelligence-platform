@@ -598,6 +598,15 @@ checks, restricted foreign keys, unique release membership, and
 `idx_weekend_review_queue_status_order` index. It creates no rows: calculated
 scores and Intelligence History never auto-populate user-owned workflow state.
 
+Migration 7 adds the empty singleton `desktop_session` preferences table.
+`SQLiteSessionRepository` reconstructs one immutable, versioned session or
+returns `None` when absent. Atomic replacement uses the shared transaction and
+savepoint boundary; failed writes preserve the previous row. The Project
+identifier is an unbound compatibility string rather than a foreign key.
+Session storage contains no domain payload, draft, calculated model, secret,
+path, or process state. See
+[Session Restoration](SessionRestoration.md).
+
 ---
 
 # Migration Rules

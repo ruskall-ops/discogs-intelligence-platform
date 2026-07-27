@@ -122,7 +122,10 @@ Normal desktop execution persists Project identity, deterministic insertion and
 last-opened order, and active-project state in the existing SQLite database.
 The composition root creates `Current Collection` once on a new database and
 reuses it thereafter. Project creation UI, file selection, collection refresh,
-and session or workspace restoration remain planned work.
+and secondary-workspace restoration remain planned work. The implemented
+v0.5.5 primary desktop session restores normal geometry, primary navigation,
+filters, and stable visible selections, using active Project identity only as a
+compatibility guard.
 
 Project identity does not yet partition collection, Marketplace, intelligence,
 history, or research data. Version 0.4 therefore remains a practical
@@ -198,14 +201,16 @@ src/dip/
 - **0.3 — Marketplace Intelligence and Decision Support:** released.
 - **0.4 — SQLite Project Persistence:** released; current package version is
   0.4.0.
-- **0.5 — Collector Run Pipeline:** planned, beginning with one collection and
-  establishing refresh orchestration before session restoration.
+- **0.5 — Collector Workflow Foundation:** v0.5.1 through v0.5.5 implemented
+  but unreleased, covering Collector Run, canonical capture, coherent
+  Intelligence History, Collector Review, and primary session restoration.
 
 See the [Roadmap](docs/Roadmap.md) for release scope and future direction.
 
 ## Documentation
 
 - [Vision](docs/Vision.md)
+- [Session Restoration](docs/SessionRestoration.md)
 - [Architecture](docs/Architecture.md)
 - [Roadmap](docs/Roadmap.md)
 - [Configuration](docs/Configuration.md)

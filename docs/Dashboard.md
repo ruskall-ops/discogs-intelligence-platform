@@ -12,6 +12,11 @@ foundation converts standard `IntelligenceResult` objects into immutable,
 presentation-neutral view models. The command centre composes those models
 with existing workspace presentation state.
 
+The v0.5.5 primary desktop session may restore Dashboard as the selected
+top-level destination after fresh Dashboard queries. It does not persist cards,
+counts, observations, comparisons, or other Dashboard presentation models. See
+[Session Restoration](SessionRestoration.md).
+
 ---
 
 # Collection Intelligence Dashboard foundation

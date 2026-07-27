@@ -126,7 +126,13 @@ upgrade paths are equivalent.
 
 ## Deliberate exclusions
 
-This slice adds no Project partitioning, session restoration, automatic queue
+This slice adds no Project partitioning, automatic queue
 population, recommendations, alerts, scheduling, tags, priority, manual order,
 status audit history, listing acquisition, scoring changes, or duplicated
 Collection Decision persistence.
+
+The v0.5.5 session boundary may restore the selected Review destination,
+source, filter, and exact visible observation or queue identity after fresh
+queries. It never persists Review-note drafts or changes the existing
+Save/Discard/Cancel lifecycle. See
+[Session Restoration](SessionRestoration.md).

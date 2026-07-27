@@ -50,6 +50,7 @@ class DatabaseTestCase(unittest.TestCase):
             "projects",
             "project_state",
             "weekend_review_queue",
+            "desktop_session",
         }
 
         self.assertTrue(
