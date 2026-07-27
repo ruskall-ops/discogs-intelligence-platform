@@ -7,7 +7,11 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from dip.composition import build_desktop_application_dependencies
-from dip.persistence.sqlite import SQLiteProjectRepository
+from dip.app.collector_review import WeekendObservationService, WeekendReviewService
+from dip.persistence.sqlite import (
+    SQLiteProjectRepository,
+    SQLiteWeekendReviewQueueRepository,
+)
 
 
 class ProjectCompositionTestCase(unittest.TestCase):
@@ -74,6 +78,37 @@ class ProjectCompositionTestCase(unittest.TestCase):
             )
         finally:
             second.database.close()
+
+    def test_collector_review_composition_is_lazy_and_uses_sqlite_queue(self) -> None:
+        with (
+            patch.object(
+                WeekendObservationService,
+                "workspace",
+                side_effect=AssertionError("startup queried observations"),
+            ),
+            patch.object(
+                SQLiteWeekendReviewQueueRepository,
+                "list_queue",
+                side_effect=AssertionError("startup queried queue"),
+            ),
+            patch.object(
+                SQLiteWeekendReviewQueueRepository,
+                "add_or_get_existing",
+                side_effect=AssertionError("startup mutated queue"),
+            ),
+        ):
+            dependencies = self.build()
+        try:
+            self.assertIsInstance(
+                dependencies.collector_review_observations,
+                WeekendObservationService,
+            )
+            self.assertIsInstance(
+                dependencies.collector_review,
+                WeekendReviewService,
+            )
+        finally:
+            dependencies.database.close()
 
 
 if __name__ == "__main__":

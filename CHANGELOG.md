@@ -6,6 +6,23 @@ All notable changes to the Discogs Intelligence Platform will be documented here
 
 # Unreleased — Version 0.5
 
+## Collector Review Workflow and Weekend Review Queue
+
+- Added an immutable calculated-observation workspace for separate Hot now and
+  Hidden Gems research signals.
+- Added exact Hot-now score-origin provenance, coherent freshness checks, safe
+  partial/stale/retained warnings, and persisted Hidden Gems reconstruction.
+- Added the explicit, user-owned Weekend Review Queue with frozen source
+  summaries, notes, active/resolved states, reopen, and confirmed removal.
+- Added migration 6, schema parity, restricted evidence provenance, optimistic
+  write conflicts, deterministic ordering, and restart-safe SQLite persistence.
+- Integrated observation drill-down with the Dashboard and added Observations,
+  Weekend Review Queue, and the existing Collection Decisions editor beneath
+  Collection Review.
+- Kept queue population entirely explicit: Collector Run, Dashboard refresh,
+  observation refresh, and intelligence execution never add or mutate items.
+- Kept package/runtime version `0.4.0`; v0.5.4 is implemented but unreleased.
+
 ## Coherent Intelligence Execution and History
 
 - Extended eligible complete and partial Collector Runs through the existing

@@ -68,15 +68,27 @@ A record identified as having strong market characteristics that may not yet be 
 
 Hidden Gems should always be supported by evidence.
 
+In Collector Review, a Hidden Gem observation is reconstructed from persisted
+Intelligence History. It is calculated evidence, not a queue item or decision.
+
 ---
 
 # Weekend Listings
 
-A curated shortlist of records that may be worth considering for sale.
+A factual Marketplace Intelligence result containing qualifying listing
+observations within an explicit weekend time window. It preserves evidence and
+deterministic order; it is not a curated shortlist, sale suggestion, or
+recommendation.
 
-The platform never recommends automatic selling.
+---
 
-Weekend Listings are suggestions for review.
+# Weekend Review Queue
+
+Durable user-owned workflow state created only when the collector explicitly
+adds a Hot-now or Hidden Gem observation. It freezes the source summary and
+provenance while allowing a review note and `to_review`, `reviewing`, or
+`resolved` status. It is separate from calculated observations and Collection
+Decisions.
 
 ---
 

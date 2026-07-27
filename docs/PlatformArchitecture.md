@@ -68,9 +68,11 @@ navigation. They do not calculate intelligence or query persistence.
 
 ### User-owned state
 
-Personal collection decisions, notes, and Marketplace Research Status remain
-distinct from objective intelligence. Research labels describe the collector's
-workflow and never alter an assessment.
+Personal collection decisions, Marketplace Research Status, and the durable
+Weekend Review Queue remain distinct from objective intelligence. Calculated
+Hot-now and Hidden Gems observations enter the queue only through explicit
+collector action; their frozen evidence and review notes never alter an
+assessment.
 
 ## Implemented entry and navigation
 
@@ -84,7 +86,9 @@ The Dashboard summarises existing Portfolio, Collection, Marketplace, and
 Historical presentation state and opens their established desktop
 destinations. Portfolio Workspace currently implements Overview only; its
 other navigation destinations are visible placeholders. Marketplace Workspace
-implements its six research panes.
+implements its six research panes. Collection Review exposes calculated
+Observations, the Weekend Review Queue, and the separate Collection Decisions
+editor.
 
 ## Extensibility
 

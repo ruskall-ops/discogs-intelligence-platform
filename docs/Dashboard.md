@@ -209,6 +209,20 @@ remain outside this homepage. Drill-down is provided by the dedicated detail
 experiences and Collection Explorer; broader history is presented by the
 separate Historical Intelligence experiences.
 
+## Collector Review observations
+
+Each explicit Dashboard refresh requests one immutable
+`WeekendObservationWorkspace`. The visible Hot-now count is exactly the number
+of projected Hot-now observations in that instance, and its action opens
+Collection Review → Observations → Hot now. If observation projection is
+unavailable, the card displays an unavailable value and its action is disabled;
+the legacy aggregate database count is not used as a fallback.
+
+The established Hidden Gems detail action remains. **Review in Observations**
+opens the separate persisted Hidden Gems projection. Dashboard refresh performs
+no queue mutation and shares its workspace with the observation renderer for
+that refresh cycle, so card count and drill-down cannot disagree.
+
 ## Dashboard command centre
 
 The unified Dashboard command centre composes the existing Dashboard homepage,
@@ -220,7 +234,7 @@ Quick Actions.
 
 Each card copies a concise summary from an existing immutable presentation
 model or supplies neutral navigation guidance. Marketplace Highlights uses the
-first item in the caller-ordered Attention Queue and does not rank or sort it.
+first caller-supplied opportunity and does not rank or sort it.
 Explicit navigation targets open existing Portfolio, Collection, Marketplace,
 and Historical Intelligence desktop controllers. No routing framework is
 introduced.

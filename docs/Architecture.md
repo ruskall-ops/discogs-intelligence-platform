@@ -3,7 +3,7 @@
 ## Purpose
 
 This document describes the architecture implemented by the Discogs
-Intelligence Platform (DIP) at version 0.4.0. It records the current component
+Intelligence Platform (DIP). It records the current implemented component
 boundaries, dependency direction, data flows, and constraints that future work
 must preserve.
 
@@ -93,6 +93,7 @@ boundaries over immutable presentation models:
 - Project Workspace;
 - Dashboard command centre;
 - Collection Explorer;
+- Collection Review;
 - Portfolio Workspace;
 - Marketplace Workspace;
 - History Explorer.
@@ -309,7 +310,9 @@ Quick Actions. Its actions open existing workspace controllers.
 
 The earlier Collection Intelligence Dashboard homepage and its dedicated
 Collection Health and Hidden Gems detail views remain active presentation
-components within the desktop application.
+components. Dashboard refresh also obtains one immutable Collector Review
+observation workspace: its Hot-now count and drill-down therefore describe the
+same calculated rows.
 
 ### Portfolio Workspace
 
@@ -322,9 +325,9 @@ destinations as unimplemented.
 
 ### Marketplace Workspace
 
-Marketplace Workspace composes a caller-ordered Attention Queue, Opportunity
+Marketplace Workspace composes caller-supplied Opportunities, Opportunity
 Detail, Evidence, Marketplace History, Portfolio Context, and Research Status.
-Queue order comes from the caller and never implies ranking or a
+Opportunity order comes from the caller and never implies ranking or a
 recommendation. Research status is user-owned workflow metadata and is not
 persisted by this slice.
 
@@ -335,6 +338,15 @@ and the implemented Marketplace Intelligence and Marketplace Decision
 Intelligence destinations. Historical Intelligence presents Change Analysis,
 Trend Analysis, History Explorer, and Intelligence Insights from
 already-produced models.
+
+Collection Review contains three deliberately separate destinations:
+calculated **Observations**, the user-owned **Weekend Review Queue**, and
+**Collection Decisions**. Observation projection reads stored Hot-now scores,
+Intelligence History, and canonical Marketplace evidence without executing
+intelligence. Only an explicit user Add creates a durable queue item. Frozen
+source evidence does not change when later Collector Runs refresh calculated
+observations, and Collection Decisions continue to use their independent
+editor and persistence. See [Collector Review](CollectorReview.md).
 
 ## Data and history boundaries
 

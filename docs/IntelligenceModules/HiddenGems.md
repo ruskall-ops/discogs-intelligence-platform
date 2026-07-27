@@ -212,5 +212,16 @@ Version 0.2 does not use:
 The module answers: “Which releases have evidence that makes them worth
 researching further?” It does not answer: “What should I do with this record?”
 
-No Hidden Gems dashboard card or desktop integration is included in this
-vertical slice.
+Hidden Gems is integrated into the Dashboard and its established detail
+experience. Collector Review also reconstructs only the latest persisted
+`hidden_gems` result for its calculated Observations section. It preserves
+candidate order and evidence, accepts completed or legitimately skipped
+results, and never executes the module. Legacy candidates without canonical
+Marketplace provenance remain visible with an explicit warning; a referenced
+but missing provenance record is treated as unavailable.
+
+Adding a Hidden Gem to the Weekend Review Queue is always an explicit collector
+action. The frozen queue summary records its persisted rank, score, first
+non-empty evidence statement, Intelligence run identity, and Marketplace
+snapshot identity when available. It does not alter Hidden Gems scoring or
+create a buying or selling recommendation.

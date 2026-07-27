@@ -49,6 +49,7 @@ class DatabaseTestCase(unittest.TestCase):
             "marketplace_snapshots",
             "projects",
             "project_state",
+            "weekend_review_queue",
         }
 
         self.assertTrue(

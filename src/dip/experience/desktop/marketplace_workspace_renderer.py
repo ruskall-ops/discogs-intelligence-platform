@@ -37,7 +37,7 @@ class DesktopMarketplaceWorkspaceRenderer:
         if state.availability is MarketplaceWorkspaceAvailability.UNAVAILABLE:
             return DesktopMarketplaceWorkspaceView(
                 state.title, state.availability,
-                (DesktopMarketplaceWorkspaceSection("Attention Queue", "Workspace unavailable."),),
+                (DesktopMarketplaceWorkspaceSection("Supplied Opportunities", "Workspace unavailable."),),
             )
         selected = next((value for value in state.filtered_queue if value.release_id == state.selected_release_id), None)
         queue = (
@@ -69,7 +69,7 @@ class DesktopMarketplaceWorkspaceRenderer:
         return DesktopMarketplaceWorkspaceView(
             state.title, state.availability,
             (
-                DesktopMarketplaceWorkspaceSection("Attention Queue", queue),
+                DesktopMarketplaceWorkspaceSection("Supplied Opportunities", queue),
                 DesktopMarketplaceWorkspaceSection("Opportunity Detail", detail),
                 DesktopMarketplaceWorkspaceSection("Evidence", evidence),
                 DesktopMarketplaceWorkspaceSection("Marketplace History", history),
