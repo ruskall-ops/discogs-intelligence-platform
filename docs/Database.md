@@ -31,6 +31,7 @@ The current schema in `src/dip/persistence/sqlite/schema.sql` contains:
 | `marketplace_snapshots` | Canonically serialized aggregate Marketplace snapshots |
 | `projects` | Normalized immutable Project application fields and deterministic order |
 | `project_state` | Singleton active-project identity |
+| `weekend_review_queue` | Explicit user-owned review items with frozen source evidence |
 
 `market_snapshots` and `marketplace_snapshots` are intentionally different
 contracts. The former supports the original per-release refresh workflow; the
@@ -84,6 +85,11 @@ observation or calculated historical result.
 Marketplace Workspace Research Status is currently presentation state and is
 not persisted.
 
+The Weekend Review Queue is durable user-owned workflow state. It is populated
+only by an explicit Add from a calculated Hot-now or Hidden Gem observation.
+It freezes source evidence and provenance independently of later calculation
+and keeps Collection Decisions in their existing table.
+
 ## Project persistence
 
 `projects` stores `project_id`, `name`, `description`, nullable positive
@@ -103,6 +109,12 @@ Migration version 5 adds Intelligence History Marketplace provenance and its
 partial unique index. Existing runs remain `NULL`; unlimited standalone
 `NULL`-provenance executions remain valid. Fresh and upgraded schemas are
 equivalent.
+
+Migration version 6 creates an empty `weekend_review_queue`, its unique
+release membership, restricted release/Intelligence/Marketplace provenance,
+timestamp and lifecycle checks, and deterministic status-order index. It does
+not backfill calculated observations. Fresh and genuine v5-to-v6 upgraded
+schemas are equivalent.
 
 ## Connection and transaction boundary
 

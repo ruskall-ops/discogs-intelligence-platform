@@ -1363,10 +1363,10 @@ SQLite, networking, providers, or clocks.
 
 Marketplace Workspace is a presentation experience over immutable,
 already-produced Marketplace, Historical, Insights, and Portfolio presentation
-models. It has six panes: Attention Queue, Opportunity Detail, Evidence,
+models. It has six panes: Supplied Opportunities, Opportunity Detail, Evidence,
 Marketplace History, Portfolio Context, and Research Status.
 
-The supplying application owns queue membership and order. The workspace does
+The supplying application owns opportunity membership and order. The workspace does
 not rank, score, sort, synthesize, or recommend opportunities. Its filters are
 limited to research status, assessment, evidence state, artist, label,
 ownership, release identity, history availability, and trend availability;
@@ -1378,3 +1378,20 @@ Opening and navigating the workspace performs no Marketplace retrieval,
 provider call, module execution, historical calculation, repository access, or
 persistence. Watchlists, alerts, automatic status transitions, live refresh,
 background monitoring, and purchase or sale automation remain deferred.
+
+## Collector Review boundary
+
+The Weekend Review Queue is not part of Marketplace Workspace and is not an
+intelligence result. Collector Review projects stored `Hot now` score rows and
+persisted Hidden Gems results into separate calculated observation sections.
+Hot-now projection resolves the exact legacy snapshot that produced each score,
+then validates any canonical Collector Run and Intelligence provenance before
+attaching Marketplace evidence. Newer evidence may make a retained score stale
+but is never substituted as its origin.
+
+A collector explicitly adds an observation to the durable queue. The queue
+freezes a neutral source summary and optional provenance; later Marketplace
+capture, scoring, Intelligence execution, and Dashboard refresh do not update
+it. Canonical partial evidence remains visible with safe diagnostics, while
+empty, failed, or unavailable observations cannot substantiate a Hot-now
+score. See [Collector Review](CollectorReview.md).

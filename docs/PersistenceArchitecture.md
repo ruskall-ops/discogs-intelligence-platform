@@ -592,6 +592,12 @@ An existing database is upgraded through ordered migrations.
 
 Both paths must produce equivalent current schemas.
 
+Migration 6 adds the `weekend_review_queue` user-owned workflow table. The
+genuine v5-to-v6 path and fresh schema define the same columns, defaults,
+checks, restricted foreign keys, unique release membership, and
+`idx_weekend_review_queue_status_order` index. It creates no rows: calculated
+scores and Intelligence History never auto-populate user-owned workflow state.
+
 ---
 
 # Migration Rules
@@ -695,6 +701,14 @@ Every repository implementation should test:
 - savepoint behaviour;
 - foreign-key behaviour;
 - closed connection behaviour where relevant.
+
+The Weekend Review Queue adapter additionally uses normalized aware UTC
+microsecond timestamps and optimistic `updated_at` comparisons for save and
+delete. Application orchestration guarantees a strictly later token for every
+real mutation even when its clock is equal or earlier. A conflict-safe
+unique-release insert returns the persisted race
+winner; it must not use broad `INSERT OR IGNORE` semantics that could hide
+unrelated integrity failures.
 
 ---
 

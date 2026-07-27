@@ -99,7 +99,7 @@ class MarketplaceWorkspaceTestCase(unittest.TestCase):
         self.assertEqual(
             tuple(value.title for value in rendered.sections),
             (
-                "Attention Queue", "Opportunity Detail", "Evidence",
+                "Supplied Opportunities", "Opportunity Detail", "Evidence",
                 "Marketplace History", "Portfolio Context", "Research Status",
             ),
         )

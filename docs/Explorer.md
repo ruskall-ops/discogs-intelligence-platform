@@ -327,7 +327,7 @@ deferred.
 
 Marketplace Workspace is a separate top-level desktop research experience. It
 receives an explicitly supplied, already-ordered queue of immutable
-presentation models and exposes Attention Queue, Opportunity Detail, Evidence,
+presentation models and exposes Supplied Opportunities, Opportunity Detail, Evidence,
 Marketplace History, Portfolio Context, and Research Status panes. Existing
 Opportunity Detail, History Explorer, and Intelligence Insights renderers are
 reused; the workspace does not reproduce their calculations.

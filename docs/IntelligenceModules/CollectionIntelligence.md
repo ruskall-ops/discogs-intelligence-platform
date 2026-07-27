@@ -158,9 +158,11 @@ The foundation provides:
 - aggregate completion, failure and skipped counts;
 - compatibility with the original tuple-returning engine API.
 
-The engine does not yet connect to the desktop interface or replace the
-existing opportunity-scoring workflow. This deliberately preserves Version
-0.1 application behaviour while Version 0.2 modules are developed and tested.
+The Collector Run application boundary now supplies eligible complete and
+partial canonical Marketplace evidence to the engine and records a coherent
+Intelligence History execution. Dashboard, Explorer, and Collector Review
+consume completed presentation or persisted history models; they do not
+execute the engine. The legacy opportunity-scoring workflow remains separate.
 
 ## Module Contract
 

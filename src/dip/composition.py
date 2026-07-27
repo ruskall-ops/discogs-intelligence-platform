@@ -6,6 +6,10 @@ import time
 from dataclasses import dataclass
 
 from dip.app.collector_run import CollectorRunService
+from dip.app.collector_review import (
+    WeekendObservationService,
+    WeekendReviewService,
+)
 from dip.app.collection_intelligence import CollectionIntelligenceExecutionService
 from dip.app.intelligence_context import IntelligenceContextFactory
 from dip.app.collection_health_presentation import CollectionHealthPresentationService
@@ -193,9 +197,11 @@ from dip.portfolio_decision_intelligence import PortfolioOpportunityAlignmentMod
 from dip.marketplace_intelligence import ListingLifecycleModule, MarketplaceActivityModule, PriceChangesModule, RareAppearancesModule, SupplyChangesModule
 from dip.persistence.sqlite import (
     Database,
+    SQLiteHotNowCalculatedStateRepository,
     SQLiteIntelligenceHistoryRepository,
     SQLiteMarketplaceHistoryRepository,
     SQLiteProjectRepository,
+    SQLiteWeekendReviewQueueRepository,
 )
 
 
@@ -240,6 +246,8 @@ class DesktopApplicationDependencies:
     project_management: ProjectManagementService | None = None
     collector_run: CollectorRunService | None = None
     collection_intelligence_execution: CollectionIntelligenceExecutionService | None = None
+    collector_review_observations: WeekendObservationService | None = None
+    collector_review: WeekendReviewService | None = None
 
 
 def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
@@ -331,6 +339,18 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
     )
     history_repository = SQLiteIntelligenceHistoryRepository(database)
     history_queries = IntelligenceHistoryQueryService(history_repository)
+    collector_review_queue_repository = SQLiteWeekendReviewQueueRepository(
+        database
+    )
+    collector_review_observations = WeekendObservationService(
+        SQLiteHotNowCalculatedStateRepository(database),
+        history_queries,
+        marketplace_history_queries,
+        collector_review_queue_repository,
+    )
+    collector_review = WeekendReviewService(
+        collector_review_queue_repository
+    )
     collection_intelligence_execution = CollectionIntelligenceExecutionService(
         IntelligenceEngine(build_v02_intelligence_registry()),
         history_repository,
@@ -541,6 +561,8 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         project_management=project_management,
         collector_run=collector_run,
         collection_intelligence_execution=collection_intelligence_execution,
+        collector_review_observations=collector_review_observations,
+        collector_review=collector_review,
         dashboard_homepage=DashboardHomepageService(
             history_queries,
             comparison_presentation,

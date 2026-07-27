@@ -20,7 +20,7 @@ class MarketplaceHistoryMigrationTestCase(unittest.TestCase):
 
         applied = run_migrations(self.connection)
 
-        self.assertEqual(tuple(item.version for item in applied), (3, 4, 5))
+        self.assertEqual(tuple(item.version for item in applied), (3, 4, 5, 6))
         self.assertIn("Marketplace History", applied[0].name)
         self._assert_marketplace_history_schema(self.connection)
         self.assertEqual(
@@ -55,7 +55,7 @@ class MarketplaceHistoryMigrationTestCase(unittest.TestCase):
                     "SELECT version FROM schema_migrations"
                 ).fetchall()
             },
-            {1, 2, 3, 4, 5},
+            {1, 2, 3, 4, 5, 6},
         )
 
         self.assertEqual(run_migrations(self.connection), [])

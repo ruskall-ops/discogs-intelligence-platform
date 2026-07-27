@@ -198,5 +198,86 @@ CREATE TABLE IF NOT EXISTS project_state (
 INSERT OR IGNORE INTO project_state(singleton_id, active_project_id)
 VALUES (1, NULL);
 
+CREATE TABLE IF NOT EXISTS weekend_review_queue (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    release_id INTEGER NOT NULL UNIQUE
+        CHECK (typeof(release_id) = 'integer' AND release_id > 0),
+    added_at TEXT NOT NULL
+        CHECK (length(trim(added_at)) > 0),
+    status TEXT NOT NULL
+        CHECK (status IN ('to_review', 'reviewing', 'resolved')),
+    review_note TEXT NOT NULL DEFAULT '',
+    updated_at TEXT NOT NULL
+        CHECK (length(trim(updated_at)) > 0),
+    resolved_at TEXT,
+    source_type TEXT NOT NULL
+        CHECK (source_type IN ('hot_now', 'hidden_gem')),
+    source_observed_at TEXT NOT NULL
+        CHECK (length(trim(source_observed_at)) > 0),
+    source_summary TEXT NOT NULL
+        CHECK (
+            length(trim(source_summary)) > 0
+            AND source_summary = trim(source_summary)
+            AND instr(source_summary, char(32) || char(32)) = 0
+            AND instr(source_summary, char(9)) = 0
+            AND instr(source_summary, char(10)) = 0
+            AND instr(source_summary, char(13)) = 0
+        ),
+    source_intelligence_run_id INTEGER,
+    source_marketplace_snapshot_id TEXT,
+    CHECK (
+        (status = 'resolved' AND resolved_at IS NOT NULL)
+        OR
+        (status <> 'resolved' AND resolved_at IS NULL)
+    ),
+    CHECK (julianday(added_at) IS NOT NULL),
+    CHECK (julianday(updated_at) IS NOT NULL),
+    CHECK (julianday(source_observed_at) IS NOT NULL),
+    CHECK (julianday(source_observed_at) <= julianday(added_at)),
+    CHECK (julianday(added_at) <= julianday(updated_at)),
+    CHECK (
+        resolved_at IS NULL
+        OR (
+            julianday(resolved_at) IS NOT NULL
+            AND julianday(added_at) <= julianday(resolved_at)
+            AND julianday(resolved_at) <= julianday(updated_at)
+        )
+    ),
+    CHECK (
+        source_type <> 'hidden_gem'
+        OR (
+            typeof(source_intelligence_run_id) = 'integer'
+            AND source_intelligence_run_id > 0
+        )
+    ),
+    CHECK (
+        source_type <> 'hot_now'
+        OR source_intelligence_run_id IS NULL
+    ),
+    CHECK (
+        source_marketplace_snapshot_id IS NULL
+        OR (
+            length(trim(source_marketplace_snapshot_id)) > 0
+            AND source_marketplace_snapshot_id =
+                trim(source_marketplace_snapshot_id)
+        )
+    ),
+    FOREIGN KEY (release_id)
+        REFERENCES releases(release_id)
+        ON UPDATE RESTRICT
+        ON DELETE RESTRICT,
+    FOREIGN KEY (source_intelligence_run_id)
+        REFERENCES intelligence_runs(id)
+        ON UPDATE RESTRICT
+        ON DELETE RESTRICT,
+    FOREIGN KEY (source_marketplace_snapshot_id)
+        REFERENCES marketplace_snapshots(snapshot_id)
+        ON UPDATE RESTRICT
+        ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS idx_weekend_review_queue_status_order
+ON weekend_review_queue(status, added_at ASC, id ASC);
+
 INSERT OR IGNORE INTO schema_migrations(version)
 VALUES (1);

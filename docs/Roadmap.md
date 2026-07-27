@@ -86,7 +86,7 @@ collection.
 
 ## Version 0.5 — Collector Run Pipeline
 
-**Status: In progress — v0.5.1 through v0.5.3 implemented, unreleased**
+**Status: In progress — v0.5.1 through v0.5.4 implemented, unreleased**
 
 Version 0.5 will establish the collector run lifecycle before adding session
 restoration. Its initial scope assumes one collection and should connect
@@ -142,15 +142,29 @@ semantics. CSV import is disabled and guarded during a run. Package/runtime
 version remains `0.4.0`; Project scoping, session restoration, scheduling,
 collection-history architecture, and scoring changes remain deferred.
 
+### Version 0.5.4 — Collector Review Workflow and Weekend Review Queue
+
+**Status: Implemented, unreleased**
+
+The fourth slice projects stored Hot-now scores and the latest persisted Hidden
+Gems result into separate calculated observation sections. It resolves
+score-origin and canonical evidence without recalculating intelligence, and
+uses one observation workspace for the Dashboard count and drill-down.
+
+Migration 6 adds the durable, user-owned Weekend Review Queue with frozen
+source evidence, deterministic ordering, explicit add, notes, active/resolved
+states, reopen, confirmed removal, and optimistic conflict detection. Queue
+population is never automatic and Collection Decisions remain separate.
+Package/runtime version remains `0.4.0`.
+
 Candidate follow-on slices include:
 
 - session and workspace restoration after the run lifecycle is explicit;
 - enabled project creation and opening only after platform data can be
   partitioned safely by Project;
 - completed Portfolio Workspace destination pages;
-- a user-owned **Weekend Review Queue**, distinct from the calculated
-  **Weekend Marketplace Observations** intelligence;
-- persistent research notes, statuses, watchlists, tags, and saved views.
+- broader persistent research workflows such as watchlists and saved views,
+  only after their ownership and Project-scoping boundaries are designed.
 
 Multi-project UI is deliberately deferred until collection, Marketplace,
 intelligence, history, and research data are genuinely Project-scoped. Research
