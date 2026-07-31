@@ -7,8 +7,8 @@ preferences across graceful application restarts. It improves continuity
 without treating calculated presentation models, unsaved drafts, or running
 processes as durable state.
 
-The implemented v0.5.5 slice is unreleased. Package and runtime versions remain
-`0.4.0`.
+Session Restoration is implemented and validated in the prepared Version 0.5.0
+release candidate, which awaits release completion.
 
 Database backup does not trigger a special session save. It captures the last
 successfully stored session row; graceful close remains the session persistence

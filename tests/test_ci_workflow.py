@@ -1,9 +1,15 @@
 from pathlib import Path
 import subprocess
+import tarfile
 import tempfile
 import unittest
+from unittest.mock import patch
 
-from scripts.validate_release_artifacts import _require_artifact_clean
+from scripts.validate_release_artifacts import (
+    _require_artifact_clean,
+    _sdist_compatibility_client,
+    _validate_compatibility_client,
+)
 
 
 class CIWorkflowTestCase(unittest.TestCase):
@@ -79,9 +85,49 @@ class CIWorkflowTestCase(unittest.TestCase):
             / "scripts/validate_release_artifacts.py"
         ).read_text(encoding="utf-8")
         self.assertIn('environment.pop("PYTHONPATH", None)', validator)
+        self.assertIn('isolated.pop("PYTHONPATH", None)', validator)
+        self.assertIn('cwd=working_directory', validator)
+        self.assertIn('Path(dip.__file__).resolve()', validator)
         self.assertIn("TemporaryDirectory", validator)
         self.assertIn('"dip.app:main"', validator)
         self.assertIn("shutil.rmtree(path)", validator)
+
+    def test_sdist_compatibility_client_is_selected_exactly_or_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "discogs_client.py"
+            source.write_text("distributed = True\n", encoding="utf-8")
+            archive = root / "artifact.tar.gz"
+            with tarfile.open(archive, "w:gz") as value:
+                value.add(source, arcname="package/discogs_client.py")
+            self.assertEqual(
+                _sdist_compatibility_client(archive),
+                b"distributed = True\n",
+            )
+
+            with tarfile.open(archive, "w:gz") as value:
+                value.add(source, arcname="one/discogs_client.py")
+                value.add(source, arcname="two/discogs_client.py")
+            with self.assertRaisesRegex(RuntimeError, "at most one"):
+                _sdist_compatibility_client(archive)
+
+    def test_compatibility_client_validation_clears_checkout_import_path(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            artifact = root / "artifact.whl"
+            artifact.touch()
+            working = root / "compatibility"
+            with patch("scripts.validate_release_artifacts._run") as run:
+                _validate_compatibility_client(
+                    artifact,
+                    Path("isolated-python"),
+                    working,
+                    {"PYTHONPATH": "checkout", "PRESERVED": "yes"},
+                )
+            self.assertEqual(run.call_args.kwargs["cwd"], working)
+            self.assertNotIn("PYTHONPATH", run.call_args.kwargs["env"])
+            self.assertEqual(run.call_args.kwargs["env"]["PRESERVED"], "yes")
+            self.assertTrue((working / "discogs_client.py").is_file())
 
     def test_linux_editable_install_artifact_is_named_and_rejected(
         self,

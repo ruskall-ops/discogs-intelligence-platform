@@ -38,7 +38,7 @@ calculated screen models are not included.
 
 Restore a backup with the same DIP version or a newer compatible version that
 can migrate its schema. Do not open a newer-schema backup with an older DIP
-version. Schema version 7 and application version 0.4.0 are separate version
+version. Schema version 7 and application version 0.5.0 are separate version
 identities.
 
 ## Manual recovery

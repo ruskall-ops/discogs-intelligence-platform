@@ -7,6 +7,11 @@ foundations. It complements the product evolution in the [Roadmap](Roadmap.md)
 without treating the presence of a model, builder, or renderer as proof of a
 complete desktop feature.
 
+This is the production capability boundary for the prepared Version 0.5.0
+release candidate: implemented and validated, awaiting release completion.
+Application version 0.5.0 is distinct from SQLite schema version 7
+(migrations 1–7).
+
 ## Production-wired and usable
 
 - Project identity and the default Current Collection environment;
@@ -55,6 +60,9 @@ execution and data-supply path is connected.
 
 ## Deferred
 
-Project partitioning, listing acquisition, CSV reconciliation, automatic
-backup, in-app restore, scheduling, background monitoring, accounts, cloud
-services, and automated buying or selling remain outside the current product.
+Version 0.5 supports one collector and one practical `Current Collection`.
+Project partitioning, CSV reconciliation, Marketplace module execution,
+listing acquisition, automatic backup, in-app restore, Collector Run
+scheduling, cancellation and resumption, background monitoring, accounts,
+cloud sync, commercial distribution support, and automated buying or selling
+remain outside the current product.

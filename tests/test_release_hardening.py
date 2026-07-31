@@ -26,8 +26,32 @@ from tests.test_portfolio_workspace import presentation as portfolio_presentatio
 
 
 class ReleaseHardeningTestCase(unittest.TestCase):
+    def test_current_documents_describe_an_unreleased_candidate(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        documents = tuple(
+            (root / name).read_text(encoding="utf-8")
+            for name in (
+                "README.md",
+                "PROJECT_BOOTSTRAP.md",
+                "docs/Roadmap.md",
+                "docs/SessionRestoration.md",
+                "docs/CollectorReview.md",
+                "docs/Architecture.md",
+                "docs/CurrentProductState.md",
+                "docs/Configuration.md",
+                "docs/Database.md",
+            )
+        )
+        for document in documents:
+            with self.subTest(document=document[:40]):
+                lowered = document.lower()
+                self.assertIn("release candidate", lowered)
+                self.assertNotIn("released 31 july 2026", lowered)
+                self.assertNotIn("released as version 0.5.0", lowered)
+                self.assertNotIn("released in version 0.5.0", lowered)
+
     def test_runtime_packaging_entry_point_and_schema_contract(self) -> None:
-        self.assertEqual(dip.__version__, "0.4.0")
+        self.assertEqual(dip.__version__, "0.5.0")
         distribution = importlib.metadata.distribution(
             "discogs-intelligence-platform"
         )

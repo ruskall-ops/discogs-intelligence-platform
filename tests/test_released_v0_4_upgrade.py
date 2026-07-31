@@ -8,6 +8,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from dip import __version__
 from dip.composition import build_desktop_application_dependencies
 from dip.persistence.sqlite import Database
 from tests.fixtures.v0_4_0_schema import SCHEMA_SQL
@@ -237,12 +238,13 @@ class ReleasedVersionUpgradeTestCase(unittest.TestCase):
                 "dip.composition.SETTINGS",
                 SimpleNamespace(
                     database_path=path,
-                    application_version="0.4.0",
+                    application_version=__version__,
                     discogs_request_delay_seconds=0,
                 ),
             ):
                 dependencies = build_desktop_application_dependencies()
             try:
+                self.assertEqual(__version__, "0.5.0")
                 self.assertEqual(
                     dependencies.project_management.active_project().project_id,
                     "current_collection",

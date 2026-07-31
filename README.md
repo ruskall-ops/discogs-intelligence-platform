@@ -14,21 +14,20 @@ for every buying, selling, pricing, and collection decision.
 
 > **Automate the research, not the decision.**
 
-## Current release
+## Current release candidate
 
-**Version 0.4.0 — SQLite Project Persistence**
+**Version 0.5.0 — Collector Workflow Foundation**
 
-Versions 0.1 through 0.4 are released. Version 0.4 adds durable SQLite Project
-identity, active-project state, deterministic recent-project ordering, and
-idempotent `Current Collection` bootstrap to the Marketplace, Portfolio,
-Historical, Workspace, Dashboard, and Project Management foundations delivered
-through version 0.3.
+Prepared, implemented, and validated; awaiting release completion. Version 0.5
+connects the single-collection Collector Run to canonical Marketplace History,
+Collection Intelligence, immutable
+Intelligence History, Dashboard and Collector Review workflows, the
+user-owned Weekend Review Queue, Collection Decisions, primary desktop session
+restoration, and explicit verified SQLite backup.
 
-The implemented but unreleased v0.5.1–v0.5.6 development line adds Collector
-Run orchestration, canonical capture, coherent Intelligence History, Collector
-Review, session restoration, verified personal database backup, safe primary
-diagnostics, and truthful availability. Package/runtime remains 0.4.0 until a
-separate reviewed 0.5.0 release procedure.
+The release also makes desktop availability truthful, presents safe
+value-neutral diagnostics, validates genuine v0.4.0 upgrades, and adds Linux
+and macOS CI with isolated wheel and source-distribution validation.
 
 ## Implemented capabilities
 
@@ -126,13 +125,13 @@ Normal desktop execution persists Project identity, deterministic insertion and
 last-opened order, and active-project state in the existing SQLite database.
 The composition root creates `Current Collection` once on a new database and
 reuses it thereafter. Project creation UI, file selection, collection refresh,
-and secondary-workspace restoration remain planned work. The implemented
-v0.5.5 primary desktop session restores normal geometry, primary navigation,
+and secondary-workspace restoration remain planned work. The Version 0.5
+primary desktop session restores normal geometry, primary navigation,
 filters, and stable visible selections, using active Project identity only as a
 compatibility guard.
 
 Project identity does not yet partition collection, Marketplace, intelligence,
-history, or research data. Version 0.4 therefore remains a practical
+history, or research data. Version 0.5 therefore remains a practical
 single-collection workflow; multi-project UI is deferred until those data
 boundaries are genuinely Project-scoped.
 
@@ -179,6 +178,7 @@ architecture.
 src/dip/
 ├── app/                              application and presentation services
 ├── collection/                       collection import
+├── collector_review/                 observations and review queue
 ├── comparison/                       historical comparison
 ├── config/                           typed settings
 ├── core/                             shared errors and primitives
@@ -195,6 +195,8 @@ src/dip/
 ├── portfolio_decision_intelligence/  Opportunity Alignment
 ├── portfolio_intelligence/           portfolio modules
 ├── projects/                          Project models and repository contract
+├── session/                           primary desktop session models
+├── database_backup.py                 backup domain models
 └── composition.py                    desktop dependency composition
 ```
 
@@ -203,12 +205,10 @@ src/dip/
 - **0.1 — Core Platform:** released.
 - **0.2 — Collection Intelligence:** released.
 - **0.3 — Marketplace Intelligence and Decision Support:** released.
-- **0.4 — SQLite Project Persistence:** released; current package version is
-  0.4.0.
-- **0.5 — Collector Workflow Foundation:** v0.5.1 through v0.5.6 implemented
-  but unreleased, covering Collector Run, canonical capture, coherent
-  Intelligence History, Collector Review, primary session restoration, and
-  personal-use release hardening.
+- **0.4 — SQLite Project Persistence:** released.
+- **0.5 — Collector Workflow Foundation:** prepared release candidate;
+  implemented and validated, awaiting release completion. Current package
+  version is 0.5.0.
 
 See the [Roadmap](docs/Roadmap.md) for release scope and future direction.
 
