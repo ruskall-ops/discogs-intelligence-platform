@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from types import MappingProxyType
+from unittest.mock import patch
 
 from dip.app.collector_review import (
     WeekendReviewApplicationError,
@@ -706,33 +707,25 @@ class WeekendReviewServiceTestCase(unittest.TestCase):
         self.assertEqual(calls, 0)
 
         maximum = datetime.max.replace(tzinfo=UTC)
-        with self.database.conn:
-            self.database.conn.execute(
-                """
-                UPDATE weekend_review_queue
-                SET added_at=?, updated_at=?, source_observed_at=?
-                WHERE id=?
-                """,
-                (
-                    maximum.isoformat(timespec="microseconds"),
-                    maximum.isoformat(timespec="microseconds"),
-                    maximum.isoformat(timespec="microseconds"),
-                    added.queue_item_id,
-                ),
-            )
         before = self.repository.get_by_id(added.queue_item_id)
-        with self.assertRaisesRegex(
-            WeekendReviewApplicationError,
-            "could not be updated safely",
+        overflow_item = replace(added, updated_at=maximum)
+        with patch.object(
+            self.repository,
+            "get_by_id",
+            return_value=overflow_item,
         ):
-            WeekendReviewService(
-                self.repository,
-                clock=lambda: maximum,
-            ).save_note(
-                added.queue_item_id,
-                "Overflow",
-                expected_updated_at=maximum,
-            )
+            with self.assertRaisesRegex(
+                WeekendReviewApplicationError,
+                "could not be updated safely",
+            ):
+                WeekendReviewService(
+                    self.repository,
+                    clock=lambda: maximum,
+                ).save_note(
+                    added.queue_item_id,
+                    "Overflow",
+                    expected_updated_at=maximum,
+                )
         self.assertEqual(self.repository.get_by_id(added.queue_item_id), before)
 
     def test_real_sqlite_hot_now_freshness_preserves_score_origin_evidence(
