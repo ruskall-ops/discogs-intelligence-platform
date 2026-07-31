@@ -17,8 +17,7 @@ Resolve, reopen, or remove
 
 It follows the platform principle: **Automate the research, not the decision.**
 Neither an observation nor a queue item is a recommendation to buy or sell.
-Collector Review is implemented and validated in the prepared Version 0.5.0
-release candidate, which awaits release completion, and remains
+Collector Review was released as part of DIP v0.5.0 on 31 July 2026 and remains
 single-collection.
 
 ## Architectural boundaries

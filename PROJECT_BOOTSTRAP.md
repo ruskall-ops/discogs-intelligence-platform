@@ -19,12 +19,14 @@ decisions.
 
 **Version 0.5.0 — Collector Workflow Foundation**
 
-Prepared release candidate: implemented and validated, awaiting release
-completion. Version 0.5 adds the single-collection Collector Run,
-canonical Marketplace and Intelligence History integration, Collector Review,
-primary desktop session restoration, explicit verified database backup, safe
+DIP v0.5.0 was released on 31 July 2026 and is the current public personal-use
+release. Version 0.5 adds the single-collection Collector Run, canonical
+Marketplace and Intelligence History integration, Collector Review, primary
+desktop session restoration, explicit verified database backup, safe
 diagnostics, truthful desktop availability, genuine v0.4.0 upgrade coverage,
-and Linux/macOS artifact-validating CI.
+and Linux/macOS artifact-validating CI. macOS is the primary personal-use
+platform; Linux receives automated headless compatibility validation, and
+Windows is not supported.
 
 Project creation/opening UI, Project-scoped refresh, multi-project workflows,
 automatic backup, and in-app restore are not implemented. Collection,

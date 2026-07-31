@@ -194,8 +194,8 @@ Potential future settings include:
 
 Persistent user preferences and a graphical settings screen are not
 implemented. The default `application_version` is the canonical runtime
-`dip.__version__`, which is 0.5.0 for this prepared release candidate. The
-`DIP_APPLICATION_VERSION` environment variable may override it for a specific
+`dip.__version__`, which is 0.5.0 for the current public personal-use release.
+The `DIP_APPLICATION_VERSION` environment variable may override it for a specific
 runtime without changing package metadata. The Discogs client uses the
 canonical runtime version in its User-Agent.
 

@@ -14,16 +14,16 @@ for every buying, selling, pricing, and collection decision.
 
 > **Automate the research, not the decision.**
 
-## Current release candidate
+## Current release
 
 **Version 0.5.0 — Collector Workflow Foundation**
 
-Prepared, implemented, and validated; awaiting release completion. Version 0.5
-connects the single-collection Collector Run to canonical Marketplace History,
-Collection Intelligence, immutable
-Intelligence History, Dashboard and Collector Review workflows, the
-user-owned Weekend Review Queue, Collection Decisions, primary desktop session
-restoration, and explicit verified SQLite backup.
+DIP v0.5.0 was released on 31 July 2026 and is the current public personal-use
+release. Version 0.5 connects the single-collection Collector Run to canonical
+Marketplace History, Collection Intelligence, immutable Intelligence History,
+Dashboard and Collector Review workflows, the user-owned Weekend Review Queue,
+Collection Decisions, primary desktop session restoration, and explicit
+verified SQLite backup.
 
 The release also makes desktop availability truthful, presents safe
 value-neutral diagnostics, validates genuine v0.4.0 upgrades, and adds Linux
@@ -206,9 +206,8 @@ src/dip/
 - **0.2 — Collection Intelligence:** released.
 - **0.3 — Marketplace Intelligence and Decision Support:** released.
 - **0.4 — SQLite Project Persistence:** released.
-- **0.5 — Collector Workflow Foundation:** prepared release candidate;
-  implemented and validated, awaiting release completion. Current package
-  version is 0.5.0.
+- **0.5 — Collector Workflow Foundation:** released on 31 July 2026; current
+  package/runtime version is 0.5.0.
 
 See the [Roadmap](docs/Roadmap.md) for release scope and future direction.
 
@@ -264,7 +263,7 @@ supported. The SQLite database uses `DIP_DATABASE_FILENAME` when supplied and
 otherwise defaults to `discogs_intelligence.db` in the launch directory.
 
 macOS is the primary personal-use platform after manual release smoke testing.
-Linux receives automated headless compatibility validation. Windows is not yet
+Linux receives automated headless compatibility validation. Windows is not
 supported or verified.
 
 Use **Back Up Database…** for an explicit complete SQLite backup. DIP does not

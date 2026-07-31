@@ -26,7 +26,7 @@ from tests.test_portfolio_workspace import presentation as portfolio_presentatio
 
 
 class ReleaseHardeningTestCase(unittest.TestCase):
-    def test_current_documents_describe_an_unreleased_candidate(self) -> None:
+    def test_current_documents_describe_the_published_release(self) -> None:
         root = Path(__file__).resolve().parents[1]
         documents = tuple(
             (root / name).read_text(encoding="utf-8")
@@ -45,10 +45,12 @@ class ReleaseHardeningTestCase(unittest.TestCase):
         for document in documents:
             with self.subTest(document=document[:40]):
                 lowered = document.lower()
-                self.assertIn("release candidate", lowered)
-                self.assertNotIn("released 31 july 2026", lowered)
-                self.assertNotIn("released as version 0.5.0", lowered)
-                self.assertNotIn("released in version 0.5.0", lowered)
+                self.assertIn("0.5.0", lowered)
+                self.assertNotIn("prepared release candidate", lowered)
+                self.assertNotIn("awaiting release completion", lowered)
+        combined = "\n".join(documents).lower()
+        self.assertIn("released on 31 july 2026", combined)
+        self.assertIn("current public personal-use release", combined)
 
     def test_runtime_packaging_entry_point_and_schema_contract(self) -> None:
         self.assertEqual(dip.__version__, "0.5.0")

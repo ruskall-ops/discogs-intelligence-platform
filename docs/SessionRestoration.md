@@ -7,8 +7,7 @@ preferences across graceful application restarts. It improves continuity
 without treating calculated presentation models, unsaved drafts, or running
 processes as durable state.
 
-Session Restoration is implemented and validated in the prepared Version 0.5.0
-release candidate, which awaits release completion.
+Session Restoration was released as part of DIP v0.5.0 on 31 July 2026.
 
 Database backup does not trigger a special session save. It captures the last
 successfully stored session row; graceful close remains the session persistence
