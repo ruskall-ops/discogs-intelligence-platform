@@ -111,9 +111,22 @@ from .weekend_listings_presentation import WeekendListingsPresentationService
 def main() -> None:
     """Start the desktop application."""
 
+    from tkinter import messagebox
     from dip.experience.desktop.app import App
 
-    App().mainloop()
+    try:
+        application = App()
+    except Exception:
+        try:
+            messagebox.showerror(
+                "Unable to start DIP",
+                "DIP could not start. The application database or configuration "
+                "could not be opened.",
+            )
+        except Exception:
+            pass
+        return
+    application.mainloop()
 
 
 __all__ = [

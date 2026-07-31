@@ -52,10 +52,12 @@ def _result(status):
 def _app():
     app = App.__new__(App)
     app._collector_run_active = False
+    app._database_backup_active = False
     app.collector_run_service = None
     app.db = SimpleNamespace(release_ids=Mock(return_value=[3, 4]))
     app.refresh_discogs_button = Mock()
     app.import_csv_button = Mock()
+    app.database_backup_button = Mock()
     app.progress = Mock()
     app.status_var = Mock()
     app.refresh_dashboard = Mock()
@@ -195,8 +197,7 @@ class CollectorRunDesktopTestCase(unittest.TestCase):
         app.refresh_market_data("temporary-token")
 
         self.assertEqual(scheduled[0][0], app.show_refresh_error)
-        self.assertNotIn("temporary-token", scheduled[0][1][0])
-        self.assertIn("RuntimeError", scheduled[0][1][0])
+        self.assertEqual(scheduled[0][1], ())
         app.import_csv_button.configure.assert_not_called()
         callback, args = scheduled[0]
         with patch("dip.experience.desktop.app.messagebox.showerror"):
@@ -228,7 +229,7 @@ class CollectorRunDesktopTestCase(unittest.TestCase):
 
             self.assertEqual(
                 scheduled,
-                [(app.show_refresh_unavailable, ("No stored collection.",))],
+            [(app.show_refresh_unavailable, ())],
             )
             app.refresh_discogs_button.configure.assert_not_called()
             app.import_csv_button.configure.assert_not_called()
@@ -287,7 +288,7 @@ class CollectorRunDesktopTestCase(unittest.TestCase):
 
             self.assertEqual(
                 scheduled,
-                [(app.show_refresh_error, (str(application_error),))],
+            [(app.show_refresh_error, ())],
             )
             app.refresh_discogs_button.configure.assert_not_called()
             app.import_csv_button.configure.assert_not_called()
@@ -347,6 +348,32 @@ class CollectorRunDesktopTestCase(unittest.TestCase):
                 app.load_table.assert_called_once_with()
                 message.assert_called_once()
                 _assert_import_available(app)
+
+    def test_terminal_status_survives_normal_table_refresh(self):
+        app = _app()
+        app._collector_run_active = True
+        visible_status = {"value": ""}
+        app.status_var.set.side_effect = (
+            lambda value: visible_status.__setitem__("value", value)
+        )
+        app.status_var.get.side_effect = lambda: visible_status["value"]
+        app.load_table.side_effect = (
+            lambda: app.status_var.set("Showing 6 records")
+        )
+
+        with patch(
+            "dip.experience.desktop.app.messagebox.showinfo"
+        ) as message:
+            app.finish_refresh(_result(CollectorRunStatus.COMPLETED))
+
+        self.assertEqual(
+            visible_status["value"],
+            "Refresh complete — 2 successful, 0 errors",
+        )
+        message.assert_called_once_with(
+            "Refresh complete",
+            "Refresh complete — 2 successful, 0 errors",
+        )
 
     def test_failed_and_unexpected_outcomes_restore_controls(self):
         app = _app()

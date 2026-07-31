@@ -1,6 +1,7 @@
 
 from __future__ import annotations
 import threading
+from datetime import datetime, timezone
 from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, simpledialog
@@ -12,6 +13,7 @@ from dip.app.collector_run import (
     CollectorRunStatus,
     CollectorRunUnavailableError,
 )
+from dip.app.database_backup import DatabaseBackupValidationError
 from dip.collection.importers import CollectionImportError
 from dip.collection.services import ImportService
 from dip.collector_review import (
@@ -35,6 +37,7 @@ from dip.experience.dashboard import (
     DashboardNavigationTarget,
 )
 from dip.experience.portfolio_workspace import PortfolioWorkspaceDestination
+from dip.experience.explorer import CollectionExplorerDestination
 from dip.experience.project_workspace import ProjectWorkspaceNavigationTarget
 from dip.experience.desktop.homepage_renderer import (
     DesktopDashboardHomepageRenderer,
@@ -81,6 +84,20 @@ _DECISION_FILTER_LABELS = {
     DecisionStateFilter.MAYBE: "Maybe",
     DecisionStateFilter.IGNORE: "Ignore",
 }
+_UNAVAILABLE_EXPLORER_DESTINATIONS = frozenset(
+    (
+        CollectionExplorerDestination.WEEKEND_LISTINGS,
+        CollectionExplorerDestination.PRICE_CHANGES,
+        CollectionExplorerDestination.SUPPLY_CHANGES,
+        CollectionExplorerDestination.RARE_APPEARANCES,
+        CollectionExplorerDestination.MARKETPLACE_ACTIVITY,
+        CollectionExplorerDestination.LISTING_LIFECYCLE,
+        CollectionExplorerDestination.MARKETPLACE_MOMENTUM,
+        CollectionExplorerDestination.MARKETPLACE_STABILITY,
+        CollectionExplorerDestination.MARKETPLACE_SCARCITY,
+        CollectionExplorerDestination.MARKETPLACE_OPPORTUNITY,
+    )
+)
 
 class App(tk.Tk):
     def __init__(self):
@@ -140,7 +157,11 @@ class App(tk.Tk):
         self.session_restoration_service = getattr(
             dependencies, "session_restoration", None
         )
+        self.database_backup_service = getattr(
+            dependencies, "database_backup", None
+        )
         self._collector_run_active = False
+        self._database_backup_active = False
         self._session_restoring = True
         self.current_observation_workspace = (
             WeekendObservationWorkspace.unavailable(
@@ -165,7 +186,7 @@ class App(tk.Tk):
         self.current_marketplace_workspace_queue = ()
         self.desktop_homepage_renderer = DesktopDashboardHomepageRenderer()
         self.current_dashboard_homepage = DashboardHomepageViewModel.loading()
-        self.protocol("WM_DELETE_WINDOW", self.on_close)
+        self._register_close_handlers()
 
         self.status_var = tk.StringVar(value="Ready")
         self.search_var = tk.StringVar()
@@ -198,12 +219,39 @@ class App(tk.Tk):
             command=self.start_refresh,
         )
         self.refresh_discogs_button.pack(side="left", padx=3)
+        self.database_backup_button = ttk.Button(
+            toolbar,
+            text="Back Up Database…",
+            command=self.back_up_database,
+        )
+        self.database_backup_button.pack(side="left", padx=3)
         ttk.Button(toolbar, text="Export Excel", command=self.export_report).pack(side="left", padx=3)
         ttk.Button(toolbar, text="Export Intelligence Report", command=self.export_intelligence_report).pack(side="left", padx=3)
         ttk.Button(toolbar, text="Refresh View", command=self.load_table).pack(side="left", padx=3)
-        ttk.Button(toolbar, text="Portfolio", command=self.open_portfolio_overview).pack(side="left", padx=3)
-        ttk.Button(toolbar, text="Historical Intelligence", command=self.open_intelligence_change_analysis).pack(side="left", padx=3)
-        ttk.Button(toolbar, text="Marketplace Workspace", command=self.open_marketplace_workspace).pack(side="left", padx=3)
+        self.portfolio_button = ttk.Button(
+            toolbar, text="Portfolio", command=self.open_portfolio_overview
+        )
+        self.portfolio_button.state(["disabled"])
+        self.portfolio_button.pack(side="left", padx=3)
+        self.historical_intelligence_button = ttk.Button(
+            toolbar,
+            text="Historical Intelligence",
+            command=self.open_intelligence_change_analysis,
+        )
+        self.historical_intelligence_button.state(["disabled"])
+        self.historical_intelligence_button.pack(side="left", padx=3)
+        self.marketplace_workspace_button = ttk.Button(
+            toolbar,
+            text="Marketplace Workspace",
+            command=self.open_marketplace_workspace,
+        )
+        self.marketplace_workspace_button.state(["disabled"])
+        self.marketplace_workspace_button.pack(side="left", padx=3)
+        ttk.Label(
+            toolbar,
+            text="Portfolio, Historical Intelligence, and Marketplace Workspace: "
+            "Not available in this release",
+        ).pack(side="left", padx=8)
 
         self.progress = ttk.Progressbar(toolbar, length=260, mode="determinate")
         self.progress.pack(side="right", padx=5)
@@ -334,7 +382,7 @@ class App(tk.Tk):
         )
         self.dashboard_command_vars = {}
         command_cards = (
-            ("Portfolio Summary", 6, 0), ("Portfolio Health", 6, 3),
+            ("Portfolio Summary", 6, 0), ("Collection Health", 6, 3),
             ("Opportunity Highlights", 7, 0), ("Collection Changes", 7, 3),
             ("Historical Changes", 8, 0), ("Marketplace Highlights", 8, 3),
             ("Research Summary", 9, 0), ("Quick Actions", 9, 3),
@@ -1302,6 +1350,7 @@ class App(tk.Tk):
         if response:
             return self._save_queue_note()
         self._queue_note_dirty = False
+        self._queue_note_discarded = True
         return True
 
     def _on_collection_review_destination_changed(self, _event=None):
@@ -1363,8 +1412,136 @@ class App(tk.Tk):
     def _open_project_target(self, target):
         if target is ProjectWorkspaceNavigationTarget.DASHBOARD:
             self.tabs.select(self.dashboard_tab)
-        elif target is ProjectWorkspaceNavigationTarget.PORTFOLIO:
-            self.open_portfolio_overview()
+
+    def back_up_database(self):
+        if self._collector_run_active:
+            messagebox.showinfo(
+                "Backup unavailable",
+                "Database backup is unavailable while Collector Run is active.",
+            )
+            return
+        if self._database_backup_active:
+            messagebox.showinfo(
+                "Backup already active",
+                "A database backup is already in progress.",
+            )
+            return
+        if self.database_backup_service is None:
+            messagebox.showerror(
+                "Backup unavailable",
+                "The database backup could not be created. The existing database "
+                "and any previous backup were not changed.",
+            )
+            return
+        self._queue_note_discarded = False
+        if not self._confirm_unsaved_queue_note():
+            return
+        if self._queue_note_discarded:
+            current = self.__dict__.get("current_queue_item")
+            if current is not None:
+                self._load_queue_item(current)
+        suggested = (
+            "discogs-intelligence-backup-"
+            f"{datetime.now(timezone.utc):%Y%m%d-%H%M%SZ}.sqlite3"
+        )
+        selected = filedialog.asksaveasfilename(
+            title="Back Up Database",
+            defaultextension=".sqlite3",
+            initialfile=suggested,
+            filetypes=[
+                ("SQLite database", "*.sqlite3"),
+                ("All files", "*.*"),
+            ],
+            confirmoverwrite=False,
+        )
+        if not selected:
+            return
+        destination = Path(selected)
+        destination_exists = destination.exists()
+        try:
+            self.database_backup_service.validate_destination(
+                destination,
+                overwrite=destination_exists,
+            )
+        except Exception:
+            messagebox.showerror(
+                "Backup unavailable",
+                "Choose a different existing folder and a filename ending in "
+                ".sqlite3.",
+            )
+            return
+        overwrite = False
+        if destination_exists:
+            overwrite = messagebox.askyesno(
+                "Replace existing backup?",
+                "A file with this name already exists. Replace it with the new backup?",
+            )
+            if not overwrite:
+                return
+
+        try:
+            previous_status = self.status_var.get()
+        except Exception:
+            previous_status = "Ready"
+        result = None
+        failure = False
+        try:
+            self._database_backup_active = True
+            self.database_backup_button.state(["disabled"])
+            self.refresh_discogs_button.configure(state="disabled")
+            self.status_var.set("Backing up database…")
+            self.configure(cursor="watch")
+            self.update_idletasks()
+            result = self.database_backup_service.backup(
+                destination,
+                overwrite=overwrite,
+            )
+        except Exception:
+            failure = True
+        finally:
+            self._database_backup_active = False
+            try:
+                self.configure(cursor="")
+            except Exception:
+                pass
+            try:
+                self.status_var.set(previous_status)
+            except Exception:
+                pass
+            try:
+                if self._collector_run_active:
+                    self.database_backup_button.state(["disabled"])
+                else:
+                    self.database_backup_button.state(["!disabled"])
+            except Exception:
+                pass
+            try:
+                self.refresh_discogs_button.configure(
+                    state=(
+                        "disabled"
+                        if self._collector_run_active
+                        else "normal"
+                    )
+                )
+            except Exception:
+                pass
+        if failure or result is None:
+            try:
+                messagebox.showerror(
+                    "Backup failed",
+                    "The database backup could not be created. The existing "
+                    "database and any previous backup were not changed.",
+                )
+            except Exception:
+                pass
+            return
+        try:
+            messagebox.showinfo(
+                "Backup complete",
+                f"Database backup created:\n\n{result.filename}",
+            )
+        except Exception:
+            pass
 
     def import_csv(self):
         if self._collector_run_active:
@@ -1402,16 +1579,16 @@ class App(tk.Tk):
                 ),
             )
 
-        except CollectionImportError as exc:
+        except CollectionImportError:
             messagebox.showerror(
                 "Import failed",
-                str(exc),
+                "The selected collection file could not be imported.",
             )
 
-        except Exception as exc:
+        except Exception:
             messagebox.showerror(
                 "Import failed",
-                f"An unexpected error occurred:\n\n{exc}",
+                "The selected collection file could not be imported.",
             )
 
     def start_refresh(self):
@@ -1436,6 +1613,9 @@ class App(tk.Tk):
         self._collector_run_active = True
         self.refresh_discogs_button.configure(state="disabled")
         self.import_csv_button.configure(state="disabled")
+        backup_button = self.__dict__.get("database_backup_button")
+        if backup_button is not None:
+            backup_button.state(["disabled"])
         self.progress.configure(value=0)
         self.status_var.set("Starting Discogs refresh…")
         worker = threading.Thread(
@@ -1445,13 +1625,13 @@ class App(tk.Tk):
         )
         try:
             worker.start()
-        except Exception as exc:
+        except Exception:
             self._restore_refresh_controls()
             self.status_var.set("Refresh failed")
             messagebox.showerror(
                 "Refresh failed",
-                "Collector Run could not be started "
-                f"({type(exc).__name__}).",
+                "Collector Run could not be completed. Existing saved data has "
+                "been preserved.",
             )
 
     def refresh_market_data(self, token):
@@ -1462,15 +1642,14 @@ class App(tk.Tk):
                     0, self.update_refresh_progress, progress
                 ),
             )
-        except CollectorRunUnavailableError as exc:
-            self.after(0, self.show_refresh_unavailable, str(exc))
-        except CollectorRunExecutionError as exc:
-            self.after(0, self.show_refresh_error, str(exc))
-        except Exception as exc:
+        except CollectorRunUnavailableError:
+            self.after(0, self.show_refresh_unavailable)
+        except CollectorRunExecutionError:
+            self.after(0, self.show_refresh_error)
+        except Exception:
             self.after(
                 0,
                 self.show_refresh_error,
-                f"Collector Run failed unexpectedly ({type(exc).__name__}).",
             )
         else:
             self.after(0, self.finish_refresh, result)
@@ -1503,43 +1682,58 @@ class App(tk.Tk):
                 self.status_var.get(),
             )
             return
-        self.status_var.set(
+        terminal_status = (
             f"Refresh complete — {succeeded:,} successful, "
             f"{failed:,} errors"
         )
+        self.status_var.set(terminal_status)
         self.refresh_dashboard()
         self.load_table()
+        self.status_var.set(terminal_status)
         if result.status is CollectorRunStatus.PARTIAL:
             messagebox.showwarning(
                 "Refresh partially complete",
-                self.status_var.get(),
+                terminal_status,
             )
         else:
             messagebox.showinfo(
                 "Refresh complete",
-                self.status_var.get(),
+                terminal_status,
             )
 
-    def show_refresh_error(self, error_message):
+    def show_refresh_error(self, _error_message=None):
         self._restore_refresh_controls()
         self.status_var.set("Refresh failed")
         messagebox.showerror(
             "Refresh failed",
-            f"An unexpected error occurred:\n\n{error_message}",
+            "Collector Run could not be completed. Existing saved data has "
+            "been preserved.",
         )
 
-    def show_refresh_unavailable(self, error_message):
+    def show_refresh_unavailable(self, _error_message=None):
         self._restore_refresh_controls()
         self.status_var.set("Refresh unavailable")
-        messagebox.showwarning("Refresh unavailable", error_message)
+        messagebox.showwarning(
+            "Refresh unavailable",
+            "Collector Run is unavailable. Confirm that a collection has been "
+            "imported and try again.",
+        )
 
     def _restore_refresh_controls(self):
         self._collector_run_active = False
         self.refresh_discogs_button.configure(state="normal")
         self.import_csv_button.configure(state="normal")
+        if not self.__dict__.get("_database_backup_active", False):
+            backup_button = self.__dict__.get("database_backup_button")
+            if backup_button is not None:
+                backup_button.state(["!disabled"])
 
     def refresh_dashboard(self):
-        row = self.db.dashboard()
+        try:
+            row = self.db.dashboard()
+        except Exception:
+            self.status_var.set("Dashboard information could not be loaded.")
+            return
         for key, widget in self.kpis.items():
             if key != "hot_now":
                 widget.configure(text=f"{int(row[key] or 0):,}")
@@ -1584,13 +1778,10 @@ class App(tk.Tk):
                 section.section_id.value: section.body
                 for section in sections
             }
-        except Exception as exc:
+        except Exception:
             self.current_dashboard_homepage = DashboardHomepageViewModel.loading()
             rendered = {
-                section_id: (
-                    "Dashboard information is unavailable.\n"
-                    f"{type(exc).__name__}: {exc}"
-                )
+                section_id: "Dashboard information could not be loaded."
                 for section_id in self.dashboard_homepage_vars
             }
 
@@ -1617,9 +1808,9 @@ class App(tk.Tk):
                 history_changes=self.current_history_change_view_models,
                 history_trends=self.current_history_trend_view_models,
             )
-        except Exception as exc:
+        except Exception:
             for body, _ in self.dashboard_command_vars.values():
-                body.set(f"Workspace summary is unavailable: {type(exc).__name__}.")
+                body.set("Dashboard information could not be loaded.")
             return
         for card in rendered.cards:
             body, actions = self.dashboard_command_vars[card.title]
@@ -1627,33 +1818,28 @@ class App(tk.Tk):
             for child in actions.winfo_children():
                 child.destroy()
             for action in card.actions:
-                ttk.Button(
+                button = ttk.Button(
                     actions,
                     text=action.label,
                     command=lambda target=action.target: self._open_dashboard_target(target),
-                ).pack(side="left", padx=(0, 6))
+                )
+                if not action.enabled:
+                    button.state(["disabled"])
+                button.pack(side="left", padx=(0, 6))
 
     def _open_dashboard_target(self, target):
-        actions = {
-            DashboardNavigationTarget.PORTFOLIO: lambda: self.open_portfolio_overview(),
-            DashboardNavigationTarget.PORTFOLIO_OPPORTUNITY_ALIGNMENT: lambda: self.open_portfolio_overview(PortfolioWorkspaceDestination.OPPORTUNITY_ALIGNMENT),
-            DashboardNavigationTarget.PORTFOLIO_HISTORY: lambda: self.open_portfolio_overview(PortfolioWorkspaceDestination.HISTORY),
-            DashboardNavigationTarget.PORTFOLIO_RESEARCH: lambda: self.open_portfolio_overview(PortfolioWorkspaceDestination.RESEARCH),
-            DashboardNavigationTarget.COLLECTION_EXPLORER: self.open_intelligence_explorer,
-            DashboardNavigationTarget.HISTORICAL_INTELLIGENCE: self.open_intelligence_change_analysis,
-            DashboardNavigationTarget.MARKETPLACE_WORKSPACE: self.open_marketplace_workspace,
-        }
-        actions[target]()
+        if target is DashboardNavigationTarget.COLLECTION_EXPLORER:
+            self.open_intelligence_explorer()
 
     def open_collection_health(self):
         try:
             rendered = self.collection_health_controller.open(
                 self.current_dashboard_homepage
             )
-        except Exception as exc:
+        except Exception:
             messagebox.showerror(
                 "Collection Health unavailable",
-                f"Collection Health could not be displayed:\n\n{exc}",
+                "Collection Health could not be displayed.",
             )
             return
 
@@ -1731,10 +1917,10 @@ class App(tk.Tk):
             rendered = self.hidden_gems_controller.open(
                 self.current_dashboard_homepage
             )
-        except Exception as exc:
+        except Exception:
             messagebox.showerror(
                 "Hidden Gems unavailable",
-                f"Hidden Gems could not be displayed:\n\n{exc}",
+                "Hidden Gems could not be displayed.",
             )
             return
 
@@ -1783,10 +1969,10 @@ class App(tk.Tk):
             rendered = self.collection_explorer_controller.open(
                 self.current_dashboard_homepage
             )
-        except Exception as exc:
+        except Exception:
             messagebox.showerror(
                 "Collection Explorer unavailable",
-                f"Collection Explorer could not be displayed:\n\n{exc}",
+                "Collection Explorer could not be displayed.",
             )
             return
 
@@ -1803,6 +1989,9 @@ class App(tk.Tk):
         for index, section in enumerate(rendered.sections):
             frame = ttk.Frame(notebook, padding=12)
             notebook.add(frame, text=section.title)
+            unavailable = section.destination in _UNAVAILABLE_EXPLORER_DESTINATIONS
+            if unavailable:
+                notebook.tab(frame, state="disabled")
             if section.destination is rendered.selected_destination:
                 selected_index = index
             text = tk.Text(frame, wrap="word", padx=10, pady=10)
@@ -1812,7 +2001,10 @@ class App(tk.Tk):
                 command=text.yview,
             )
             text.configure(yscrollcommand=scrollbar.set)
-            text.insert("1.0", section.body)
+            text.insert(
+                "1.0",
+                "Not available in this release" if unavailable else section.body,
+            )
             text.configure(state="disabled")
             text.pack(side="left", fill="both", expand=True)
             scrollbar.pack(side="right", fill="y")
@@ -1823,6 +2015,7 @@ class App(tk.Tk):
 
     def open_portfolio_overview(self, destination=None):
         """Open the separate Portfolio experience from a supplied completed result."""
+        return
         if self.portfolio_workspace_controller is None:
             messagebox.showerror("Portfolio unavailable", "Portfolio is not configured.")
             return
@@ -1837,10 +2030,10 @@ class App(tk.Tk):
                 rendered = self.portfolio_workspace_controller.navigate(
                     rendered.state, destination
                 )
-        except Exception as exc:
+        except Exception:
             messagebox.showerror(
                 "Portfolio unavailable",
-                f"Portfolio could not be displayed:\n\n{exc}",
+                "Portfolio could not be displayed.",
             )
             return
         window = tk.Toplevel(self)
@@ -1894,6 +2087,7 @@ class App(tk.Tk):
 
     def open_intelligence_change_analysis(self):
         """Render already-produced Change and Trend Analysis results."""
+        return
         if self.intelligence_change_analysis_controller is None:
             messagebox.showerror(
                 "Historical Intelligence unavailable",
@@ -1927,10 +2121,10 @@ class App(tk.Tk):
                 if self.intelligence_insights_controller is not None
                 else None
             )
-        except Exception as exc:
+        except Exception:
             messagebox.showerror(
                 "Historical Intelligence unavailable",
-                f"Intelligence Change Analysis could not be displayed:\n\n{exc}",
+                "Intelligence Change Analysis could not be displayed.",
             )
             return
         window = tk.Toplevel(self)
@@ -1966,6 +2160,7 @@ class App(tk.Tk):
 
     def open_marketplace_workspace(self):
         """Render one already-supplied Marketplace workflow queue."""
+        return
         if self.marketplace_workspace_controller is None:
             messagebox.showerror("Marketplace Workspace unavailable", "Marketplace Workspace is not configured.")
             return
@@ -1973,10 +2168,10 @@ class App(tk.Tk):
             rendered = self.marketplace_workspace_controller.open(
                 self.current_marketplace_workspace_queue
             )
-        except Exception as exc:
+        except Exception:
             messagebox.showerror(
                 "Marketplace Workspace unavailable",
-                f"Marketplace Workspace could not be displayed:\n\n{exc}",
+                "Marketplace Workspace could not be displayed.",
             )
             return
         window = tk.Toplevel(self)
@@ -1998,11 +2193,19 @@ class App(tk.Tk):
     def load_table(self):
         for item in self.tree.get_children():
             self.tree.delete(item)
-        rows = self.db.review_rows(
-            search=self.search_var.get().strip(),
-            priority=self.priority_var.get(),
-            decision=self.decision_filter_var.get()
-        )
+        try:
+            rows = self.db.review_rows(
+                search=self.search_var.get().strip(),
+                priority=self.priority_var.get(),
+                decision=self.decision_filter_var.get()
+            )
+        except Exception:
+            self.status_var.set("Collection Decisions could not be loaded.")
+            messagebox.showerror(
+                "Collection Decisions unavailable",
+                "Collection Decisions could not be loaded.",
+            )
+            return
         for row in rows:
             self.tree.insert("", "end", iid=str(row["release_id"]), values=(
                 row["artist"], row["title"], f"{row['lowest_price']:.2f}",
@@ -2016,7 +2219,14 @@ class App(tk.Tk):
         if not selection:
             return
         rid = int(selection[0])
-        row = self.db.review_rows(limit=5000)
+        try:
+            row = self.db.review_rows(limit=5000)
+        except Exception:
+            messagebox.showerror(
+                "Collection Decisions unavailable",
+                "Collection Decisions could not be loaded.",
+            )
+            return
         record = next((x for x in row if x["release_id"] == rid), None)
         if not record:
             return
@@ -2058,8 +2268,21 @@ class App(tk.Tk):
         form.rowconfigure(3, weight=1)
 
         def save():
-            self.db.save_decision(rid, decision.get(), miss.get(),
-                                  notes.get("1.0","end").strip(), protected.get())
+            try:
+                self.db.save_decision(
+                    rid,
+                    decision.get(),
+                    miss.get(),
+                    notes.get("1.0", "end").strip(),
+                    protected.get(),
+                )
+            except Exception:
+                messagebox.showerror(
+                    "Collection Decision unavailable",
+                    "The Collection Decision could not be saved. Your editor "
+                    "remains open.",
+                )
+                return
             window.destroy()
             self.refresh_dashboard()
             self.load_table()
@@ -2091,13 +2314,13 @@ class App(tk.Tk):
 
             messagebox.showinfo(
                 "Report exported",
-                f"Intelligence report saved to:\n\n{path}",
+                f"Intelligence report created:\n\n{Path(path).name}",
             )
 
-        except Exception as exc:
+        except Exception:
             messagebox.showerror(
                 "Report export failed",
-                f"An unexpected error occurred:\n\n{exc}",
+                "The Intelligence report could not be exported.",
             )
 
     def export_report(self):
@@ -2109,9 +2332,19 @@ class App(tk.Tk):
         )
         if not path:
             return
-        rows = self.db.review_rows(limit=10000)
-        export_excel(Path(path), rows)
-        messagebox.showinfo("Export complete", f"Saved:\n{path}")
+        try:
+            rows = self.db.review_rows(limit=10000)
+            export_excel(Path(path), rows)
+        except Exception:
+            messagebox.showerror(
+                "Export failed",
+                "The Excel report could not be exported.",
+            )
+            return
+        messagebox.showinfo(
+            "Export complete",
+            f"Excel report created:\n{Path(path).name}",
+        )
 
     def _restore_session_and_load(self):
         self._session_restoring = True
@@ -2412,6 +2645,15 @@ class App(tk.Tk):
             return False
         self.destroy()
         return True
+
+    def _register_close_handlers(self):
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
+        try:
+            windowing_system = self.tk.call("tk", "windowingsystem")
+        except tk.TclError:
+            return
+        if windowing_system == "aqua":
+            self.createcommand("::tk::mac::Quit", self.on_close)
 
     def on_close(self):
         if self.__dict__.get("_collector_run_active", False):

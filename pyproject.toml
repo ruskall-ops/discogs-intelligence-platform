@@ -14,7 +14,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+dev = [
+    "build>=1.2.0",
+    "pytest>=8.0",
+]
 
 [project.scripts]
 dip = "dip.app:main"

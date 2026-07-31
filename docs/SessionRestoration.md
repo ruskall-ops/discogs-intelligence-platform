@@ -10,6 +10,10 @@ processes as durable state.
 The implemented v0.5.5 slice is unreleased. Package and runtime versions remain
 `0.4.0`.
 
+Database backup does not trigger a special session save. It captures the last
+successfully stored session row; graceful close remains the session persistence
+boundary.
+
 ## Architecture
 
 ```text
@@ -106,6 +110,10 @@ cancellation, waiting, resumption, or recovery behavior.
 Otherwise the existing Weekend Review note Save, Discard, or Cancel lifecycle
 runs before session capture. Cancel or note-save failure keeps the application
 open and performs no session write.
+
+Both the main-window close request and the macOS application Quit command enter
+this same graceful-close boundary. Application-level Quit must not bypass
+session capture.
 
 The session is then atomically replaced. If saving fails, the collector chooses
 `Close Without Saving` or `Stay Open`. Previously saved queue notes and

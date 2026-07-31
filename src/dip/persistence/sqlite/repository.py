@@ -23,7 +23,11 @@ class Database:
         self._lock = RLock()
         self._savepoint_ids = count(1)
         self.conn = create_connection(self.path)
-        initialise_schema(self.conn)
+        try:
+            initialise_schema(self.conn)
+        except BaseException:
+            self.conn.close()
+            raise
 
     @contextmanager
     def locked_connection(self) -> Iterator[sqlite3.Connection]:

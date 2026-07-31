@@ -1,5 +1,14 @@
 # Collection Explorer
 
+## Current desktop availability
+
+Overview, Collection Health, Hidden Gems, and Collection Trends are
+production-wired and remain enabled for truthful empty or insufficient-history
+states. Weekend Listings, Price Changes, Supply Changes, Rare Appearances,
+Marketplace Activity, Listing Lifecycle, Momentum, Stability, Scarcity, and
+Opportunity remain visible but their tabs are disabled as **Not available in
+this release** because the desktop does not yet supply their results.
+
 ## Purpose
 
 The first unified Collection Explorer is the primary desktop workspace for
@@ -331,12 +340,15 @@ deferred.
 
 ## Marketplace Workspace desktop
 
-Marketplace Workspace is a separate top-level desktop research experience. It
-receives an explicitly supplied, already-ordered queue of immutable
-presentation models and exposes Supplied Opportunities, Opportunity Detail, Evidence,
-Marketplace History, Portfolio Context, and Research Status panes. Existing
-Opportunity Detail, History Explorer, and Intelligence Insights renderers are
-reused; the workspace does not reproduce their calculations.
+Marketplace Workspace remains a reusable presentation foundation rather than a
+production-operable desktop destination. Its builder and renderer can receive
+an explicitly supplied, already-ordered queue of immutable presentation models
+and expose Supplied Opportunities, Opportunity Detail, Evidence, Marketplace
+History, Portfolio Context, and Research Status panes. The production desktop
+entry point is disabled because no production data path currently supplies that
+queue; invoking the disabled action does not open a controller or window.
+Existing Opportunity Detail, History Explorer, and Intelligence Insights
+renderers are reused; the workspace does not reproduce their calculations.
 
 Selection and exact filtering create new immutable state and never reorder the
 queue. Research status is user-owned workflow metadata, not an intelligence

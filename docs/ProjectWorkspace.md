@@ -1,5 +1,11 @@
 # Project Workspace
 
+The current primary desktop session restores safe Project-compatible
+navigation and geometry. Project Open, Create, Project-scoped Refresh, and
+Portfolio navigation remain visible but disabled as **Not available in this
+release**. Dashboard navigation remains enabled. Project identity still does
+not partition collection or intelligence data.
+
 ## Purpose
 
 Project Workspace is the presentation root of the Discogs Intelligence

@@ -65,11 +65,18 @@ class DashboardIntegrationTestCase(unittest.TestCase):
         cards = {card.card_id: card for card in first.cards}
         self.assertEqual(
             cards[DashboardCommandCardId.MARKETPLACE_HIGHLIGHTS].summary,
-            queue()[0].insight_summary,
+            "Not available in this release",
         )
         self.assertEqual(
             cards[DashboardCommandCardId.HISTORICAL_CHANGES].summary,
-            changes[-1].summary_text,
+            "Not available in this release",
+        )
+        self.assertEqual(
+            cards[DashboardCommandCardId.PORTFOLIO_HEALTH].title,
+            "Collection Health",
+        )
+        self.assertFalse(
+            cards[DashboardCommandCardId.MARKETPLACE_HIGHLIGHTS].actions[0].enabled
         )
 
     def test_renderer_preserves_summaries_and_navigation_actions(self):

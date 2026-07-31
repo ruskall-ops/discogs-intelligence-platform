@@ -102,10 +102,13 @@ invented.
 
 `PortfolioOverviewPresentationService` maps typed output into immutable view
 models without matching, aggregation, ratio calculation, classification, or
-sorting. Portfolio Overview is a separate top-level desktop destination rather
-than a fifteenth Collection Explorer tab. Its controller accepts only an
-already-produced result. Opening the view performs no collection query,
-provider call, or intelligence execution.
+sorting. Portfolio Overview remains a reusable top-level presentation
+foundation rather than a fifteenth Collection Explorer tab. Its controller
+accepts only an already-produced result. The production desktop entry point is
+disabled because no production result currently supplies that controller, so
+the disabled action opens no controller or window. Rendering an explicitly
+supplied view performs no collection query, provider call, or intelligence
+execution.
 
 ## Deliberate exclusions
 

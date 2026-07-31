@@ -72,10 +72,7 @@ class ProjectWorkspaceTestCase(unittest.TestCase):
         )
         self.assertEqual(
             enabled,
-            (
-                ProjectWorkspaceNavigationTarget.DASHBOARD,
-                ProjectWorkspaceNavigationTarget.PORTFOLIO,
-            ),
+            (ProjectWorkspaceNavigationTarget.DASHBOARD,),
         )
         self.assertEqual(
             tuple(value.target for value in workspace.actions),
@@ -93,6 +90,7 @@ class ProjectWorkspaceTestCase(unittest.TestCase):
             "Current Collection",
             "No recent projects have been supplied.",
             "Project identity and active state are stored in SQLite",
+            "primary desktop session restoration is enabled",
             "Open Dashboard",
             "Open Portfolio Workspace",
         ):
