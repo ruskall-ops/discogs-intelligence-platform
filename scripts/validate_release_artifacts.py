@@ -11,19 +11,16 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-GENERATED = (
-    ROOT / "build",
-    ROOT / "dist",
-    ROOT / "src/discogs_intelligence_platform.egg-info",
+GENERATED_RELATIVE = (
+    Path("build"),
+    Path("dist"),
+    Path("src/discogs_intelligence_platform.egg-info"),
 )
+GENERATED = tuple(ROOT / path for path in GENERATED_RELATIVE)
 
 
 def main() -> None:
-    existing = tuple(path for path in GENERATED if path.exists())
-    if existing:
-        raise RuntimeError(
-            "Release validation requires an artifact-clean working tree."
-        )
+    _require_artifact_clean()
     try:
         with tempfile.TemporaryDirectory(
             prefix="dip-release-validation-"
@@ -47,6 +44,21 @@ def main() -> None:
         for path in GENERATED:
             if path.exists():
                 shutil.rmtree(path)
+
+
+def _require_artifact_clean(root: Path = ROOT) -> None:
+    generated = tuple(root / path for path in GENERATED_RELATIVE)
+    existing = tuple(path for path in generated if path.exists())
+    if not existing:
+        return
+    names = ", ".join(
+        path.relative_to(root).as_posix()
+        for path in existing
+    )
+    raise RuntimeError(
+        "Release validation requires an artifact-clean working tree. "
+        f"Remove generated artifact paths: {names}"
+    )
 
 
 def _validate_artifact(artifact: Path, environment_root: Path) -> None:

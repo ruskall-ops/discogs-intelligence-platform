@@ -3,6 +3,8 @@ import subprocess
 import tempfile
 import unittest
 
+from scripts.validate_release_artifacts import _require_artifact_clean
+
 
 class CIWorkflowTestCase(unittest.TestCase):
     def test_ci_contract_is_repository_owned_and_non_publishing(self) -> None:
@@ -27,6 +29,50 @@ class CIWorkflowTestCase(unittest.TestCase):
             self.assertIn(expected, workflow)
         for forbidden in ("secrets.", "upload-artifact", "publish", "twine"):
             self.assertNotIn(forbidden, workflow)
+        self.assertEqual(workflow.count("runs-on:"), 2)
+        self.assertEqual(
+            workflow.count("python scripts/validate_release_artifacts.py"),
+            2,
+        )
+        self.assertEqual(
+            workflow.count(
+                "python -m unittest discover -s tests -q"
+            ),
+            2,
+        )
+        self.assertEqual(
+            workflow.count(
+                "python -m compileall -q src tests app.py "
+                "discogs_client.py"
+            ),
+            2,
+        )
+        self.assertEqual(
+            workflow.count("Validate changed-content whitespace"),
+            2,
+        )
+        linux_start = workflow.index("  linux:")
+        macos_start = workflow.index("  macos:")
+        for job_text in (
+            workflow[linux_start:macos_start],
+            workflow[macos_start:],
+        ):
+            ordered_commands = (
+                "python scripts/validate_release_artifacts.py",
+                "python -m pip install -e .[dev]",
+                "python -m unittest discover -s tests -q",
+                (
+                    "python -m compileall -q src tests app.py "
+                    "discogs_client.py"
+                ),
+            )
+            positions = tuple(
+                job_text.index(command)
+                for command in ordered_commands
+            )
+            self.assertEqual(positions, tuple(sorted(positions)))
+            self.assertIn("git merge-base HEAD", job_text)
+            self.assertIn("git diff --check", job_text)
 
         validator = (
             Path(__file__).resolve().parents[1]
@@ -36,6 +82,38 @@ class CIWorkflowTestCase(unittest.TestCase):
         self.assertIn("TemporaryDirectory", validator)
         self.assertIn('"dip.app:main"', validator)
         self.assertIn("shutil.rmtree(path)", validator)
+
+    def test_linux_editable_install_artifact_is_named_and_rejected(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _require_artifact_clean(root)
+
+            egg_info = (
+                root / "src/discogs_intelligence_platform.egg-info"
+            )
+            egg_info.mkdir(parents=True)
+            with self.assertRaisesRegex(
+                RuntimeError,
+                (
+                    r"Remove generated artifact paths: "
+                    r"src/discogs_intelligence_platform\.egg-info"
+                ),
+            ):
+                _require_artifact_clean(root)
+            self.assertTrue(egg_info.is_dir())
+
+            (root / "build").mkdir()
+            (root / "dist").mkdir()
+            with self.assertRaisesRegex(
+                RuntimeError,
+                (
+                    r"Remove generated artifact paths: build, dist, "
+                    r"src/discogs_intelligence_platform\.egg-info"
+                ),
+            ):
+                _require_artifact_clean(root)
 
     def test_whitespace_commands_execute_for_root_push_and_ranges(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
