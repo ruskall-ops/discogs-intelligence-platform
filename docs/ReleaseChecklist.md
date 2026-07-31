@@ -30,8 +30,8 @@
 
 ## Release procedure
 
-Version 0.5.0 is a prepared release candidate: implemented and validated,
-awaiting release completion. Perform the release in this exact order:
+For a prepared and validated release candidate, perform the release in this
+exact order:
 
 1. prepare release changes on `release/v0.5.0`;
 2. complete the read-only review;

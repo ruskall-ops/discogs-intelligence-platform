@@ -86,7 +86,7 @@ collection.
 
 ## Version 0.5 — Collector Run Pipeline
 
-**Status: Prepared release candidate — implemented and validated, awaiting release completion**
+**Status: Released as Version 0.5.0 on 31 July 2026**
 
 Version 0.5 establishes the collector run lifecycle and then adds limited
 session restoration. Its scope assumes one collection and connects collection
@@ -96,7 +96,7 @@ application boundaries.
 
 ### Version 0.5.1 — Collector Run Application Boundary
 
-**Status: Implemented and validated in the Version 0.5.0 release candidate**
+**Status: Released in Version 0.5.0**
 
 The first slice extracts the existing Discogs Marketplace refresh lifecycle
 from Tkinter into `CollectorRunService`. It adds immutable progress and result
@@ -111,7 +111,7 @@ scope data by Project.
 
 ### Version 0.5.2 — Canonical Marketplace Capture
 
-**Status: Implemented and validated in the Version 0.5.0 release candidate**
+**Status: Released in Version 0.5.0**
 
 The second slice records one immutable canonical Marketplace aggregate for
 each Collector Run that finishes every provider attempt. It preserves exact
@@ -129,7 +129,7 @@ or package-version change.
 
 ### Version 0.5.3 — Coherent Intelligence Execution and History
 
-**Status: Implemented and validated in the Version 0.5.0 release candidate**
+**Status: Released in Version 0.5.0**
 
 The third slice extends complete and partial canonical Collector Runs through
 the existing default Collection Intelligence registry. It builds an explicit
@@ -145,7 +145,7 @@ deferred.
 
 ### Version 0.5.4 — Collector Review Workflow and Weekend Review Queue
 
-**Status: Implemented and validated in the Version 0.5.0 release candidate**
+**Status: Released in Version 0.5.0**
 
 The fourth slice projects stored Hot-now scores and the latest persisted Hidden
 Gems result into separate calculated observation sections. It resolves
@@ -159,7 +159,7 @@ population is never automatic and Collection Decisions remain separate.
 
 ### Version 0.5.5 — Session Restoration
 
-**Status: Implemented and validated in the Version 0.5.0 release candidate**
+**Status: Released in Version 0.5.0**
 
 The fifth slice restores a deliberately small database-scoped desktop session:
 normal main-window geometry, primary and Collection Review navigation, stable
@@ -178,7 +178,7 @@ excluded. See [Session Restoration](SessionRestoration.md).
 
 ### Version 0.5.6 — Personal-Use Release Hardening
 
-**Status: Implemented and validated in the Version 0.5.0 release candidate**
+**Status: Released in Version 0.5.0**
 
 The sixth slice adds an explicit verified SQLite backup, manual recovery
 documentation, fixed safe diagnostics for primary workflows, and truthful

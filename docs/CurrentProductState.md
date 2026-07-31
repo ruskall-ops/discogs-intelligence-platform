@@ -7,10 +7,11 @@ foundations. It complements the product evolution in the [Roadmap](Roadmap.md)
 without treating the presence of a model, builder, or renderer as proof of a
 complete desktop feature.
 
-This is the production capability boundary for the prepared Version 0.5.0
-release candidate: implemented and validated, awaiting release completion.
-Application version 0.5.0 is distinct from SQLite schema version 7
-(migrations 1–7).
+This is the production capability boundary for DIP v0.5.0, released on 31 July
+2026 as the current public personal-use release. Application version 0.5.0 is
+distinct from SQLite schema version 7 (migrations 1–7). macOS is the primary
+personal-use platform; Linux receives automated headless compatibility
+validation, and Windows is not supported.
 
 ## Production-wired and usable
 
