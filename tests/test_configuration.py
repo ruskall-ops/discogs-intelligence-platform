@@ -7,6 +7,7 @@ from unittest.mock import patch
 from dip import __version__
 from dip.config import SETTINGS, load_settings
 from dip.data_sources.discogs.client import DiscogsClient
+from discogs_client import DiscogsClient as LegacyDiscogsClient
 
 
 class ConfigurationTestCase(unittest.TestCase):
@@ -42,12 +43,13 @@ class ConfigurationTestCase(unittest.TestCase):
         self.assertEqual(settings.application_version, "test-build")
 
     def test_discogs_user_agent_uses_package_version(self) -> None:
-        client = DiscogsClient("test-token")
-
-        self.assertEqual(
-            client.session.headers["User-Agent"],
-            f"RussellDiscogsIntelligencePlatform/{__version__}",
-        )
+        for client_type in (DiscogsClient, LegacyDiscogsClient):
+            with self.subTest(client_type=client_type):
+                client = client_type("test-token")
+                self.assertEqual(
+                    client.session.headers["User-Agent"],
+                    f"RussellDiscogsIntelligencePlatform/{__version__}",
+                )
 
 
 if __name__ == "__main__":

@@ -17,8 +17,9 @@ Resolve, reopen, or remove
 
 It follows the platform principle: **Automate the research, not the decision.**
 Neither an observation nor a queue item is a recommendation to buy or sell.
-The implemented v0.5.4 slice remains single-collection and unreleased; the
-package/runtime version remains `0.4.0`.
+Collector Review is implemented and validated in the prepared Version 0.5.0
+release candidate, which awaits release completion, and remains
+single-collection.
 
 ## Architectural boundaries
 

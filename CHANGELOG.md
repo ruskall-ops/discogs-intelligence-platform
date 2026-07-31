@@ -4,89 +4,72 @@ All notable changes to the Discogs Intelligence Platform will be documented here
 
 ---
 
-# Unreleased — Version 0.5
+# Version 0.5.0 — Collector Workflow Foundation
 
-## Session Restoration
+Released 31 July 2026.
 
-- Added database-scoped restoration of normal main-window geometry, primary
-  navigation, review filters, observation source, and exact visible
-  selections.
-- Added the immutable session application boundary, SQLite repository, and
-  migration 7 singleton table.
-- Added Project compatibility guarding, safe invalidation, atomic graceful
-  close persistence, and close prevention during Collector Run.
-- Kept search text, drafts, calculated models, secrets, process state,
-  secondary windows, and non-normal window states outside session storage.
+Version 0.5 consolidates the reviewed v0.5.1–v0.5.6 implementation slices into
+the first coherent, hardened personal collector workflow.
 
-## Collector Review Workflow and Weekend Review Queue
+## Collector Run, Marketplace, and Intelligence History
 
-- Added an immutable calculated-observation workspace for separate Hot now and
-  Hidden Gems research signals.
-- Added exact Hot-now score-origin provenance, coherent freshness checks, safe
-  partial/stale/retained warnings, and persisted Hidden Gems reconstruction.
+- Moved the synchronous per-release Discogs refresh lifecycle behind the typed
+  `CollectorRunService` application boundary, with lazy provider construction,
+  deterministic progress, partial and fatal outcomes, and safe diagnostics.
+- Added one canonical aggregate Marketplace History snapshot for each run that
+  completes all provider attempts, preserving exact `Decimal` prices, optional
+  facts, provenance, and provider-neutral diagnostics.
+- Integrated eligible complete and partial runs with the existing Collection
+  Intelligence registry and immutable Intelligence History.
+- Preserved absent evidence, recorded completed and legitimately skipped module
+  results atomically, and rejected failed Intelligence executions.
+- Added canonical Marketplace provenance to Intelligence History through
+  migration 5 while retaining exact replay and conflict detection.
+
+## Dashboard and Collector Review
+
+- Integrated collection summaries, change evidence, and Hot-now attention into
+  the Dashboard command centre.
+- Added separate Hot now and Hidden Gems calculated observation sources without
+  recalculating intelligence.
 - Added the explicit, user-owned Weekend Review Queue with frozen source
-  summaries, notes, active/resolved states, reopen, and confirmed removal.
-- Added migration 6, schema parity, restricted evidence provenance, optimistic
-  write conflicts, deterministic ordering, and restart-safe SQLite persistence.
-- Integrated observation drill-down with the Dashboard and added Observations,
-  Weekend Review Queue, and the existing Collection Decisions editor beneath
-  Collection Review.
-- Kept queue population entirely explicit: Collector Run, Dashboard refresh,
-  observation refresh, and intelligence execution never add or mutate items.
-- Kept package/runtime version `0.4.0`; v0.5.4 is implemented but unreleased.
+  evidence, notes, active and resolved states, reopen, confirmed removal,
+  optimistic concurrency, and deterministic ordering through migration 6.
+- Integrated the existing Collection Decisions workflow beneath Collection
+  Review while keeping decisions separate from queue state.
+- Kept queue population entirely explicit; Collector Run, refresh, and
+  intelligence execution never add queue items automatically.
 
-## Coherent Intelligence Execution and History
+## Session, backup, and release hardening
 
-- Extended eligible complete and partial Collector Runs through the existing
-  Collection Intelligence execution service and default Version 0.2 registry.
-- Built an explicit immutable context from fixed collection evidence, the
-  just-recorded canonical Marketplace snapshot, and its nearest eligible
-  canonical predecessor.
-- Preserved absence as `None`, persisted completed and legitimately skipped
-  module results atomically, and made any failed module fatal.
-- Added migration 5 with nullable canonical Marketplace provenance, restricted
-  referential integrity, a partial unique index, exact replay, and immutable
-  conflict detection.
-- Reused the single run timestamp and production engine version `0.2`, and
-  disabled and guarded CSV import during active Collector Runs.
-- Kept package/runtime version `0.4.0`; v0.5.3 is implemented but unreleased.
+- Added database-scoped restoration of normal window geometry, primary and
+  Collection Review navigation, filters, observation source, and exact visible
+  selections through migration 7.
+- Added active-Project compatibility guarding, safe restoration fallback,
+  graceful close persistence, and close prevention during Collector Run.
+- Added explicit, verified, atomic SQLite backup with documented manual
+  recovery. Backup is user initiated; there is no schedule, retention policy,
+  automatic backup, or in-app restore.
+- Disabled unwired Portfolio, Marketplace, secondary Historical, and related
+  Dashboard/Explorer destinations while retaining their reusable presentation
+  foundations.
+- Replaced raw primary-workflow failures with fixed, value-neutral diagnostics.
+- Added genuine frozen-v0.4.0 upgrade validation, Linux and macOS CI,
+  range-based whitespace checks, and isolated wheel/source-distribution
+  installation and composition validation.
 
-## Canonical Marketplace Capture
+## Important limits
 
-- Added one canonical aggregate Marketplace snapshot for every Collector Run
-  that completes all provider attempts.
-- Preserved exact `Decimal` price and optional provider facts through a pure
-  provider-to-canonical mapping boundary.
-- Added deterministic complete, partial, empty, unavailable, and failed
-  release evidence with safe provider-neutral diagnostics.
-- Reused the existing Marketplace History command and SQLite repository with
-  `collector-run-{analysis_run_id}` identity and no schema change.
-- Kept existing legacy snapshots and scoring through an explicit projection
-  that owns legacy defaults and float conversion.
-- Recorded canonical history before legacy terminal state while retaining
-  existing fatal failure, progress, token-safety, and desktop boundaries.
-- Added provider, mapper, Collector Run, real SQLite, composition, and desktop
-  regression coverage.
-- Did not add Project scoping, CSV reconciliation, scheduling, cancellation,
-  or package-version changes.
-
-## Collector Run Application Boundary
-
-- Extracted the legacy Discogs Marketplace refresh lifecycle from Tkinter into
-  a typed synchronous `CollectorRunService`.
-- Added immutable validated progress, terminal result, status, and application
-  error models.
-- Added deterministic release processing, one UTC capture timestamp, lazy
-  temporary-token provider construction, and between-attempt throttling.
-- Distinguished complete, partial, all-provider-failed, and unexpected fatal
-  outcomes while preserving legacy snapshots and scoring.
-- Rewired the desktop action to use a daemon worker and schedule presentation
-  updates back to Tkinter.
-- Added focused application, SQLite integration, composition, and desktop
-  orchestration tests.
-- Deferred canonical Marketplace History capture to the subsequent v0.5.2
-  slice and did not add Intelligence execution, Project scoping, automatic CSV
-  import, session restoration, or package-version changes.
+- Version 0.5 supports one collector and one practical `Current Collection`;
+  Project identity does not partition collection, Marketplace, intelligence,
+  history, queue, decision, or research data.
+- There is no CSV reconciliation, Marketplace module execution, listing
+  acquisition, automated backup, in-app restore, Collector Run scheduling,
+  cancellation, or resumption.
+- There is no cloud sync, account system, Windows support claim, or commercial
+  distribution support.
+- DIP remains decision support: it automates research, not buying, selling,
+  pricing, or collecting decisions.
 
 ---
 

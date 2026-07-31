@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
 from pathlib import Path
 
@@ -89,7 +90,8 @@ from unittest.mock import Mock, patch
 import dip
 from dip.composition import build_desktop_application_dependencies
 
-assert dip.__version__ == "0.4.0"
+assert dip.__version__ == "0.5.0"
+assert importlib.metadata.version("discogs-intelligence-platform") == "0.5.0"
 entry_points = {
     value.name: value.value
     for value in importlib.metadata.distribution(
@@ -100,7 +102,11 @@ assert entry_points["dip"] == "dip.app:main"
 assert importlib.resources.files("dip.persistence.sqlite").joinpath(
     "schema.sql"
 ).is_file()
-dependencies = build_desktop_application_dependencies()
+with patch(
+    "dip.composition.DiscogsClient",
+    side_effect=AssertionError("provider constructed during composition"),
+) as provider:
+    dependencies = build_desktop_application_dependencies()
 try:
     versions = tuple(
         row[0]
@@ -112,12 +118,33 @@ try:
     assert dependencies.database.conn.execute(
         "SELECT COUNT(*) FROM desktop_session"
     ).fetchone()[0] == 0
-    assert dependencies.project_management.active_project().name == (
-        "Current Collection"
-    )
-    assert isinstance(dependencies.collector_run._provider_factory, type)
+    current = dependencies.project_management.active_project()
+    assert current.name == "Current Collection"
+    current_id = current.project_id
+    assert len(dependencies.project_management.list_projects()) == 1
+    assert dependencies.collector_run._provider_factory is provider
+    provider.assert_not_called()
 finally:
     dependencies.database.close()
+
+with patch(
+    "dip.composition.DiscogsClient",
+    side_effect=AssertionError("provider constructed during reopen"),
+) as provider:
+    reopened = build_desktop_application_dependencies()
+try:
+    assert reopened.project_management.active_project().project_id == current_id
+    projects = reopened.project_management.list_projects()
+    assert len(projects) == 1
+    assert projects[0].project_id == current_id
+    provider.assert_not_called()
+finally:
+    reopened.database.close()
+
+from dip.data_sources.discogs.client import DiscogsClient
+assert DiscogsClient("validation-token").session.headers["User-Agent"] == (
+    "RussellDiscogsIntelligencePlatform/0.5.0"
+)
 
 fake = Mock()
 with patch("dip.experience.desktop.app.App", return_value=fake):
@@ -132,6 +159,63 @@ fake.mainloop.assert_called_once_with()
         cwd=environment_root,
         env=environment,
     )
+    _validate_compatibility_client(
+        artifact,
+        python,
+        environment_root / "compatibility-client",
+        environment,
+    )
+
+
+def _validate_compatibility_client(
+    artifact: Path,
+    python: Path,
+    working_directory: Path,
+    environment: dict[str, str],
+) -> None:
+    working_directory.mkdir()
+    target = working_directory / "discogs_client.py"
+    distributed = _sdist_compatibility_client(artifact)
+    if distributed is None:
+        shutil.copyfile(ROOT / "discogs_client.py", target)
+    else:
+        target.write_bytes(distributed)
+    checkout = str(ROOT.resolve())
+    check = f"""
+from pathlib import Path
+import dip
+from discogs_client import DiscogsClient
+
+assert dip.__version__ == "0.5.0"
+assert {checkout!r} not in str(Path(dip.__file__).resolve())
+assert DiscogsClient("validation-token").session.headers["User-Agent"] == (
+    "RussellDiscogsIntelligencePlatform/0.5.0"
+)
+"""
+    isolated = dict(environment)
+    isolated.pop("PYTHONPATH", None)
+    _run(str(python), "-c", check, cwd=working_directory, env=isolated)
+
+
+def _sdist_compatibility_client(artifact: Path) -> bytes | None:
+    if not artifact.name.endswith(".tar.gz"):
+        return None
+    with tarfile.open(artifact, "r:gz") as archive:
+        members = tuple(
+            member
+            for member in archive.getmembers()
+            if member.isfile() and Path(member.name).name == "discogs_client.py"
+        )
+        if not members:
+            return None
+        if len(members) != 1:
+            raise RuntimeError(
+                "Expected at most one compatibility client in the source distribution."
+            )
+        extracted = archive.extractfile(members[0])
+        if extracted is None:
+            raise RuntimeError("Could not read the distributed compatibility client.")
+        return extracted.read()
 
 
 def _one(values) -> Path:

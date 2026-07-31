@@ -86,7 +86,7 @@ collection.
 
 ## Version 0.5 — Collector Run Pipeline
 
-**Status: Release candidate — v0.5.1 through v0.5.6 implemented, unreleased**
+**Status: Prepared release candidate — implemented and validated, awaiting release completion**
 
 Version 0.5 establishes the collector run lifecycle and then adds limited
 session restoration. Its scope assumes one collection and connects collection
@@ -96,7 +96,7 @@ application boundaries.
 
 ### Version 0.5.1 — Collector Run Application Boundary
 
-**Status: Implemented, unreleased**
+**Status: Implemented and validated in the Version 0.5.0 release candidate**
 
 The first slice extracts the existing Discogs Marketplace refresh lifecycle
 from Tkinter into `CollectorRunService`. It adds immutable progress and result
@@ -111,7 +111,7 @@ scope data by Project.
 
 ### Version 0.5.2 — Canonical Marketplace Capture
 
-**Status: Implemented, unreleased**
+**Status: Implemented and validated in the Version 0.5.0 release candidate**
 
 The second slice records one immutable canonical Marketplace aggregate for
 each Collector Run that finishes every provider attempt. It preserves exact
@@ -129,7 +129,7 @@ or package-version change.
 
 ### Version 0.5.3 — Coherent Intelligence Execution and History
 
-**Status: Implemented, unreleased**
+**Status: Implemented and validated in the Version 0.5.0 release candidate**
 
 The third slice extends complete and partial canonical Collector Runs through
 the existing default Collection Intelligence registry. It builds an explicit
@@ -139,13 +139,13 @@ atomically, and rejects failed-module executions.
 
 Migration 5 adds nullable canonical Marketplace provenance to Intelligence
 History with restricted referential integrity and exact replay/conflict
-semantics. CSV import is disabled and guarded during a run. Package/runtime
-version remains `0.4.0`; Project scoping, session restoration, scheduling,
-collection-history architecture, and scoring changes remain deferred.
+semantics. CSV import is disabled and guarded during a run. Project scoping,
+scheduling, collection-history architecture, and scoring changes remain
+deferred.
 
 ### Version 0.5.4 — Collector Review Workflow and Weekend Review Queue
 
-**Status: Implemented, unreleased**
+**Status: Implemented and validated in the Version 0.5.0 release candidate**
 
 The fourth slice projects stored Hot-now scores and the latest persisted Hidden
 Gems result into separate calculated observation sections. It resolves
@@ -156,11 +156,10 @@ Migration 6 adds the durable, user-owned Weekend Review Queue with frozen
 source evidence, deterministic ordering, explicit add, notes, active/resolved
 states, reopen, confirmed removal, and optimistic conflict detection. Queue
 population is never automatic and Collection Decisions remain separate.
-Package/runtime version remains `0.4.0`.
 
 ### Version 0.5.5 — Session Restoration
 
-**Status: Implemented, unreleased**
+**Status: Implemented and validated in the Version 0.5.0 release candidate**
 
 The fifth slice restores a deliberately small database-scoped desktop session:
 normal main-window geometry, primary and Collection Review navigation, stable
@@ -179,19 +178,16 @@ excluded. See [Session Restoration](SessionRestoration.md).
 
 ### Version 0.5.6 — Personal-Use Release Hardening
 
-**Status: Implemented, unreleased release candidate**
+**Status: Implemented and validated in the Version 0.5.0 release candidate**
 
 The sixth slice adds an explicit verified SQLite backup, manual recovery
 documentation, fixed safe diagnostics for primary workflows, and truthful
 disabled presentation for destinations without a production data path. It also
 adds Linux and macOS CI, a frozen released-v0.4.0 upgrade test, fresh-install
-and packaging validation, and release-candidate documentation.
+and packaging validation, and release documentation.
 
-It adds no schema migration: migrations remain 1–7. Package/runtime remains
-0.4.0. Automatic backup, retention, in-app restore, Windows support, and a
-0.5.0 release tag remain outside this implementation. A separate release step
-may establish 0.5.0 only after the manual macOS and controlled real-Discogs
-gates pass.
+It adds no schema migration: migrations remain 1–7. Automatic backup,
+retention, in-app restore, and Windows support remain outside Version 0.5.
 
 Candidate follow-on slices include:
 

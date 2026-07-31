@@ -17,14 +17,14 @@ decisions.
 
 ## Current release and development state
 
-**Version 0.4.0 — SQLite Project Persistence**
+**Version 0.5.0 — Collector Workflow Foundation**
 
-Version 0.4 adds durable Project identity, active state, deterministic recent
-ordering, schema migration 4, and idempotent `Current Collection` bootstrap.
-The implemented but unreleased v0.5.1–v0.5.6 development line adds the
-single-collection Collector Run, canonical Marketplace and Intelligence
-History integration, Collector Review, primary desktop session restoration,
-and explicit verified database backup. Package/runtime version remains 0.4.0.
+Prepared release candidate: implemented and validated, awaiting release
+completion. Version 0.5 adds the single-collection Collector Run,
+canonical Marketplace and Intelligence History integration, Collector Review,
+primary desktop session restoration, explicit verified database backup, safe
+diagnostics, truthful desktop availability, genuine v0.4.0 upgrade coverage,
+and Linux/macOS artifact-validating CI.
 
 Project creation/opening UI, Project-scoped refresh, multi-project workflows,
 automatic backup, and in-app restore are not implemented. Collection,

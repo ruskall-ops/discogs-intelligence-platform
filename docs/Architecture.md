@@ -17,11 +17,11 @@ workflows. Its governing principle is:
 The platform does not automate buying, selling, pricing, or collecting
 decisions.
 
-The v0.5.6 personal-use release candidate also applies a product-truthfulness
-rule: a desktop capability requires a real production execution and data path,
-not merely models, builders, renderers, or fixtures. Foundation-only
-destinations remain visible but disabled with **Not available in this
-release**. See [Current Product State](CurrentProductState.md).
+The prepared Version 0.5 release candidate applies a product-truthfulness rule:
+a desktop capability requires a real production execution and data path, not
+merely models, builders, renderers, or fixtures. Foundation-only destinations
+remain visible but disabled with **Not available in this release**. See
+[Current Product State](CurrentProductState.md).
 
 ## Implemented architecture
 
@@ -303,8 +303,8 @@ Project persistence and uses active identity only as a compatibility guard.
 
 Project persistence currently stores Project metadata only. Collection,
 Marketplace, intelligence, history, and research records are not partitioned
-by Project identity. The released desktop therefore supports a practical
-single-collection workflow; multi-project UI must wait for genuine
+by Project identity. The release-candidate desktop therefore supports a
+practical single-collection workflow; multi-project UI must wait for genuine
 Project-scoped data boundaries.
 
 ## Current desktop workflows

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "discogs-intelligence-platform"
-version = "0.4.0"
+version = "0.5.0"
 description = "Explainable collection and marketplace intelligence for Discogs collectors."
 readme = "README.md"
 requires-python = ">=3.11"

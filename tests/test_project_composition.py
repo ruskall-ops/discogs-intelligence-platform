@@ -6,6 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from dip import __version__
 from dip.composition import build_desktop_application_dependencies
 from dip.app.collector_review import WeekendObservationService, WeekendReviewService
 from dip.persistence.sqlite import (
@@ -28,7 +29,7 @@ class ProjectCompositionTestCase(unittest.TestCase):
             "dip.composition.SETTINGS",
             SimpleNamespace(
                 database_path=self.database_path,
-                application_version="0.4.0",
+                application_version=__version__,
                 discogs_request_delay_seconds=0,
             ),
         ):
