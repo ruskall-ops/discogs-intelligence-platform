@@ -244,7 +244,7 @@ class ReleasedVersionUpgradeTestCase(unittest.TestCase):
             ):
                 dependencies = build_desktop_application_dependencies()
             try:
-                self.assertEqual(__version__, "0.5.0")
+                self.assertEqual(__version__, "0.5.1")
                 self.assertEqual(
                     dependencies.project_management.active_project().project_id,
                     "current_collection",

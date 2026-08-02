@@ -22,6 +22,7 @@ from dip.experience.dashboard import (
 )
 from dip.experience.hidden_gems import HiddenGemsDetailViewModel
 from dip.experience.price_changes import PriceChangesDetailViewModel
+from dip.experience.price_changes import PriceChangesDetailState
 from dip.experience.supply_changes import SupplyChangesDetailViewModel
 from dip.experience.rare_appearances import RareAppearancesDetailViewModel
 from dip.experience.marketplace_activity import MarketplaceActivityDetailViewModel
@@ -68,6 +69,17 @@ class CollectionExplorerState(str, Enum):
     ERROR = "error"
     INSUFFICIENT_HISTORY = "insufficient_history"
     INSUFFICIENT_DATA = "insufficient_data"
+
+
+class MarketplaceChangePresentationOutcome(str, Enum):
+    """Presentation-safe Marketplace workspace outcome identity."""
+
+    NO_ELIGIBLE_CURRENT = "no_eligible_current"
+    NO_COMPATIBLE_BASELINE = "no_compatible_baseline"
+    NO_COMPARABLE_FACTS = "no_comparable_facts"
+    HISTORY_UNREADABLE = "history_unreadable"
+    HISTORY_INVALID = "history_invalid"
+    COMPARISON_FAILED = "comparison_failed"
 
 
 @dataclass(frozen=True)
@@ -187,6 +199,7 @@ class CollectionExplorerViewModel:
     marketplace_stability: MarketplaceStabilityDetailViewModel
     marketplace_scarcity: MarketplaceScarcityDetailViewModel
     marketplace_opportunity: MarketplaceOpportunityDetailViewModel
+    marketplace_change_outcome: MarketplaceChangePresentationOutcome | None = None
     title: str = field(init=False, default="Collection Explorer")
 
     def __post_init__(self) -> None:
@@ -228,6 +241,10 @@ class CollectionExplorerViewModel:
             raise TypeError("marketplace_scarcity must be a MarketplaceScarcityDetailViewModel.")
         if type(self.marketplace_opportunity) is not MarketplaceOpportunityDetailViewModel:
             raise TypeError("marketplace_opportunity must be a MarketplaceOpportunityDetailViewModel.")
+        if self.marketplace_change_outcome is not None and type(self.marketplace_change_outcome) is not MarketplaceChangePresentationOutcome:
+            raise TypeError("marketplace_change_outcome must be a MarketplaceChangePresentationOutcome or None.")
+        if self.marketplace_change_outcome is not None and self.price_changes.state not in {PriceChangesDetailState.ERROR, PriceChangesDetailState.INSUFFICIENT_HISTORY, PriceChangesDetailState.INSUFFICIENT_DATA}:
+            raise CollectionExplorerConsistencyError("Successful Marketplace details cannot retain a failure outcome.")
 
         expected_states = (
             self.overview.state,

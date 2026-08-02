@@ -30,6 +30,7 @@ from .models import (
     CollectionExplorerOverviewViewModel,
     CollectionExplorerState,
     CollectionExplorerViewModel,
+    MarketplaceChangePresentationOutcome,
     destination_view_models,
     explorer_state,
 )
@@ -58,6 +59,7 @@ class CollectionExplorerViewModelBuilder:
         selected_destination: CollectionExplorerDestination = (
             CollectionExplorerDestination.OVERVIEW
         ),
+        marketplace_change_outcome: MarketplaceChangePresentationOutcome | None = None,
     ) -> CollectionExplorerViewModel:
         """Build all destinations from one already selected homepage result."""
 
@@ -205,6 +207,7 @@ class CollectionExplorerViewModelBuilder:
             marketplace_stability=marketplace_stability,
             marketplace_scarcity=marketplace_scarcity,
             marketplace_opportunity=marketplace_opportunity,
+            marketplace_change_outcome=marketplace_change_outcome,
         )
 
     @staticmethod

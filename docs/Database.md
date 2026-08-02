@@ -140,8 +140,8 @@ fail as schema-integrity errors rather than being recreated. A database with
 partial application objects and no coherent migration baseline is not treated
 as fresh.
 
-Schema version 7 is current and is distinct from application version 0.5.0.
-The Version 0.5 release adds no migration 8.
+Schema version 7 is current and is distinct from application version 0.5.1.
+The Version 0.5.1 Marketplace Change implementation adds no migration 8.
 
 Complete user-initiated backup uses SQLite's backup API and independent
 verification without adding a schema table. See

@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 from dip.experience.supply_changes import SupplyChangesDetailState, SupplyChangesDetailViewModel
+from dip.marketplace_intelligence import SupplyChangeKind
 
 
 @dataclass(frozen=True)
@@ -35,7 +36,7 @@ class DesktopSupplyChangesRenderer:
                 context.extend((f"{label} snapshot: {snapshot.snapshot_id}", f"{label} captured: {snapshot.captured_at.isoformat()}", f"{label} status: {snapshot.status.value.replace('_', ' ').title()}"))
         if context:
             context.append(f"Comparison source: {detail.source or 'Unavailable'}")
-        changes = tuple(DesktopReleaseSupplyChange(index, value.release_id, f"Release {value.release_id} — {value.change_kind.value.replace('_', ' ').title()}", "\n".join((f"Previous supply: {_value(value.previous_supply)}", f"Latest supply: {_value(value.latest_supply)}", f"Delta: {_delta(value.delta)}", f"Previous snapshot: {value.previous_snapshot_id}", f"Latest snapshot: {value.latest_snapshot_id}", *(f"Evidence: {item}" for item in value.evidence)))) for index, value in enumerate(detail.changes, 1))
+        changes = tuple(DesktopReleaseSupplyChange(index, value.release_id, f"{value.display_label or f'Release {value.release_id}'} — {_kind_copy(value.change_kind)}", "\n".join((f"Release ID: {value.release_id}", f"Previous supply: {_value(value.previous_supply)}", f"Latest supply: {_value(value.latest_supply)}", f"Delta: {_delta(value.delta)}", f"Previous snapshot: {value.previous_snapshot_id}", f"Latest snapshot: {value.latest_snapshot_id}", f"Previous observed: {_timestamp(value.previous_observed_at)}", f"Current observed: {_timestamp(value.latest_observed_at)}", *(f"Evidence: {item}" for item in value.evidence), *(f"Diagnostic: {item}" for item in value.observation_diagnostics)))) for index, value in enumerate(detail.changes, 1))
         counts = "" if detail.change_count is None else "\n".join((f"Release changes: {detail.change_count}", f"Unchanged releases: {detail.unchanged_count}", f"Incomparable releases: {detail.incomparable_count}"))
         return DesktopSupplyChangesView(detail.title, detail.state, detail.state.value.replace("_", " ").title(), detail.summary, "\n".join(context), counts, changes, "\n".join(f"• {item}" for item in detail.diagnostics))
 
@@ -46,6 +47,20 @@ def _value(value: int | None) -> str:
 
 def _delta(value: int | None) -> str:
     return "Unavailable" if value is None else f"{value:+d}"
+
+
+def _timestamp(value) -> str:
+    return "Unavailable" if value is None else value.isoformat()
+
+
+def _kind_copy(value: SupplyChangeKind) -> str:
+    return {
+        SupplyChangeKind.INCREASED: "Increased",
+        SupplyChangeKind.DECREASED: "Decreased",
+        SupplyChangeKind.NEWLY_AVAILABLE: "Became available for sale",
+        SupplyChangeKind.NO_LONGER_AVAILABLE: "No copies observed for sale",
+        SupplyChangeKind.INCOMPARABLE: "Incomparable",
+    }[value]
 
 
 __all__ = ["DesktopReleaseSupplyChange", "DesktopSupplyChangesRenderer", "DesktopSupplyChangesView"]

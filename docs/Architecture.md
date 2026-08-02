@@ -24,6 +24,13 @@ Foundation-only destinations remain visible but disabled with **Not available
 in this release**. See
 [Current Product State](CurrentProductState.md).
 
+The implemented but unreleased v0.5.1 slice adds a read-only Marketplace
+Change workspace. One application service reads complete Marketplace History
+once, selects an exact-source/version snapshot pair, calculates release-level
+Price and Supply changes, and batch-loads current catalogue labels at most once.
+The immutable result is cached by the Explorer controller; no provider or write
+is involved.
+
 ## Implemented architecture
 
 The implementation uses a `src`-layout package, a Tkinter desktop shell, SQLite

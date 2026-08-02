@@ -2,12 +2,12 @@
 
 ## Current desktop availability
 
-Overview, Collection Health, Hidden Gems, and Collection Trends are
-production-wired and remain enabled for truthful empty or insufficient-history
-states. Weekend Listings, Price Changes, Supply Changes, Rare Appearances,
+Overview, Collection Health, Hidden Gems, Collection Trends, release-level Price
+Changes, and release-level Supply Changes are production-wired. Price and Supply
+remain selectable for data, empty, partial, insufficient-history,
+insufficient-data, and safe-error states. Weekend Listings, Rare Appearances,
 Marketplace Activity, Listing Lifecycle, Momentum, Stability, Scarcity, and
-Opportunity remain visible but their tabs are disabled as **Not available in
-this release** because the desktop does not yet supply their results.
+Opportunity remain visible but disabled as **Not available in this release**.
 
 ## Purpose
 
@@ -67,7 +67,33 @@ Price Changes result are supplied at the same presentation boundary. Marketplace
 Momentum is also supplied only as an already-produced result. Switching tabs
 does not query Marketplace or Intelligence History, execute intelligence, fetch
 Marketplace data, calculate a comparison or assessment, sort records, or
-rebuild the workspace.
+rebuild the workspace. On first Explorer open, a separate read-only Marketplace
+Change service queries canonical Marketplace History once, selects one
+exact-source/version snapshot pair, and batch-loads current artist/title labels
+at most once. Its immutable workspace is cached across reopening and tab
+switches. Only **Refresh Marketplace Changes** rebuilds it. Refresh preserves
+the currently selected enabled destination. While Collector Run is active,
+open and refresh perform no Marketplace History or metadata query and the
+refresh control is disabled. The controller also enforces this boundary through
+an injected read-only availability check, so direct, keyboard, programmatic,
+alternate open/rebuild, Price/Supply dispatch, and renderer/controller callback
+paths fail closed independently of Tk widget state. Button and keyboard
+callbacks share the same guarded production boundary.
+Collector Run completion invalidates the cache,
+marks every live Explorer window stale with fixed copy, and enables explicit
+refresh without issuing an automatic History or metadata query, provider call,
+workspace rebuild, persistence write, or replacement-window creation.
+An explicit refresh retains the installed cache and stale window while it builds
+a candidate workspace, presentation, and fully populated replacement. Only after
+all pre-publication rendering succeeds does it install the candidate and replace
+the registered window. A safe workspace error or unexpected presentation
+failure retains the stale content and destination, shows fixed safe failure
+copy, and permits a later retry.
+The replacement stages are independently regression-tested. Before publication,
+failure retains the exact old cache and registered stale window; after
+publication, cleanup failure retains one truthful authoritative replacement.
+Hostile diagnostic and exception values are mapped to fixed safe domain,
+presentation, renderer, status, stale-state, and dialog copy.
 
 Overview, Collection Health, and Hidden Gems remain anchored to the Dashboard
 homepage execution supplied when the Explorer opens. Trends identifies its
@@ -128,15 +154,18 @@ diagnostics, and the explicit weekend window. The builder does not qualify,
 filter, rerank, or recalculate listings. If no result is supplied, the fifth
 destination remains visible with an unavailable state.
 
-Price Changes likewise consumes the typed output of an already-produced
-standard `IntelligenceResult`. Its immutable detail preserves the previous and
-latest snapshot context, exact prices, signed deltas, comparison kinds,
-canonical listing and release-change order, unchanged and incomparable counts,
-and diagnostics. Listing identities remain `(release_id, listing_id)`;
-release-level detail is limited to supplied lowest and highest price facts. The
-presentation service and builder do not select history, compare values,
-calculate deltas, convert currencies, classify or sort changes. If no result is
-supplied, the sixth destination remains visible with an unavailable state.
+Price Changes displays only release-level observed lowest prices. It matches by
+release ID, preserves exact Decimal values and signed deltas, requires matching
+currencies, and treats missing facts or observations as incomparable. It emits
+no listing or highest-price detail and calculates no percentage.
+
+Supply Changes displays only explicit `num_for_sale` facts. Missing facts are
+never zero; only explicit zero-to-positive and positive-to-zero transitions are
+labelled became available and no copies observed for sale. Wants are excluded.
+
+Artist and title are current collection metadata provided for identification.
+They were not captured with the Marketplace snapshots. Release ID remains the
+stable identity and missing metadata falls back to `Release <release_id>`.
 
 ## States and degradation
 

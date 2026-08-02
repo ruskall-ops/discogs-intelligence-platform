@@ -1348,10 +1348,12 @@ History mutation.
 Marketplace Intelligence should integrate naturally through the existing IntelligenceResult contract.
 
 Price Changes follows this boundary. Marketplace History retains the two full
-raw snapshots, while the `price_changes` result retains narrow snapshot
-references, typed factual listing and release-price changes, summary counts and
-diagnostics. It does not copy either complete snapshot into an Intelligence
-History record. Historical snapshot selection remains application
+raw snapshots, while authoritative `price_changes` 2.0 retains narrow snapshot
+references and typed factual release-level lowest-price changes only. The
+separate `listing_price_changes` 1.0 capability retains listing and historical
+highest-price detail under its own identity and is not production-wired. Neither
+result copies a complete snapshot into an Intelligence History record.
+Historical snapshot selection remains application
 orchestration; neither Intelligence History nor its repository selects or
 recalculates the comparison.
 

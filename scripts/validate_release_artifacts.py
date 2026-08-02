@@ -90,8 +90,8 @@ from unittest.mock import Mock, patch
 import dip
 from dip.composition import build_desktop_application_dependencies
 
-assert dip.__version__ == "0.5.0"
-assert importlib.metadata.version("discogs-intelligence-platform") == "0.5.0"
+assert dip.__version__ == "0.5.1"
+assert importlib.metadata.version("discogs-intelligence-platform") == "0.5.1"
 entry_points = {
     value.name: value.value
     for value in importlib.metadata.distribution(
@@ -143,7 +143,7 @@ finally:
 
 from dip.data_sources.discogs.client import DiscogsClient
 assert DiscogsClient("validation-token").session.headers["User-Agent"] == (
-    "RussellDiscogsIntelligencePlatform/0.5.0"
+    "RussellDiscogsIntelligencePlatform/0.5.1"
 )
 
 fake = Mock()
@@ -186,10 +186,10 @@ from pathlib import Path
 import dip
 from discogs_client import DiscogsClient
 
-assert dip.__version__ == "0.5.0"
+assert dip.__version__ == "0.5.1"
 assert {checkout!r} not in str(Path(dip.__file__).resolve())
 assert DiscogsClient("validation-token").session.headers["User-Agent"] == (
-    "RussellDiscogsIntelligencePlatform/0.5.0"
+    "RussellDiscogsIntelligencePlatform/0.5.1"
 )
 """
     isolated = dict(environment)

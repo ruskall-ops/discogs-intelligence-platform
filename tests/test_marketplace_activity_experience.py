@@ -11,7 +11,7 @@ class MarketplaceActivityExperienceTestCase(unittest.TestCase):
         _, price, supply, rare = source_results()
         result, _ = activity(price, supply, rare)
         detail = MarketplaceActivityPresentationService(MarketplaceActivityDetailViewModelBuilder()).detail_for_result(result)
-        self.assertIs(detail.state, MarketplaceActivityDetailState.AVAILABLE)
+        self.assertIs(detail.state, MarketplaceActivityDetailState.PARTIAL)
         self.assertEqual(tuple(value.release_id for value in detail.activities), (1, 2))
         rendered = DesktopMarketplaceActivityRenderer().render(detail)
         self.assertIn("Historical activity count: 4", rendered.activities[0].body)

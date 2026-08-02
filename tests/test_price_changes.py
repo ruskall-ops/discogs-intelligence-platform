@@ -471,7 +471,7 @@ class ReleasePriceComparisonTestCase(unittest.TestCase):
         self.assertEqual(output.summary.release_incomparable_count, 2)
         self.assertEqual(
             sum("uses different currencies" in value for value in result.diagnostics),
-            2,
+            0,
         )
 
     def test_release_order_is_release_id_then_canonical_metric(self) -> None:
@@ -596,35 +596,22 @@ class PriceChangesModuleResultTestCase(unittest.TestCase):
         self.assertTrue(unavailable_result.diagnostics)
         self.assertTrue(failed_result.diagnostics)
 
-    def test_equal_capture_instants_are_skipped_without_arbitrary_ordering(self) -> None:
+    def test_equal_capture_instants_are_rejected_without_arbitrary_ordering(self) -> None:
         previous = empty_snapshot("previous", LATEST_CAPTURED_AT)
         latest = empty_snapshot(
             "latest",
             LATEST_CAPTURED_AT.astimezone(timezone(timedelta(hours=-4))),
         )
 
-        result = analyse(previous, latest)
+        with self.assertRaisesRegex(PriceChangesDomainError, "strictly earlier"):
+            analyse(previous, latest)
 
-        self.assertIs(result.status, IntelligenceStatus.SKIPPED)
-        self.assertIs(
-            price_output(result).comparison_state,
-            PriceChangesComparisonState.INSUFFICIENT_DATA,
-        )
-        self.assertTrue(any("Equal capture times" in value for value in result.diagnostics))
-
-    def test_source_mismatch_is_skipped_and_retains_both_provenance_references(self) -> None:
+    def test_source_mismatch_is_rejected_at_pair_boundary(self) -> None:
         previous = empty_snapshot("previous", PREVIOUS_CAPTURED_AT, source="discogs")
         latest = empty_snapshot("latest", LATEST_CAPTURED_AT, source="other_source")
 
-        result = analyse(previous, latest)
-        output = price_output(result)
-
-        self.assertIs(result.status, IntelligenceStatus.SKIPPED)
-        self.assertIs(output.comparison_state, PriceChangesComparisonState.INSUFFICIENT_DATA)
-        self.assertIsNone(output.source)
-        self.assertEqual(output.previous_snapshot.source, "discogs")
-        self.assertEqual(output.latest_snapshot.source, "other_source")
-        self.assertTrue(any("sources differ" in value for value in result.diagnostics))
+        with self.assertRaisesRegex(PriceChangesDomainError, "matching snapshot sources"):
+            analyse(previous, latest)
 
     def test_two_empty_snapshots_complete_with_no_invented_changes(self) -> None:
         result = analyse(
@@ -641,7 +628,7 @@ class PriceChangesModuleResultTestCase(unittest.TestCase):
         self.assertEqual(result.evidence, ())
         self.assertIn("No listing or supplied release-price changes", result.summary)
 
-    def test_partial_snapshot_and_version_change_degrade_but_still_complete(self) -> None:
+    def test_partial_snapshot_with_version_change_is_rejected(self) -> None:
         source_diagnostic = diagnostic("partial_response", details={"page": "2"})
         previous = snapshot(
             "previous",
@@ -658,16 +645,10 @@ class PriceChangesModuleResultTestCase(unittest.TestCase):
             source_version="api-v2",
         )
 
-        result = analyse(previous, latest)
-        output = price_output(result)
+        with self.assertRaisesRegex(PriceChangesDomainError, "source versions"):
+            analyse(previous, latest)
 
-        self.assertIs(result.status, IntelligenceStatus.COMPLETED)
-        self.assertIs(output.comparison_state, PriceChangesComparisonState.PARTIAL)
-        self.assertEqual(output.diagnostics, (source_diagnostic,))
-        self.assertTrue(any("latest snapshot latest" in value for value in result.diagnostics))
-        self.assertTrue(any("source versions differ" in value for value in result.diagnostics))
-
-    def test_source_version_change_alone_is_diagnostic_not_partial(self) -> None:
+    def test_source_version_change_is_rejected(self) -> None:
         previous = snapshot(
             "previous",
             PREVIOUS_CAPTURED_AT,
@@ -681,16 +662,8 @@ class PriceChangesModuleResultTestCase(unittest.TestCase):
             source_version="api-v2",
         )
 
-        result = analyse(previous, latest)
-
-        self.assertIs(result.status, IntelligenceStatus.COMPLETED)
-        self.assertIs(
-            price_output(result).comparison_state,
-            PriceChangesComparisonState.COMPLETE,
-        )
-        self.assertTrue(
-            any("source versions differ" in value for value in result.diagnostics)
-        )
+        with self.assertRaisesRegex(PriceChangesDomainError, "source versions"):
+            analyse(previous, latest)
 
     def test_nonempty_snapshots_without_supported_prices_are_insufficient_data(
         self,
@@ -719,7 +692,7 @@ class PriceChangesModuleResultTestCase(unittest.TestCase):
         self.assertEqual(output.release_changes, ())
         self.assertIn("no supported price evidence", result.summary.lower())
         self.assertTrue(
-            any("lowest/highest price evidence" in value for value in result.diagnostics)
+            any("listing or release-price evidence" in value for value in result.diagnostics)
         )
 
     def test_release_level_diagnostics_are_preserved_with_snapshot_provenance(self) -> None:
@@ -748,11 +721,12 @@ class PriceChangesModuleResultTestCase(unittest.TestCase):
         result = analyse(previous, latest)
         output = price_output(result)
 
-        self.assertEqual(output.diagnostics, (release_diagnostic,))
+        self.assertEqual(tuple(value.code for value in output.diagnostics), ("marketplace_evidence_incomplete",))
+        self.assertNotIn(release_diagnostic.message, repr(output.diagnostics))
         self.assertTrue(
             any(
                 value.startswith("previous snapshot previous, release 1:")
-                and "field=lowest_price" in value
+                and "Marketplace evidence was incomplete" in value
                 for value in result.diagnostics
             )
         )
@@ -782,9 +756,11 @@ class PriceChangesModuleResultTestCase(unittest.TestCase):
         result = analyse(previous, latest)
         output = price_output(result)
 
-        self.assertEqual(output.diagnostics, (previous_diagnostic, latest_diagnostic))
+        self.assertEqual(tuple(value.code for value in output.diagnostics), ("marketplace_evidence_incomplete", "marketplace_evidence_incomplete"))
+        self.assertTrue(all(not value.details for value in output.diagnostics))
         self.assertTrue(result.diagnostics[0].startswith("previous snapshot previous:"))
-        self.assertIn("; a=first; z=last", result.diagnostics[0])
+        self.assertNotIn("first", result.diagnostics[0])
+        self.assertNotIn("last", result.diagnostics[0])
         self.assertTrue(result.diagnostics[1].startswith("latest snapshot latest:"))
         self.assertTrue(any("Listing listing-1" in value for value in result.diagnostics))
 
@@ -806,7 +782,7 @@ class PriceChangesModuleResultTestCase(unittest.TestCase):
         )
         self.assertEqual(execution.module_count, 1)
         self.assertEqual(execution.results[0].module_id, "price_changes")
-        self.assertEqual(execution.results[0].module_version, "1.0")
+        self.assertEqual(execution.results[0].module_version, "2.0")
         self.assertIs(execution.results[0].status, IntelligenceStatus.COMPLETED)
 
 
@@ -1226,10 +1202,8 @@ def analyse(
     previous: MarketplaceSnapshot,
     latest: MarketplaceSnapshot,
 ):
-    return PriceChangesModule().analyse(
-        IntelligenceContext(
-            marketplace_comparison=MarketplaceSnapshotComparisonInput(previous, latest)
-        )
+    return PriceChangesModule().calculate_listing_pair(
+        MarketplaceSnapshotComparisonInput(previous, latest)
     )
 
 

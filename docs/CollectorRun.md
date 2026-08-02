@@ -3,10 +3,11 @@
 ## Purpose
 
 Collector Run is the application boundary for recurring collector workflows
-over the collection already stored in SQLite. Version 0.5.1 established the
-Discogs Marketplace refresh stage; Version 0.5.2 adds canonical Marketplace
-capture to that same application lifecycle. Version 0.5.3 adds coherent
-Collection Intelligence execution and Intelligence History recording.
+over the collection already stored in SQLite. The first three internal Version
+0.5 development slices established the Discogs Marketplace refresh stage,
+canonical Marketplace capture, and coherent Collection Intelligence execution
+with Intelligence History recording. Those slices were consolidated into the
+public DIP v0.5.0 release; they are not separate public v0.5.1–v0.5.3 releases.
 
 Discogs CSV import remains a separate, explicit, optional collection-update
 action. Refreshing Marketplace facts does not require selecting or re-importing
@@ -158,11 +159,11 @@ failure messages or desktop diagnostics.
 
 ## Explicitly deferred
 
-Version 0.5.3 does not automatically import or reconcile a CSV, scope data by
+The released v0.5.0 Collector Run does not automatically import or reconcile a CSV, scope data by
 Project, acquire listings, enable Project Workspace refresh, cancel runs, schedule
 monitoring, or change legacy scoring rules.
 
-The v0.5.5 desktop refuses graceful close while Collector Run is active so the
+The released v0.5.0 desktop refuses graceful close while Collector Run is active so the
 daemon worker retains its Tk and shared-database boundaries. This is close
 prevention only: no cancellation, waiting, resumption, stale-run cleanup, or
 process recovery is introduced. Session state never records run or progress

@@ -115,6 +115,13 @@ class ReleasePriceChangeViewModel:
     previous_snapshot_id: str
     latest_snapshot_id: str
     evidence: tuple[str, ...]
+    artist: str | None = None
+    title: str | None = None
+    display_label: str | None = None
+    uses_current_metadata: bool = False
+    previous_observed_at: datetime | None = None
+    latest_observed_at: datetime | None = None
+    observation_diagnostics: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         _positive_integer(self.release_id, "release_id")
@@ -133,6 +140,22 @@ class ReleasePriceChangeViewModel:
                 "A release change requires factual evidence."
             )
         object.__setattr__(self, "evidence", evidence)
+        for name, value in (("artist", self.artist), ("title", self.title)):
+            if value is not None and not isinstance(value, str):
+                raise TypeError(f"{name} must be a string or None.")
+        if self.display_label is not None:
+            _text(self.display_label, "display_label")
+        if type(self.uses_current_metadata) is not bool:
+            raise TypeError("uses_current_metadata must be a boolean.")
+        expected_fallback = f"Release {self.release_id}"
+        if self.uses_current_metadata:
+            if self.display_label is None or (self.artist is None and self.title is None):
+                raise PriceChangesDetailConsistencyError("Current metadata requires a current label value.")
+        elif self.display_label is not None and self.display_label != expected_fallback:
+            raise PriceChangesDetailConsistencyError("Fallback labels must preserve release identity.")
+        _optional_aware_datetime(self.previous_observed_at, "previous_observed_at")
+        _optional_aware_datetime(self.latest_observed_at, "latest_observed_at")
+        object.__setattr__(self, "observation_diagnostics", _string_tuple(self.observation_diagnostics, "observation_diagnostics"))
         _validate_release_change_shape(self)
 
 
@@ -315,8 +338,6 @@ def _validate_result_state(detail: PriceChangesDetailViewModel) -> None:
 
     if detail.state in {
         PriceChangesDetailState.INSUFFICIENT_HISTORY,
-        PriceChangesDetailState.INSUFFICIENT_DATA,
-        PriceChangesDetailState.ERROR,
     } and any(
         value != 0
         for value in (
@@ -338,12 +359,14 @@ def _validate_result_state(detail: PriceChangesDetailViewModel) -> None:
             raise PriceChangesDetailConsistencyError(
                 "Previous and latest snapshot IDs must differ."
             )
-        if detail.previous_snapshot.captured_at.astimezone(timezone.utc) > (
+        if detail.previous_snapshot.captured_at.astimezone(timezone.utc) >= (
             detail.latest_snapshot.captured_at.astimezone(timezone.utc)
         ):
             raise PriceChangesDetailConsistencyError(
-                "Previous snapshot capture time cannot follow the latest snapshot."
+                "Previous snapshot must be strictly earlier than latest."
             )
+        if detail.previous_snapshot.source_version != detail.latest_snapshot.source_version:
+            raise PriceChangesDetailConsistencyError("Snapshot source versions must match.")
     if detail.state in {
         PriceChangesDetailState.AVAILABLE,
         PriceChangesDetailState.PARTIAL,
@@ -384,17 +407,14 @@ def _validate_result_state(detail: PriceChangesDetailViewModel) -> None:
             raise PriceChangesDetailConsistencyError(
                 "Insufficient-history source must match its latest snapshot."
             )
-    if detail.state in {
-        PriceChangesDetailState.INSUFFICIENT_DATA,
-        PriceChangesDetailState.ERROR,
-    }:
+    if detail.state is PriceChangesDetailState.INSUFFICIENT_DATA:
         if not has_both_snapshots:
             raise PriceChangesDetailConsistencyError(
-                "An unsuccessful comparison requires both supplied snapshot contexts."
-            )
-        if detail.listing_changes or detail.release_changes:
+            "An unsuccessful comparison requires both supplied snapshot contexts."
+        )
+        if any(value.change_kind is not ListingPriceChangeKind.INCOMPARABLE for value in detail.listing_changes) or any(value.change_kind is not ReleasePriceChangeKind.INCOMPARABLE for value in detail.release_changes) or detail.unchanged_count:
             raise PriceChangesDetailConsistencyError(
-                "An unsuccessful comparison cannot contain price changes."
+                "Insufficient data may contain only incomparable details."
             )
         previous_source = detail.previous_snapshot.source
         latest_source = detail.latest_snapshot.source
@@ -403,6 +423,9 @@ def _validate_result_state(detail: PriceChangesDetailViewModel) -> None:
             raise PriceChangesDetailConsistencyError(
                 "Comparison source must match both supplied snapshot contexts."
             )
+    if detail.state is PriceChangesDetailState.ERROR:
+        if detail.listing_changes or detail.release_changes or any((detail.listing_change_count, detail.release_change_count, detail.unchanged_count, detail.incomparable_count)):
+            raise PriceChangesDetailConsistencyError("An error result cannot contain successful price evidence.")
 
     if has_both_snapshots:
         previous_id = detail.previous_snapshot.snapshot_id
@@ -490,20 +513,28 @@ def _validate_release_change_shape(value: ReleasePriceChangeViewModel) -> None:
                 "A no-longer-available release price requires only a previous value."
             )
         return
-    if value.previous_value is None or value.latest_value is None:
-        raise PriceChangesDetailConsistencyError(
-            "A continuing release price change requires previous and latest values."
-        )
+    if value.change_kind is ReleasePriceChangeKind.INCOMPARABLE and (
+        value.previous_value is None or value.latest_value is None
+    ):
+        if value.delta is not None:
+            raise PriceChangesDetailConsistencyError(
+                "An incomparable release price cannot contain a delta."
+            )
+        return
     if value.change_kind is ReleasePriceChangeKind.INCOMPARABLE:
         if value.delta is not None:
             raise PriceChangesDetailConsistencyError(
                 "An incomparable release price cannot contain a delta."
             )
-        if value.previous_value.currency == value.latest_value.currency:
+        if value.previous_value is not None and value.latest_value is not None and value.previous_value.currency == value.latest_value.currency:
             raise PriceChangesDetailConsistencyError(
                 "An incomparable release price requires differing currencies."
             )
         return
+    if value.previous_value is None or value.latest_value is None:
+        raise PriceChangesDetailConsistencyError(
+            "A continuing release price change requires previous and latest values."
+        )
     _validate_direction_delta(
         value.previous_value,
         value.latest_value,

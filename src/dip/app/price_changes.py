@@ -13,13 +13,11 @@ from dip.marketplace_intelligence import (
     MarketplaceSnapshot,
     MarketplaceSnapshotComparisonInput,
 )
+from dip.app.marketplace_change_workspace import MarketplaceSnapshotWindowSelector
 
 
 class _MarketplaceHistoryQueries(Protocol):
-    def recent_snapshots(
-        self,
-        limit: int,
-    ) -> tuple[MarketplaceSnapshot, ...]: ...
+    def all_snapshots(self) -> tuple[MarketplaceSnapshot, ...]: ...
 
 
 class _IntelligenceEngine(Protocol):
@@ -37,17 +35,19 @@ class PriceChangesExecutionService:
         self,
         history_queries: _MarketplaceHistoryQueries,
         engine: _IntelligenceEngine,
+        selector: MarketplaceSnapshotWindowSelector | None = None,
     ) -> None:
         self._history_queries = history_queries
         self._engine = engine
+        self._selector = selector or MarketplaceSnapshotWindowSelector()
 
     def execute(self) -> IntelligenceResult:
         """Return the single Price Changes result for bounded recent history."""
 
-        snapshots = self._history_queries.recent_snapshots(2)
+        selected = self._selector._select(self._history_queries.all_snapshots())
         comparison = MarketplaceSnapshotComparisonInput(
-            previous_snapshot=snapshots[1] if len(snapshots) > 1 else None,
-            latest_snapshot=snapshots[0] if snapshots else None,
+            previous_snapshot=selected.baseline,
+            latest_snapshot=selected.current,
         )
         execution = self._engine.execute(
             IntelligenceContext(marketplace_comparison=comparison)
@@ -70,9 +70,9 @@ def _price_changes_result(execution: object) -> IntelligenceResult:
         raise PriceChangesExecutionConsistencyError(
             "Price Changes engine returned a value that is not an IntelligenceResult."
         )
-    if result.module_id != "price_changes":
+    if result.module_id != "price_changes" or result.module_version != "2.0":
         raise PriceChangesExecutionConsistencyError(
-            f"Price Changes engine returned module {result.module_id!r}."
+            "Price Changes engine returned an incompatible module identity."
         )
     return result
 

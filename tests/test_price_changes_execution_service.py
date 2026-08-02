@@ -29,10 +29,10 @@ class _HistoryQueries:
     ) -> None:
         self.snapshots = snapshots
         self.error = error
-        self.limits: list[int] = []
+        self.calls = 0
 
-    def recent_snapshots(self, limit: int) -> tuple[MarketplaceSnapshot, ...]:
-        self.limits.append(limit)
+    def all_snapshots(self) -> tuple[MarketplaceSnapshot, ...]:
+        self.calls += 1
         if self.error is not None:
             raise self.error
         return self.snapshots
@@ -68,7 +68,7 @@ class PriceChangesExecutionServiceTestCase(unittest.TestCase):
         result = PriceChangesExecutionService(queries, engine).execute()
 
         self.assertIs(result, self.result)
-        self.assertEqual(queries.limits, [2])
+        self.assertEqual(queries.calls, 1)
         self.assertEqual(len(engine.contexts), 1)
         context = engine.contexts[0]
         comparison = context.marketplace_comparison
@@ -87,7 +87,7 @@ class PriceChangesExecutionServiceTestCase(unittest.TestCase):
 
         PriceChangesExecutionService(queries, engine).execute()
 
-        self.assertEqual(queries.limits, [2])
+        self.assertEqual(queries.calls, 1)
         self.assertEqual(len(engine.contexts), 1)
         comparison = engine.contexts[0].marketplace_comparison
         self.assertIsNone(comparison.previous_snapshot)
@@ -102,12 +102,12 @@ class PriceChangesExecutionServiceTestCase(unittest.TestCase):
             "snapshot-latest",
             datetime(2026, 7, 22, 12, tzinfo=timezone.utc),
         )
-        queries = _HistoryQueries((latest, previous))
+        queries = _HistoryQueries((previous, latest))
         engine = _Engine(self.execution)
 
         PriceChangesExecutionService(queries, engine).execute()
 
-        self.assertEqual(queries.limits, [2])
+        self.assertEqual(queries.calls, 1)
         self.assertEqual(len(engine.contexts), 1)
         comparison = engine.contexts[0].marketplace_comparison
         self.assertIs(comparison.previous_snapshot, previous)
@@ -124,15 +124,15 @@ class PriceChangesExecutionServiceTestCase(unittest.TestCase):
             datetime(2026, 7, 22, 12, tzinfo=timezone.utc),
             source="ebay",
         )
-        queries = _HistoryQueries((latest, previous))
+        queries = _HistoryQueries((previous, latest))
         engine = _Engine(self.execution)
 
         PriceChangesExecutionService(queries, engine).execute()
 
         comparison = engine.contexts[0].marketplace_comparison
-        self.assertIs(comparison.previous_snapshot, previous)
+        self.assertIsNone(comparison.previous_snapshot)
         self.assertIs(comparison.latest_snapshot, latest)
-        self.assertEqual(queries.limits, [2])
+        self.assertEqual(queries.calls, 1)
         self.assertEqual(len(engine.contexts), 1)
 
     def test_history_query_failure_propagates_without_engine_execution(self) -> None:
@@ -144,7 +144,7 @@ class PriceChangesExecutionServiceTestCase(unittest.TestCase):
             PriceChangesExecutionService(queries, engine).execute()
 
         self.assertIs(raised.exception, failure)
-        self.assertEqual(queries.limits, [2])
+        self.assertEqual(queries.calls, 1)
         self.assertEqual(engine.contexts, [])
 
     def test_engine_failure_propagates_after_one_query_and_execution(self) -> None:
@@ -156,7 +156,7 @@ class PriceChangesExecutionServiceTestCase(unittest.TestCase):
             PriceChangesExecutionService(queries, engine).execute()
 
         self.assertIs(raised.exception, failure)
-        self.assertEqual(queries.limits, [2])
+        self.assertEqual(queries.calls, 1)
         self.assertEqual(len(engine.contexts), 1)
 
     def test_malformed_dedicated_engine_results_are_rejected(self) -> None:
@@ -166,12 +166,34 @@ class PriceChangesExecutionServiceTestCase(unittest.TestCase):
             status=IntelligenceStatus.COMPLETED,
             summary="Other module completed.",
         )
+        historical_result = price_changes_result()
+        historical_result = IntelligenceResult(
+            module_id="price_changes",
+            module_version="1.0",
+            status=historical_result.status,
+            summary=historical_result.summary,
+        )
+        listing_result = IntelligenceResult(
+            module_id="listing_price_changes",
+            module_version="1.0",
+            status=IntelligenceStatus.COMPLETED,
+            summary="Listing Price Changes completed.",
+        )
+        future_result = IntelligenceResult(
+            module_id="price_changes",
+            module_version="99.0",
+            status=IntelligenceStatus.COMPLETED,
+            summary="Price Changes completed.",
+        )
         malformed = (
             object(),
             IntelligenceExecution(()),
             IntelligenceExecution((self.result, self.result)),
             IntelligenceExecution((object(),)),
             IntelligenceExecution((other_result,)),
+            IntelligenceExecution((historical_result,)),
+            IntelligenceExecution((listing_result,)),
+            IntelligenceExecution((future_result,)),
         )
 
         for execution in malformed:
@@ -182,14 +204,14 @@ class PriceChangesExecutionServiceTestCase(unittest.TestCase):
                 with self.assertRaises(PriceChangesExecutionConsistencyError):
                     PriceChangesExecutionService(queries, engine).execute()
 
-                self.assertEqual(queries.limits, [2])
+                self.assertEqual(queries.calls, 1)
                 self.assertEqual(len(engine.contexts), 1)
 
 
 def price_changes_result() -> IntelligenceResult:
     return IntelligenceResult(
         module_id="price_changes",
-        module_version="1.0",
+        module_version="2.0",
         status=IntelligenceStatus.COMPLETED,
         summary="Price Changes completed.",
     )

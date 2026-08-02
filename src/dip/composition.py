@@ -29,6 +29,10 @@ from dip.app.marketplace_history import (
     MarketplaceHistoryCommandService,
     MarketplaceHistoryQueryService,
 )
+from dip.app.marketplace_change_workspace import (
+    MarketplaceChangeWorkspaceService,
+    MarketplaceSnapshotWindowSelector,
+)
 from dip.app.price_changes import PriceChangesExecutionService
 from dip.app.price_changes_presentation import PriceChangesPresentationService
 from dip.app.supply_changes import SupplyChangesExecutionService
@@ -206,6 +210,7 @@ from dip.persistence.sqlite import (
     SQLiteProjectRepository,
     SQLiteSessionRepository,
     SQLiteWeekendReviewQueueRepository,
+    SQLiteCurrentReleaseMetadataRepository,
 )
 
 
@@ -269,6 +274,11 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
     )
     marketplace_history_queries = MarketplaceHistoryQueryService(
         marketplace_history_repository
+    )
+    marketplace_change_workspace = MarketplaceChangeWorkspaceService(
+        marketplace_history_queries,
+        SQLiteCurrentReleaseMetadataRepository(database),
+        MarketplaceSnapshotWindowSelector(),
     )
     price_changes_execution = PriceChangesExecutionService(
         marketplace_history_queries,
@@ -618,6 +628,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
                 marketplace_scarcity_renderer,
                 marketplace_opportunity_renderer,
             ),
+            marketplace_change_workspace,
         ),
         hidden_gems_controller=DesktopHiddenGemsController(
             hidden_gems_presentation,

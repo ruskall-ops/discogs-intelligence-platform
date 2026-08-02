@@ -214,7 +214,7 @@ class MarketplaceMomentumInputPreparationTestCase(unittest.TestCase):
             ),
             (
                 "unsupported version",
-                (price, replace(supply, module_version="2.0"), activity),
+                (price, replace(supply, module_version="1.0"), activity),
                 MarketplaceMomentumDiagnosticCode.UNSUPPORTED_SOURCE_VERSION,
             ),
             (
@@ -279,23 +279,8 @@ class MarketplaceMomentumInputPreparationTestCase(unittest.TestCase):
             supply_output.previous_snapshot,
             source_version="different",
         )
-        conflicting_supply = replace(
-            supply,
-            metrics={
-                "output": replace(
-                    supply_output,
-                    previous_snapshot=changed_reference,
-                )
-            },
-        )
-        conflicting = build_marketplace_momentum_input(
-            (price, conflicting_supply, activity)
-        )
-        self.assertFalse(conflicting.required_sources_compatible)
-        self.assertIn(
-            MarketplaceMomentumDiagnosticCode.CONFLICTING_PROVENANCE,
-            diagnostic_codes(conflicting),
-        )
+        with self.assertRaises(ValueError):
+            replace(supply_output, previous_snapshot=changed_reference)
 
     def test_required_source_diagnostics_are_preserved_and_reduce_coverage(
         self,
