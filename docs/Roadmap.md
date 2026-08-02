@@ -192,9 +192,12 @@ retention, in-app restore, and Windows support remain outside Version 0.5.
 These six internal development slices were consolidated into the public v0.5.0
 release; their numbering does not represent later public releases.
 
-## Version 0.5.1 — Marketplace Change Execution
+## Version 0.5.1 — Marketplace Change Explorer
 
-**Status: Implemented, unreleased**
+**Status: Prepared release candidate; implemented and validated; awaiting
+release completion**
+
+DIP v0.5.0 remains the latest completed, tagged public personal-use release.
 
 Version 0.5.1 enables release-level observed lowest-price and copies-for-sale
 changes in Collection Explorer. Both views share one exact-source/version

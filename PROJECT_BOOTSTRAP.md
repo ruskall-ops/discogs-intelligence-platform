@@ -17,20 +17,20 @@ decisions.
 
 ## Current release and development state
 
-**Version 0.5.1 — Marketplace Change Execution (unreleased)**
+**Version 0.5.1 — Marketplace Change Explorer (prepared release candidate)**
 
-DIP v0.5.0 was released on 31 July 2026 and is the current public personal-use
-release. Version 0.5 adds the single-collection Collector Run, canonical
-Marketplace and Intelligence History integration, Collector Review, primary
-desktop session restoration, explicit verified database backup, safe
-diagnostics, truthful desktop availability, genuine v0.4.0 upgrade coverage,
-and Linux/macOS artifact-validating CI. macOS is the primary personal-use
-platform; Linux receives automated headless compatibility validation, and
-Windows is not supported.
+DIP v0.5.1 is the prepared release candidate. It is implemented and validated
+and is awaiting release completion. DIP v0.5.0 remains the latest completed,
+tagged public personal-use release. Version 0.5 adds the single-collection
+Collector Run, canonical Marketplace and Intelligence History integration,
+Collector Review, primary desktop session restoration, explicit verified
+database backup, safe diagnostics, truthful desktop availability, genuine
+v0.4.0 upgrade coverage, and Linux/macOS artifact-validating CI. macOS is the
+primary personal-use platform; Linux receives automated headless compatibility
+validation, and Windows is not supported.
 
-The current working implementation is v0.5.1 and remains unreleased. It enables
-read-only release-level Price and Supply Changes in Collection Explorer from
-one compatible canonical Marketplace snapshot pair.
+Version 0.5.1 enables read-only release-level Price and Supply Changes in
+Collection Explorer from one compatible canonical Marketplace snapshot pair.
 
 Project creation/opening UI, Project-scoped refresh, multi-project workflows,
 automatic backup, and in-app restore are not implemented. Collection,

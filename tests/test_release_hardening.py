@@ -26,31 +26,106 @@ from tests.test_portfolio_workspace import presentation as portfolio_presentatio
 
 
 class ReleaseHardeningTestCase(unittest.TestCase):
-    def test_current_documents_describe_the_published_release(self) -> None:
+    def test_current_documents_describe_the_prepared_release_candidate(self) -> None:
         root = Path(__file__).resolve().parents[1]
-        documents = tuple(
-            (root / name).read_text(encoding="utf-8")
-            for name in (
-                "README.md",
-                "PROJECT_BOOTSTRAP.md",
-                "docs/Roadmap.md",
-                "docs/SessionRestoration.md",
-                "docs/CollectorReview.md",
-                "docs/Architecture.md",
-                "docs/CurrentProductState.md",
-                "docs/Configuration.md",
-                "docs/Database.md",
-            )
+        names = (
+            "README.md",
+            "PROJECT_BOOTSTRAP.md",
+            "docs/Roadmap.md",
+            "docs/SessionRestoration.md",
+            "docs/CollectorReview.md",
+            "docs/Architecture.md",
+            "docs/BackupAndRecovery.md",
+            "docs/CurrentProductState.md",
+            "docs/Configuration.md",
+            "docs/Database.md",
         )
-        for document in documents:
-            with self.subTest(document=document[:40]):
-                lowered = document.lower()
-                self.assertNotIn("prepared release candidate", lowered)
-                self.assertNotIn("awaiting release completion", lowered)
-        combined = "\n".join(documents).lower()
+        documents = tuple(
+            (name, (root / name).read_text(encoding="utf-8"))
+            for name in names
+        )
+        current_state_names = {
+            "README.md",
+            "PROJECT_BOOTSTRAP.md",
+            "docs/Roadmap.md",
+            "docs/Architecture.md",
+            "docs/BackupAndRecovery.md",
+            "docs/CurrentProductState.md",
+            "docs/Configuration.md",
+        }
+        for name, document in documents:
+            with self.subTest(document=name):
+                normalized = " ".join(document.lower().split())
+                self.assertNotIn("v0.5.1 was released", normalized)
+                self.assertNotIn("v0.5.1 is the current public", normalized)
+                self.assertNotIn("v0.5.1 is tagged", normalized)
+                self.assertNotIn("v0.5.1 is published", normalized)
+                self.assertNotIn("released dip v0.5.1", normalized)
+                self.assertNotIn("status: released 2 august 2026", normalized)
+                if name in current_state_names:
+                    self.assertIn("prepared release candidate", normalized)
+                    self.assertIn("implemented and validated", normalized)
+                    self.assertIn("awaiting release completion", normalized)
+        combined = "\n".join(document for _, document in documents).lower()
         self.assertIn("0.5.1", combined)
-        self.assertIn("released on 31 july 2026", combined)
-        self.assertIn("current public personal-use release", combined)
+        self.assertIn("v0.5.0 remains the latest completed", combined)
+
+        changelog = (root / "CHANGELOG.md").read_text(encoding="utf-8")
+        self.assertIn(
+            "Version 0.5.1 — Marketplace Change Explorer",
+            changelog,
+        )
+        self.assertIn("Released 2 August 2026.", changelog)
+
+    def test_release_checklist_targets_v0_5_1_in_required_order(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        checklist = (root / "docs/ReleaseChecklist.md").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("| `RELEASE_VERSION` | `0.5.1` |", checklist)
+        self.assertIn("| `RELEASE_TAG` | `v0.5.1` |", checklist)
+        self.assertIn("| `RELEASE_BRANCH` | `release/v0.5.1` |", checklist)
+        self.assertIn(
+            "| `RELEASE_TITLE` | `DIP v0.5.1 — Marketplace Change Explorer` |",
+            checklist,
+        )
+        self.assertIn("| `PREVIOUS_TAG` | `v0.5.0` |", checklist)
+
+        self.assertNotIn("git tag -a v0.5.0", checklist)
+        self.assertNotIn("git push origin v0.5.0", checklist)
+        self.assertNotIn("gh release create v0.5.0", checklist)
+        self.assertIn("git tag -a v0.5.1", checklist)
+        self.assertIn("git push origin v0.5.1", checklist)
+        self.assertIn("gh release create v0.5.1", checklist)
+
+        ordered_gates = (
+            "1. Prepare release changes",
+            "2. Validate the complete candidate",
+            "3. Obtain independent read-only approval",
+            "4. Commit the approved release preparation",
+            "5. Push only the `release/v0.5.1` branch",
+            "6. Open a pull request",
+            "7. Require Linux and macOS CI to pass",
+            "8. Review and merge the pull request",
+            "9. Fetch/prune and synchronize local `main`",
+            "10. Verify that local `main` equals `origin/main`",
+            "11. Rebuild and install the wheel and source distribution",
+            "12. Perform the final installed macOS verification",
+            "13. Create the annotated `v0.5.1` tag",
+            "14. Verify locally that `v0.5.1^{commit}`",
+            "15. Push only the `v0.5.1` tag",
+            "16. Create the GitHub release titled",
+            "17. Verify the GitHub release title",
+            "18. Complete post-release documentation housekeeping",
+        )
+        positions = tuple(checklist.index(gate) for gate in ordered_gates)
+        self.assertEqual(positions, tuple(sorted(positions)))
+
+        self.assertIn("## Manual GitHub website path", checklist)
+        self.assertIn("Draft a new release", checklist)
+        self.assertIn("Select the existing verified tag `v0.5.1`", checklist)
+        self.assertIn("## Optional GitHub CLI path", checklist)
 
     def test_runtime_packaging_entry_point_and_schema_contract(self) -> None:
         self.assertEqual(dip.__version__, "0.5.1")
@@ -77,6 +152,11 @@ class ReleaseHardeningTestCase(unittest.TestCase):
                     )
                 )
                 self.assertEqual(versions, tuple(range(1, 8)))
+                migration_directory = (
+                    Path(__file__).resolve().parents[1]
+                    / "src/dip/persistence/sqlite/migrations/versions"
+                )
+                self.assertEqual(tuple(migration_directory.glob("v008_*.py")), ())
                 self.assertEqual(
                     database.conn.execute(
                         "SELECT COUNT(*) FROM desktop_session"

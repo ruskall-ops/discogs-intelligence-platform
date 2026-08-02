@@ -17,15 +17,17 @@ workflows. Its governing principle is:
 The platform does not automate buying, selling, pricing, or collecting
 decisions.
 
-DIP v0.5.0 was released on 31 July 2026. The public Version 0.5 release applies
-a product-truthfulness rule: a desktop capability requires a real production
+DIP v0.5.1 is the prepared release candidate. It is implemented and validated
+and is awaiting release completion. DIP v0.5.0 remains the latest completed,
+tagged public personal-use release. The public Version 0.5 line applies a
+product-truthfulness rule: a desktop capability requires a real production
 execution and data path, not merely models, builders, renderers, or fixtures.
 Foundation-only destinations remain visible but disabled with **Not available
 in this release**. See
 [Current Product State](CurrentProductState.md).
 
-The implemented but unreleased v0.5.1 slice adds a read-only Marketplace
-Change workspace. One application service reads complete Marketplace History
+Version 0.5.1 adds a read-only Marketplace Change workspace. One application
+service reads complete Marketplace History
 once, selects an exact-source/version snapshot pair, calculates release-level
 Price and Supply changes, and batch-loads current catalogue labels at most once.
 The immutable result is cached by the Explorer controller; no provider or write

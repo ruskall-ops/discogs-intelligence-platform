@@ -7,12 +7,13 @@ foundations. It complements the product evolution in the [Roadmap](Roadmap.md)
 without treating the presence of a model, builder, or renderer as proof of a
 complete desktop feature.
 
-This is the implemented, unreleased DIP v0.5.1 capability boundary. DIP v0.5.0
-was released on 31 July 2026 and remains the current public personal-use
-release. Application version 0.5.1 is
-distinct from SQLite schema version 7 (migrations 1–7). macOS is the primary
-personal-use platform; Linux receives automated headless compatibility
-validation, and Windows is not supported.
+This is the implemented DIP v0.5.1 capability boundary. DIP v0.5.1 is the
+prepared release candidate. It is implemented and validated and is awaiting
+release completion. DIP v0.5.0 remains the latest completed, tagged public
+personal-use release. Application version 0.5.1 is distinct from SQLite schema
+version 7 (migrations 1–7). macOS is the primary personal-use platform; Linux
+receives automated headless compatibility validation, and Windows is not
+supported.
 
 ## Production-wired and usable
 
