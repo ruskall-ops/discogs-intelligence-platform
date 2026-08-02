@@ -7,8 +7,9 @@ foundations. It complements the product evolution in the [Roadmap](Roadmap.md)
 without treating the presence of a model, builder, or renderer as proof of a
 complete desktop feature.
 
-This is the production capability boundary for DIP v0.5.0, released on 31 July
-2026 as the current public personal-use release. Application version 0.5.0 is
+This is the implemented, unreleased DIP v0.5.1 capability boundary. DIP v0.5.0
+was released on 31 July 2026 and remains the current public personal-use
+release. Application version 0.5.1 is
 distinct from SQLite schema version 7 (migrations 1–7). macOS is the primary
 personal-use platform; Linux receives automated headless compatibility
 validation, and Windows is not supported.
@@ -20,6 +21,7 @@ validation, and Windows is not supported.
 - CSV collection import and explicit Collector Run;
 - Collection Health and Hidden Gems;
 - Collection Explorer Overview and Collection Trends;
+- Collection Explorer release-level Price Changes and Supply Changes;
 - Hot-now and Hidden Gems Collector Review observations;
 - Weekend Review Queue;
 - Collection Decisions and personal notes;
@@ -29,6 +31,10 @@ validation, and Windows is not supported.
 
 Empty queues, zero observations, and empty candidate lists remain truthful
 usable states.
+
+The current authoritative Price Changes and Supply Changes modules use version
+2.0 semantics. Historical persisted 1.0 results retain their original module
+identity and are not silently reinterpreted.
 
 ## Available after sufficient history
 
@@ -46,8 +52,8 @@ required.
 - secondary Historical Intelligence workspace;
 - Marketplace Workspace;
 - Dashboard Portfolio, Opportunity, History, Marketplace, and Research cards;
-- Collection Explorer Marketplace destinations from Weekend Listings through
-  Marketplace Opportunity.
+- Collection Explorer Weekend Listings, Rare Appearances, Marketplace Activity,
+  Listing Lifecycle, Momentum, Stability, Scarcity, and Opportunity.
 
 These names remain visible to communicate product direction, but their controls
 are disabled and say **Not available in this release**.
@@ -62,8 +68,8 @@ execution and data-supply path is connected.
 ## Deferred
 
 Version 0.5 supports one collector and one practical `Current Collection`.
-Project partitioning, CSV reconciliation, Marketplace module execution,
-listing acquisition, automatic backup, in-app restore, Collector Run
+Project partitioning, CSV reconciliation, listing acquisition, composite or
+listing-dependent Marketplace execution, automatic backup, in-app restore, Collector Run
 scheduling, cancellation and resumption, background monitoring, accounts,
 cloud sync, commercial distribution support, and automated buying or selling
 remain outside the current product.

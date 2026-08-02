@@ -3,8 +3,8 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import unittest
 
-from dip.intelligence import IntelligenceContext, IntelligenceEngine, IntelligenceStatus
-from dip.marketplace_intelligence import MarketplaceActivityModule, MarketplaceActivityOutput, MarketplaceActivityState, MarketplaceDataStatus, MarketplaceMoney, MarketplaceReleaseObservation, MarketplaceSnapshot, MarketplaceSnapshotComparisonInput, PriceChangesModule, RareAppearancesAnalysisState, RareAppearancesModule, SupplyChangesModule
+from dip.intelligence import IntelligenceContext, IntelligenceEngine, IntelligenceResult, IntelligenceStatus
+from dip.marketplace_intelligence import MarketplaceActivityDomainError, MarketplaceActivityModule, MarketplaceActivityOutput, MarketplaceActivityState, MarketplaceDataStatus, MarketplaceMoney, MarketplaceReleaseObservation, MarketplaceSnapshot, MarketplaceSnapshotComparisonInput, PriceChangesModule, RareAppearancesAnalysisState, RareAppearancesModule, SupplyChangesModule
 
 
 START = datetime(2026, 7, 1, tzinfo=timezone.utc)
@@ -60,6 +60,117 @@ class MarketplaceActivityTestCase(unittest.TestCase):
         self.assertIs(output.state, MarketplaceActivityState.INSUFFICIENT_DATA)
         self.assertIn("supply_changes", result.diagnostics[0])
 
+    def test_direct_domain_rejects_historical_future_listing_and_wrong_source_identities(self):
+        _, price, supply, rare = source_results()
+        hostile = "TOKEN-SQL-/private/live.sqlite-99.0"
+        cases = (
+            (replace(price, module_version="1.0"), supply, rare),
+            (replace(price, module_version="99.0"), supply, rare),
+            (replace(price, module_id="listing_price_changes", module_version="1.0"), supply, rare),
+            (replace(price, module_id=hostile), supply, rare),
+            (price, replace(supply, module_version="1.0"), rare),
+            (price, replace(supply, module_version="99.0"), rare),
+            (price, replace(supply, module_id="listing_price_changes", module_version="1.0"), rare),
+            (price, replace(supply, module_id=hostile), rare),
+        )
+        for sources in cases:
+            with self.subTest(identities=tuple((v.module_id, v.module_version) for v in sources)):
+                result, output = activity(*sources)
+                self.assertIs(result.status, IntelligenceStatus.SKIPPED)
+                self.assertIs(output.state, MarketplaceActivityState.INSUFFICIENT_DATA)
+                self.assertIn(
+                    result.diagnostics,
+                    (
+                        ("A required Marketplace Activity source is incompatible.",),
+                        ("Missing required source intelligence: price_changes.",),
+                        ("Missing required source intelligence: supply_changes.",),
+                    ),
+                )
+                self.assertNotIn(hostile, repr(result))
+
+    def test_direct_domain_accepts_only_one_current_weekend_optional_source(self):
+        _, price, supply, rare = source_results()
+        weekend = IntelligenceResult(
+            "weekend_listings",
+            IntelligenceStatus.COMPLETED,
+            "Weekend Listings completed.",
+            module_version="1.0",
+        )
+        accepted, _ = activity(price, supply, rare, weekend)
+        self.assertIs(accepted.status, IntelligenceStatus.COMPLETED)
+        hostile = "TOKEN-SQL-/private/live.sqlite"
+        cases = (
+            (replace(weekend, module_version="99.0"),),
+            (replace(weekend, module_version="0.9"),),
+            (replace(weekend, module_id=hostile),),
+            (replace(weekend, module_id="listing_price_changes"),),
+            (price,),
+            (supply,),
+            (rare,),
+            (weekend, weekend),
+            (weekend, replace(weekend, module_id=hostile)),
+        )
+        for extras in cases:
+            with self.subTest(extras=tuple((v.module_id, v.module_version) for v in extras)):
+                try:
+                    result, output = activity(price, supply, rare, *extras)
+                except MarketplaceActivityDomainError as exc:
+                    self.assertEqual(
+                        str(exc),
+                        "Marketplace Activity source identities must be unique.",
+                    )
+                    self.assertNotIn(hostile, str(exc))
+                else:
+                    self.assertIs(result.status, IntelligenceStatus.SKIPPED)
+                    self.assertIs(output.state, MarketplaceActivityState.INSUFFICIENT_DATA)
+                    self.assertEqual(
+                        result.diagnostics,
+                        ("The optional Marketplace Activity source is incompatible.",),
+                    )
+                    self.assertNotIn(hostile, repr(result))
+
+    def test_direct_domain_rejects_every_malformed_optional_member_value_neutrally(self):
+        _, price, supply, rare = source_results()
+        hostile = "ACCESS-TOKEN SELECT-secret /private/live.sqlite 987"
+        weekend = IntelligenceResult(
+            "weekend_listings",
+            IntelligenceStatus.COMPLETED,
+            "Weekend Listings completed.",
+            module_version="1.0",
+        )
+
+        class IdentityOnly:
+            module_id = hostile
+
+        class VersionOnly:
+            module_version = hostile
+
+        class NonStringIdentity:
+            module_id = 99
+            module_version = object()
+
+        malformed = (
+            hostile,
+            object(),
+            IdentityOnly(),
+            VersionOnly(),
+            NonStringIdentity(),
+        )
+        for value in malformed:
+            for extras in ((value,), (weekend, value)):
+                with self.subTest(value=type(value).__name__, with_weekend=len(extras) == 2):
+                    with self.assertRaises(TypeError) as raised:
+                        MarketplaceActivityModule().analyse(
+                            IntelligenceContext(
+                                marketplace_activity_sources=(price, supply, rare, *extras)
+                            )
+                        )
+                    self.assertEqual(
+                        str(raised.exception),
+                        "marketplace_activity_sources must be a tuple of IntelligenceResult values.",
+                    )
+                    self.assertNotIn(hostile, str(raised.exception))
+
     def test_incompatible_histories_are_skipped(self):
         _, price, _, rare = source_results()
         other_old = snapshot(5, ((1, 1, "1"),))
@@ -72,7 +183,7 @@ class MarketplaceActivityTestCase(unittest.TestCase):
 
     def test_duplicate_sources_rejected_and_models_are_frozen(self):
         _, price, supply, rare = source_results()
-        with self.assertRaisesRegex(ValueError, "Duplicate"):
+        with self.assertRaisesRegex(ValueError, "identities must be unique"):
             activity(price, price, supply, rare)
         _, output = activity(price, supply, rare)
         with self.assertRaises(FrozenInstanceError):

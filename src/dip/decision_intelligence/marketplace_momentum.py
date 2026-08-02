@@ -246,9 +246,13 @@ class SourceProvenance:
             raise MarketplaceMomentumDomainError(
                 "A compatible source must have completed status."
             )
-        if self.compatible and self.module_version != MODULE_VERSION:
+        supported_version = {
+            "price_changes": "2.0",
+            "supply_changes": "2.0",
+        }.get(self.module_id, MODULE_VERSION)
+        if self.compatible and self.module_version != supported_version:
             raise MarketplaceMomentumDomainError(
-                "A compatible source must use supported version 1.0."
+                "A compatible source must use its supported module version."
             )
         object.__setattr__(self, "history_snapshot_ids", snapshot_ids)
         object.__setattr__(self, "source_versions", versions)

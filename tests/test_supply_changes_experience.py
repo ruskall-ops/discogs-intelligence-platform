@@ -5,6 +5,7 @@ from dip.app import SupplyChangesPresentationService
 from dip.experience.desktop.supply_changes_renderer import DesktopSupplyChangesRenderer
 from dip.experience.supply_changes import SupplyChangesDetailState, SupplyChangesDetailViewModelBuilder
 from dip.intelligence import IntelligenceContext
+from dataclasses import replace
 from dip.marketplace_intelligence import MarketplaceDataStatus, MarketplaceReleaseObservation, MarketplaceSnapshot, MarketplaceSnapshotComparisonInput, SupplyChangesModule
 
 
@@ -25,6 +26,29 @@ class SupplyChangesExperienceTestCase(unittest.TestCase):
     def test_missing_result_is_unavailable(self):
         detail = SupplyChangesDetailViewModelBuilder().build(None)
         self.assertIs(detail.state, SupplyChangesDetailState.UNAVAILABLE)
+
+    def test_current_builder_rejects_historical_version(self):
+        result = SupplyChangesModule().analyse(IntelligenceContext())
+        with self.assertRaises(ValueError):
+            SupplyChangesDetailViewModelBuilder().build(
+                replace(result, module_version="1.0")
+            )
+
+    def test_current_builder_accepts_only_exact_identity_and_version(self):
+        builder = SupplyChangesDetailViewModelBuilder()
+        current = SupplyChangesModule().analyse(IntelligenceContext())
+        self.assertIs(builder.build(current).state, SupplyChangesDetailState.INSUFFICIENT_HISTORY)
+        for module_id, module_version in (
+            ("supply_changes", "1.0"),
+            ("supply_changes", "99.0"),
+            ("listing_price_changes", "1.0"),
+            ("TOKEN-SQL-/private/live.sqlite", "2.0"),
+        ):
+            with self.subTest(module_id=module_id, module_version=module_version):
+                with self.assertRaisesRegex(ValueError, "supported Supply Changes contract") as raised:
+                    builder.build(replace(current, module_id=module_id, module_version=module_version))
+                self.assertNotIn(module_id, str(raised.exception))
+                self.assertNotIn(module_version, str(raised.exception))
 
 
 if __name__ == "__main__":

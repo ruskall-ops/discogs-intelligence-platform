@@ -12,6 +12,7 @@ from .models import (
     CollectionIntelligenceExplorerViewModel,
     HiddenGemsExplorerViewModel,
     HistoricalIntelligenceExplorerViewModel,
+    MarketplaceChangePresentationOutcome,
 )
 from .presenter import CollectionIntelligenceExplorerPresenter
 
@@ -28,4 +29,5 @@ __all__ = [
     "CollectionIntelligenceExplorerViewModel",
     "HiddenGemsExplorerViewModel",
     "HistoricalIntelligenceExplorerViewModel",
+    "MarketplaceChangePresentationOutcome",
 ]

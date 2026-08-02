@@ -14,8 +14,8 @@ class SupplyChangesDetailViewModelBuilder:
             return SupplyChangesDetailViewModel.unavailable()
         if type(result) is not IntelligenceResult:
             raise TypeError("result must be an IntelligenceResult or None.")
-        if result.module_id != "supply_changes":
-            raise SupplyChangesDetailConsistencyError("Supply Changes detail requires the supply_changes result.")
+        if result.module_id != "supply_changes" or result.module_version != "2.0":
+            raise SupplyChangesDetailConsistencyError("Supply Changes detail requires the supported Supply Changes contract.")
         if type(result.status) is not IntelligenceStatus or not isinstance(result.metrics, Mapping):
             raise TypeError("Supply Changes result has an invalid standard contract.")
         output = result.metrics.get("output")

@@ -14,6 +14,7 @@ from dip.marketplace_intelligence import (
     SupplyChangesModule,
     SupplyChangesOutput,
 )
+from dip.experience.supply_changes import SupplyChangesDetailViewModelBuilder
 
 
 NOW = datetime(2026, 7, 22, tzinfo=timezone.utc)
@@ -44,16 +45,40 @@ class SupplyChangesTestCase(unittest.TestCase):
         result, value = output(previous, latest)
         self.assertIs(result.status, IntelligenceStatus.COMPLETED)
         self.assertEqual(tuple(change.release_id for change in value.changes), (1, 2, 4, 5))
-        self.assertEqual(tuple(change.change_kind for change in value.changes), (SupplyChangeKind.INCREASED, SupplyChangeKind.DECREASED, SupplyChangeKind.NO_LONGER_AVAILABLE, SupplyChangeKind.NEWLY_AVAILABLE))
+        self.assertEqual(tuple(change.change_kind for change in value.changes), (SupplyChangeKind.INCREASED, SupplyChangeKind.DECREASED, SupplyChangeKind.INCOMPARABLE, SupplyChangeKind.INCOMPARABLE))
         self.assertEqual(tuple(change.delta for change in value.changes), (3, -3, None, None))
         self.assertEqual(value.summary.unchanged_count, 1)
         self.assertEqual(value.summary.change_count, 4)
+
+    def test_missing_transitions_are_incomparable_and_default_output_builds(self):
+        previous = snapshot("old", OLD, (observation(1, 3),))
+        latest = snapshot("new", NOW, (observation(2, 4),))
+        result, value = output(previous, latest)
+        self.assertEqual(tuple(change.change_kind for change in value.changes), (
+            SupplyChangeKind.INCOMPARABLE,
+            SupplyChangeKind.INCOMPARABLE,
+        ))
+        detail = SupplyChangesDetailViewModelBuilder().build(result)
+        self.assertEqual(tuple(change.change_kind for change in detail.changes), (
+            SupplyChangeKind.INCOMPARABLE,
+            SupplyChangeKind.INCOMPARABLE,
+        ))
+
+    def test_only_explicit_zero_positive_transitions_are_availability_changes(self):
+        previous = snapshot("old", OLD, (observation(1, 0), observation(2, 5)))
+        latest = snapshot("new", NOW, (observation(1, 4), observation(2, 0)))
+        result, value = output(previous, latest)
+        self.assertEqual(tuple(change.change_kind for change in value.changes), (
+            SupplyChangeKind.NEWLY_AVAILABLE,
+            SupplyChangeKind.NO_LONGER_AVAILABLE,
+        ))
+        SupplyChangesDetailViewModelBuilder().build(result)
 
     def test_missing_partial_fact_is_incomparable(self):
         previous = snapshot("old", OLD, (observation(1, None, status=MarketplaceDataStatus.PARTIAL),), status=MarketplaceDataStatus.PARTIAL)
         latest = snapshot("new", NOW, (observation(1, 2),))
         result, value = output(previous, latest)
-        self.assertIs(value.comparison_state, SupplyChangesComparisonState.PARTIAL)
+        self.assertIs(value.comparison_state, SupplyChangesComparisonState.INSUFFICIENT_DATA)
         self.assertIs(value.changes[0].change_kind, SupplyChangeKind.INCOMPARABLE)
         self.assertIsNone(value.changes[0].previous_supply)
 

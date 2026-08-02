@@ -86,8 +86,8 @@ class ReleaseSupplyChange:
         shapes = {
             SupplyChangeKind.INCREASED: self.delta is not None and self.delta > 0,
             SupplyChangeKind.DECREASED: self.delta is not None and self.delta < 0,
-            SupplyChangeKind.NEWLY_AVAILABLE: self.previous_supply is None and self.latest_supply is not None,
-            SupplyChangeKind.NO_LONGER_AVAILABLE: self.previous_supply is not None and self.latest_supply is None,
+            SupplyChangeKind.NEWLY_AVAILABLE: self.previous_supply == 0 and self.latest_supply is not None and self.latest_supply > 0,
+            SupplyChangeKind.NO_LONGER_AVAILABLE: self.previous_supply is not None and self.previous_supply > 0 and self.latest_supply == 0,
             SupplyChangeKind.INCOMPARABLE: self.delta is None and (self.previous_supply is None or self.latest_supply is None),
         }
         if not shapes[self.change_kind]:
@@ -114,6 +114,10 @@ class SupplyChangesSummary:
     @property
     def assessed_count(self) -> int:
         return self.change_count + self.unchanged_count
+
+    @property
+    def comparable_count(self) -> int:
+        return self.change_count - self.incomparable_count + self.unchanged_count
 
 
 @dataclass(frozen=True)
@@ -154,9 +158,11 @@ class SupplyChangesOutput:
         }
         if any(counts[kind] != count for kind, count in expected.items()):
             raise SupplyChangesDomainError("Summary counts must match detailed supply changes.")
-        no_detail = self.comparison_state in {SupplyChangesComparisonState.INSUFFICIENT_HISTORY, SupplyChangesComparisonState.INSUFFICIENT_DATA, SupplyChangesComparisonState.FAILED}
+        no_detail = self.comparison_state in {SupplyChangesComparisonState.INSUFFICIENT_HISTORY, SupplyChangesComparisonState.FAILED}
         if no_detail and (changes or self.summary.assessed_count):
             raise SupplyChangesDomainError("A non-comparison state cannot contain assessed supply values.")
+        if self.comparison_state is SupplyChangesComparisonState.INSUFFICIENT_DATA and self.summary.comparable_count:
+            raise SupplyChangesDomainError("Insufficient data cannot contain comparable supply facts.")
         if self.comparison_state is SupplyChangesComparisonState.INSUFFICIENT_HISTORY:
             if self.previous_snapshot is not None:
                 raise SupplyChangesDomainError("Insufficient history cannot include a previous snapshot.")
@@ -165,6 +171,25 @@ class SupplyChangesOutput:
         if self.previous_snapshot and self.latest_snapshot:
             if self.previous_snapshot.snapshot_id == self.latest_snapshot.snapshot_id:
                 raise SupplyChangesDomainError("Compared snapshot IDs must differ.")
+            if _utc(self.previous_snapshot.captured_at) >= _utc(self.latest_snapshot.captured_at):
+                raise SupplyChangesDomainError("Baseline must be strictly earlier than current.")
+            if self.previous_snapshot.source != self.latest_snapshot.source or self.source != self.previous_snapshot.source:
+                raise SupplyChangesDomainError("Comparison source must match both snapshots.")
+            if self.previous_snapshot.source_version != self.latest_snapshot.source_version:
+                raise SupplyChangesDomainError("Comparison source versions must match.")
+            processable = {MarketplaceDataStatus.COMPLETE, MarketplaceDataStatus.PARTIAL, MarketplaceDataStatus.EMPTY}
+            if self.comparison_state in {SupplyChangesComparisonState.COMPLETE, SupplyChangesComparisonState.PARTIAL}:
+                if self.previous_snapshot.status not in processable or self.latest_snapshot.status not in processable:
+                    raise SupplyChangesDomainError("A successful comparison requires processable statuses.")
+                partial_reason = (
+                    self.previous_snapshot.status is MarketplaceDataStatus.PARTIAL
+                    or self.latest_snapshot.status is MarketplaceDataStatus.PARTIAL
+                    or self.summary.incomparable_count > 0
+                )
+                if partial_reason != (self.comparison_state is SupplyChangesComparisonState.PARTIAL):
+                    raise SupplyChangesDomainError("Comparison state must reflect partial evidence.")
+                if self.comparison_state is SupplyChangesComparisonState.PARTIAL and self.summary.comparable_count == 0:
+                    raise SupplyChangesDomainError("A partial comparison requires comparable evidence.")
             for change in changes:
                 if (change.previous_snapshot_id, change.latest_snapshot_id) != (self.previous_snapshot.snapshot_id, self.latest_snapshot.snapshot_id):
                     raise SupplyChangesDomainError("Change snapshot references do not match the output.")
@@ -172,7 +197,7 @@ class SupplyChangesOutput:
 
 class SupplyChangesModule:
     module_id = "supply_changes"
-    module_version = "1.0"
+    module_version = "2.0"
 
     def analyse(self, context: IntelligenceContext) -> IntelligenceResult:
         if type(context) is not IntelligenceContext:
@@ -182,11 +207,19 @@ class SupplyChangesModule:
             return self._insufficient(None)
         if type(comparison) is not MarketplaceSnapshotComparisonInput:
             raise TypeError("marketplace_comparison must be a MarketplaceSnapshotComparisonInput or None.")
+        return self.calculate_pair(comparison)
+
+    def calculate_pair(self, comparison: MarketplaceSnapshotComparisonInput) -> IntelligenceResult:
+        """Calculate from an already-selected pair without querying History."""
+
+        if type(comparison) is not MarketplaceSnapshotComparisonInput:
+            raise TypeError("comparison must be a MarketplaceSnapshotComparisonInput.")
         previous, latest = comparison.previous_snapshot, comparison.latest_snapshot
         if previous is None or latest is None:
             return self._insufficient(latest)
+        _validate_pair(previous, latest)
         previous_ref, latest_ref = _reference(previous), _reference(latest)
-        source_diagnostics = (*previous.diagnostics, *latest.diagnostics)
+        source_diagnostics = tuple(_safe_diagnostic(value) for value in (*previous.diagnostics, *latest.diagnostics, *(value for observation in (*previous.release_observations, *latest.release_observations) for value in observation.diagnostics)))
         diagnostics = tuple(f"{value.code}: {value.message}" for value in source_diagnostics)
         source = previous.source if previous.source == latest.source else None
         if MarketplaceDataStatus.FAILED in (previous.status, latest.status):
@@ -195,14 +228,10 @@ class SupplyChangesModule:
         if MarketplaceDataStatus.UNAVAILABLE in (previous.status, latest.status):
             output = SupplyChangesOutput(previous_ref, latest_ref, source, SupplyChangesComparisonState.INSUFFICIENT_DATA, diagnostics=source_diagnostics)
             return self._result(IntelligenceStatus.SKIPPED, "Supply Changes requires two available Marketplace snapshots.", output, (*diagnostics, "A supplied Marketplace snapshot is unavailable."))
-        if _utc(previous.captured_at) == _utc(latest.captured_at) or source is None:
-            reason = "Equal capture times do not define analytical ordering." if _utc(previous.captured_at) == _utc(latest.captured_at) else "Snapshot sources differ; no supply values were compared."
-            output = SupplyChangesOutput(previous_ref, latest_ref, source, SupplyChangesComparisonState.INSUFFICIENT_DATA, diagnostics=source_diagnostics)
-            return self._result(IntelligenceStatus.SKIPPED, "Supply Changes could not safely compare the supplied snapshots.", output, (*diagnostics, reason))
-
         changes, summary = _compare(previous, latest)
-        if summary.assessed_count == 0 and not (previous.status is MarketplaceDataStatus.EMPTY and latest.status is MarketplaceDataStatus.EMPTY):
-            output = SupplyChangesOutput(previous_ref, latest_ref, source, SupplyChangesComparisonState.INSUFFICIENT_DATA, diagnostics=source_diagnostics)
+        assessed = summary.comparable_count
+        if assessed == 0 and not (previous.status is MarketplaceDataStatus.EMPTY and latest.status is MarketplaceDataStatus.EMPTY):
+            output = SupplyChangesOutput(previous_ref, latest_ref, source, SupplyChangesComparisonState.INSUFFICIENT_DATA, changes, summary, source_diagnostics)
             return self._result(IntelligenceStatus.SKIPPED, "Supply Changes found no supplied release-level supply evidence to compare.", output, (*diagnostics, "No MarketplaceReleaseObservation supply_count values were supplied."))
         partial = MarketplaceDataStatus.PARTIAL in (previous.status, latest.status) or summary.incomparable_count > 0
         state = SupplyChangesComparisonState.PARTIAL if partial else SupplyChangesComparisonState.COMPLETE
@@ -211,8 +240,9 @@ class SupplyChangesModule:
         return self._result(IntelligenceStatus.COMPLETED, summary_text, output, diagnostics, tuple(e for c in changes for e in c.evidence))
 
     def _insufficient(self, latest: MarketplaceSnapshot | None) -> IntelligenceResult:
-        output = SupplyChangesOutput(None, _reference(latest) if latest else None, latest.source if latest else None, SupplyChangesComparisonState.INSUFFICIENT_HISTORY, diagnostics=latest.diagnostics if latest else ())
-        diagnostics = tuple(f"{d.code}: {d.message}" for d in latest.diagnostics) if latest else ()
+        safe = tuple(_safe_diagnostic(value) for value in latest.diagnostics) if latest else ()
+        output = SupplyChangesOutput(None, _reference(latest) if latest else None, latest.source if latest else None, SupplyChangesComparisonState.INSUFFICIENT_HISTORY, diagnostics=safe)
+        diagnostics = tuple(f"{d.code}: {d.message}" for d in safe)
         return self._result(IntelligenceStatus.SKIPPED, "Supply Changes requires two Marketplace snapshots.", output, (*diagnostics, "Fewer than two Marketplace snapshots were supplied."))
 
     def _result(self, status: IntelligenceStatus, summary: str, output: SupplyChangesOutput, diagnostics: tuple[str, ...], evidence: tuple[str, ...] = ()) -> IntelligenceResult:
@@ -237,10 +267,10 @@ def _compare(previous: MarketplaceSnapshot, latest: MarketplaceSnapshot) -> tupl
                 counts["unchanged_count"] += 1
                 continue
             kind = SupplyChangeKind.INCREASED if delta > 0 else SupplyChangeKind.DECREASED
-        elif comparable_after and (before is None or before.status in {MarketplaceDataStatus.COMPLETE, MarketplaceDataStatus.EMPTY}):
-            delta, kind = None, SupplyChangeKind.NEWLY_AVAILABLE
-        elif comparable_before and (after is None or after.status in {MarketplaceDataStatus.COMPLETE, MarketplaceDataStatus.EMPTY}):
-            delta, kind = None, SupplyChangeKind.NO_LONGER_AVAILABLE
+            if previous_supply == 0 and latest_supply > 0:
+                kind = SupplyChangeKind.NEWLY_AVAILABLE
+            elif previous_supply > 0 and latest_supply == 0:
+                kind = SupplyChangeKind.NO_LONGER_AVAILABLE
         else:
             delta, kind = None, SupplyChangeKind.INCOMPARABLE
             previous_supply = previous_supply if comparable_before else None
@@ -314,6 +344,25 @@ def _aware(value: object, name: str) -> None:
 
 def _utc(value: datetime) -> datetime:
     return value.astimezone(timezone.utc)
+
+
+def _validate_pair(previous: MarketplaceSnapshot, latest: MarketplaceSnapshot) -> None:
+    if previous.source != latest.source:
+        raise SupplyChangesDomainError("Supply Changes requires matching snapshot sources.")
+    if previous.source_version != latest.source_version:
+        raise SupplyChangesDomainError("Supply Changes requires matching snapshot source versions.")
+    if _utc(previous.captured_at) >= _utc(latest.captured_at):
+        raise SupplyChangesDomainError("Supply Changes requires a strictly earlier baseline snapshot.")
+
+
+def _safe_diagnostic(value: MarketplaceDiagnostic) -> MarketplaceDiagnostic:
+    known = {
+        "source_unavailable": ("source_unavailable", "Marketplace evidence was unavailable for this observation."),
+        "partial_observation": ("partial_observation", "Marketplace evidence was incomplete for this observation."),
+        "missing_field": ("missing_field", "Marketplace evidence was incomplete for this observation."),
+    }
+    code, copy = known.get(value.code, ("marketplace_evidence_incomplete", "Marketplace evidence was incomplete for this observation."))
+    return MarketplaceDiagnostic(code, copy, value.severity)
 
 
 __all__ = ["ReleaseSupplyChange", "SupplyChangeKind", "SupplyChangesComparisonState", "SupplyChangesDomainError", "SupplyChangesModule", "SupplyChangesOutput", "SupplyChangesSnapshotReference", "SupplyChangesSummary"]

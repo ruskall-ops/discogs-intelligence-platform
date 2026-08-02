@@ -21,6 +21,7 @@ from dip.experience.explorer import (
     CollectionExplorerViewModelBuilder,
 )
 from dip.experience.price_changes import (
+    ListingPriceChangesDetailViewModelBuilder,
     PriceChangesDetailConsistencyError,
     PriceChangesDetailState,
     PriceChangesDetailViewModel,
@@ -38,6 +39,7 @@ from dip.marketplace_intelligence import (
     MarketplaceSnapshotComparisonInput,
     PriceChangeDelta,
     PriceChangesModule,
+    ListingPriceChangesModule,
 )
 
 from tests.test_collection_explorer import (
@@ -53,7 +55,7 @@ LATEST_TIME = datetime(2026, 7, 20, 12, tzinfo=timezone.utc)
 
 class PriceChangesPresentationModelTestCase(unittest.TestCase):
     def setUp(self) -> None:
-        self.builder = PriceChangesDetailViewModelBuilder()
+        self.builder = ListingPriceChangesDetailViewModelBuilder()
 
     def test_available_model_is_frozen_and_preserves_typed_values_and_order(self) -> None:
         detail = self.builder.build(changed_result())
@@ -88,7 +90,7 @@ class PriceChangesPresentationModelTestCase(unittest.TestCase):
         empty = self.builder.build(unchanged_result())
         unavailable = self.builder.build(None)
         insufficient_history = self.builder.build(
-            PriceChangesModule().analyse(IntelligenceContext())
+            ListingPriceChangesModule().calculate_pair(MarketplaceSnapshotComparisonInput())
         )
         insufficient_data = self.builder.build(different_source_result())
         error = self.builder.build(failed_result())
@@ -110,18 +112,14 @@ class PriceChangesPresentationModelTestCase(unittest.TestCase):
         self.assertIsNone(insufficient_history.latest_snapshot)
         self.assertIsNotNone(insufficient_data.previous_snapshot)
         self.assertIsNotNone(insufficient_data.latest_snapshot)
-        self.assertIsNone(insufficient_data.source)
+        self.assertEqual(insufficient_data.source, "discogs")
         self.assertIsNotNone(error.previous_snapshot)
         self.assertIsNotNone(error.latest_snapshot)
 
     def test_one_snapshot_retains_latest_context_as_insufficient_history(self) -> None:
         latest = market_snapshot("latest", LATEST_TIME, listing_price="12.00")
-        result = PriceChangesModule().analyse(
-            IntelligenceContext(
-                marketplace_comparison=MarketplaceSnapshotComparisonInput(
-                    latest_snapshot=latest
-                )
-            )
+        result = ListingPriceChangesModule().calculate_pair(
+            MarketplaceSnapshotComparisonInput(latest_snapshot=latest)
         )
 
         detail = self.builder.build(result)
@@ -141,6 +139,32 @@ class PriceChangesPresentationModelTestCase(unittest.TestCase):
         with self.assertRaisesRegex(PriceChangesDetailConsistencyError, "status"):
             self.builder.build(replace(result, status=IntelligenceStatus.SKIPPED))
 
+
+class CurrentPriceChangesBuilderVersionTestCase(unittest.TestCase):
+    def test_exact_current_identity_is_accepted_and_all_others_are_rejected_safely(self):
+        builder = PriceChangesDetailViewModelBuilder()
+        current = authoritative_changed_result()
+        self.assertIs(builder.build(current).state, PriceChangesDetailState.AVAILABLE)
+        for module_id, module_version in (
+            ("price_changes", "1.0"),
+            ("price_changes", "99.0"),
+            ("listing_price_changes", "1.0"),
+            ("TOKEN-SQL-/private/live.sqlite", "2.0"),
+        ):
+            with self.subTest(module_id=module_id, module_version=module_version):
+                with self.assertRaisesRegex(
+                    PriceChangesDetailConsistencyError,
+                    "supported Price Changes contract",
+                ) as raised:
+                    builder.build(replace(current, module_id=module_id, module_version=module_version))
+                self.assertNotIn(module_id, str(raised.exception))
+                self.assertNotIn(module_version, str(raised.exception))
+
+
+class ListingPriceChangesModelInvariantTestCase(unittest.TestCase):
+    def setUp(self) -> None:
+        self.builder = ListingPriceChangesDetailViewModelBuilder()
+
     def test_model_rejects_reordering_count_mismatch_and_renderer_inconsistent_kind(self) -> None:
         detail = self.builder.build(changed_result())
 
@@ -159,7 +183,7 @@ class PriceChangesPresentationModelTestCase(unittest.TestCase):
                 delta=PriceChangeDelta(Decimal("0"), "GBP"),
             )
         insufficient = self.builder.build(
-            PriceChangesModule().analyse(IntelligenceContext())
+            ListingPriceChangesModule().calculate_pair(MarketplaceSnapshotComparisonInput())
         )
         with self.assertRaisesRegex(PriceChangesDetailConsistencyError, "zero"):
             replace(insufficient, unchanged_count=1)
@@ -167,7 +191,7 @@ class PriceChangesPresentationModelTestCase(unittest.TestCase):
 
 class PriceChangesRendererTestCase(unittest.TestCase):
     def setUp(self) -> None:
-        self.builder = PriceChangesDetailViewModelBuilder()
+        self.builder = ListingPriceChangesDetailViewModelBuilder()
         self.renderer = DesktopPriceChangesRenderer()
 
     def test_renderer_preserves_snapshot_money_delta_release_and_evidence(self) -> None:
@@ -189,7 +213,7 @@ class PriceChangesRendererTestCase(unittest.TestCase):
         empty = self.renderer.render(self.builder.build(unchanged_result()))
         unavailable = self.renderer.render(PriceChangesDetailViewModel.unavailable())
         insufficient_history = self.renderer.render(
-            self.builder.build(PriceChangesModule().analyse(IntelligenceContext()))
+            self.builder.build(ListingPriceChangesModule().calculate_pair(MarketplaceSnapshotComparisonInput()))
         )
         insufficient_data = self.renderer.render(
             self.builder.build(different_source_result())
@@ -228,7 +252,7 @@ class PriceChangesRendererTestCase(unittest.TestCase):
 
 class PriceChangesExplorerIntegrationTestCase(unittest.TestCase):
     def test_price_changes_is_sixth_and_overview_remains_selected(self) -> None:
-        result = changed_result()
+        result = authoritative_changed_result()
         rendered = explorer_controller().open(
             available_homepage(),
             price_changes_result=result,
@@ -251,11 +275,11 @@ class PriceChangesExplorerIntegrationTestCase(unittest.TestCase):
             rendered.selected_destination,
             CollectionExplorerDestination.OVERVIEW,
         )
-        self.assertIn("Listing listing-1", rendered.sections[5].body)
+        self.assertNotIn("Listing listing-1", rendered.sections[5].body)
         self.assertIn("Release-level changes", rendered.sections[5].body)
 
     def test_result_is_consumed_once_and_repeated_destination_access_does_no_work(self) -> None:
-        result = changed_result()
+        result = authoritative_changed_result()
         real = PriceChangesPresentationService(
             PriceChangesDetailViewModelBuilder()
         )
@@ -291,7 +315,7 @@ class PriceChangesExplorerIntegrationTestCase(unittest.TestCase):
         unavailable = explorer_controller().open(available_homepage())
         partial = explorer_controller().open(
             available_homepage(),
-            price_changes_result=cross_currency_result(),
+            price_changes_result=authoritative_cross_currency_result(),
         )
 
         self.assertIs(unavailable.state, CollectionExplorerState.AVAILABLE)
@@ -299,10 +323,10 @@ class PriceChangesExplorerIntegrationTestCase(unittest.TestCase):
             unavailable.navigation[5].state,
             CollectionExplorerState.UNAVAILABLE,
         )
-        self.assertIs(partial.state, CollectionExplorerState.PARTIAL)
+        self.assertIs(partial.state, CollectionExplorerState.AVAILABLE)
         self.assertIs(
             partial.navigation[5].state,
-            CollectionExplorerState.PARTIAL,
+            CollectionExplorerState.INSUFFICIENT_DATA,
         )
 
     def test_loading_workspace_does_not_consume_supplied_result(self) -> None:
@@ -439,13 +463,28 @@ def market_snapshot(
 
 
 def compare(previous: MarketplaceSnapshot, latest: MarketplaceSnapshot):
-    return PriceChangesModule().analyse(
-        IntelligenceContext(
-            marketplace_comparison=MarketplaceSnapshotComparisonInput(
-                previous,
-                latest,
-            )
-        )
+    return PriceChangesModule().calculate_listing_pair(
+        MarketplaceSnapshotComparisonInput(previous, latest)
+    )
+
+
+def authoritative_compare(previous: MarketplaceSnapshot, latest: MarketplaceSnapshot):
+    return PriceChangesModule().calculate_pair(
+        MarketplaceSnapshotComparisonInput(previous, latest)
+    )
+
+
+def authoritative_changed_result():
+    return authoritative_compare(
+        market_snapshot("previous", PREVIOUS_TIME),
+        market_snapshot("latest", LATEST_TIME, lowest_price="9.00"),
+    )
+
+
+def authoritative_cross_currency_result():
+    return authoritative_compare(
+        market_snapshot("previous", PREVIOUS_TIME, currency="GBP"),
+        market_snapshot("latest", LATEST_TIME, currency="USD"),
     )
 
 
@@ -477,9 +516,13 @@ def cross_currency_result():
 
 
 def different_source_result():
-    return compare(
-        market_snapshot("previous", PREVIOUS_TIME, source="discogs"),
-        market_snapshot("latest", LATEST_TIME, source="another_source"),
+    previous_observation = MarketplaceReleaseObservation(1, PREVIOUS_TIME, MarketplaceDataStatus.COMPLETE, num_for_sale=1)
+    latest_observation = MarketplaceReleaseObservation(1, LATEST_TIME, MarketplaceDataStatus.COMPLETE, num_for_sale=1)
+    return PriceChangesModule().calculate_listing_pair(
+        MarketplaceSnapshotComparisonInput(
+            MarketplaceSnapshot("previous", PREVIOUS_TIME, "discogs", MarketplaceDataStatus.COMPLETE, (previous_observation,), source_version="v1"),
+            MarketplaceSnapshot("latest", LATEST_TIME, "discogs", MarketplaceDataStatus.COMPLETE, (latest_observation,), source_version="v1"),
+        )
     )
 
 

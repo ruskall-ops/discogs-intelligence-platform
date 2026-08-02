@@ -1,5 +1,22 @@
 # Changelog
 
+# Version 0.5.1 — Marketplace Change Execution
+
+**Status: Unreleased**
+
+- Added one shared, deterministic Marketplace snapshot window for release-level
+  Price and Supply Changes.
+- Enabled Price Changes and Supply Changes in Collection Explorer with lazy
+  caching and explicit Marketplace refresh.
+- Added current catalogue artist/title enrichment without changing historical
+  Marketplace evidence.
+- Established release-level Price Changes 2.0 and Supply Changes 2.0 contracts;
+  persisted historical 1.0 identities remain unchanged.
+- Added typed safe workspace outcomes, controller-level Collector Run
+  serialization, and transactional non-destructive refresh replacement.
+- Kept migrations at 1–7 and listing-dependent or composite Marketplace
+  destinations disabled.
+
 All notable changes to the Discogs Intelligence Platform will be documented here.
 
 ---

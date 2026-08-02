@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Callable, Protocol
+from dip.app.marketplace_change_workspace import MarketplaceChangeOutcomeReason, MarketplaceChangeWorkspace, MarketplaceChangeWorkspaceState
 
 from dip.experience.dashboard import (
     DashboardHomepageConsistencyError,
@@ -15,6 +16,7 @@ from dip.experience.explorer import (
     CollectionExplorerDestination,
     CollectionExplorerState,
     CollectionExplorerViewModel,
+    MarketplaceChangePresentationOutcome,
 )
 from dip.intelligence import IntelligenceResult
 
@@ -62,6 +64,7 @@ class DesktopCollectionExplorerView:
     selected_destination: CollectionExplorerDestination
     navigation: tuple[DesktopCollectionExplorerNavigationItem, ...]
     sections: tuple[DesktopCollectionExplorerSection, ...]
+    marketplace_change_outcome: MarketplaceChangePresentationOutcome | None = None
 
 
 class _CollectionExplorerPresentation(Protocol):
@@ -81,6 +84,10 @@ class _CollectionExplorerPresentation(Protocol):
         marketplace_scarcity_result: IntelligenceResult | None = None,
         marketplace_opportunity_result: IntelligenceResult | None = None,
     ) -> CollectionExplorerViewModel: ...
+
+
+class _MarketplaceChangeWorkspaceService(Protocol):
+    def build(self) -> MarketplaceChangeWorkspace: ...
 
 
 class DesktopCollectionExplorerRenderer:
@@ -166,6 +173,7 @@ class DesktopCollectionExplorerRenderer:
             selected_destination=explorer.selected_destination,
             navigation=navigation,
             sections=sections,
+            marketplace_change_outcome=explorer.marketplace_change_outcome,
         )
 
     @staticmethod
@@ -288,7 +296,7 @@ class DesktopCollectionExplorerRenderer:
         explorer: CollectionExplorerViewModel,
     ) -> DesktopCollectionExplorerSection:
         rendered = self._price_changes.render(explorer.price_changes)
-        parts = [rendered.headline, rendered.summary]
+        parts = [_marketplace_outcome_copy(explorer.marketplace_change_outcome) or rendered.headline, rendered.summary]
         if rendered.context:
             parts.extend(("", "Comparison context", rendered.context))
         if rendered.counts:
@@ -312,7 +320,7 @@ class DesktopCollectionExplorerRenderer:
 
     def _supply(self, explorer: CollectionExplorerViewModel) -> DesktopCollectionExplorerSection:
         rendered = self._supply_changes.render(explorer.supply_changes)
-        parts = [rendered.headline, rendered.summary]
+        parts = [_marketplace_outcome_copy(explorer.marketplace_change_outcome) or rendered.headline, rendered.summary]
         if rendered.context:
             parts.extend(("", "Comparison context", rendered.context))
         if rendered.counts:
@@ -449,9 +457,121 @@ class DesktopCollectionExplorerController:
         self,
         presentation: _CollectionExplorerPresentation,
         renderer: DesktopCollectionExplorerRenderer | None = None,
+        marketplace_changes: _MarketplaceChangeWorkspaceService | None = None,
+        marketplace_refresh_allowed: Callable[[], bool] | None = None,
     ) -> None:
         self._presentation = presentation
         self._renderer = renderer or DesktopCollectionExplorerRenderer()
+        self._marketplace_changes = marketplace_changes
+        self._marketplace_cache: MarketplaceChangeWorkspace | None = None
+        self._marketplace_refresh_allowed = marketplace_refresh_allowed or (lambda: True)
+
+    def set_marketplace_refresh_allowed(self, allowed: Callable[[], bool]) -> None:
+        if not callable(allowed):
+            raise TypeError("allowed must be callable.")
+        self._marketplace_refresh_allowed = allowed
+
+    def invalidate_marketplace_changes(self) -> None:
+        """Invalidate cached read-only Marketplace projections without rebuilding."""
+
+        self._marketplace_cache = None
+
+    def refresh_marketplace_changes(self) -> MarketplaceChangeWorkspace | None:
+        """Build but do not publish a candidate replacement workspace."""
+
+        if self._marketplace_changes is None or not self._marketplace_refresh_allowed():
+            return None
+        candidate = self._construct_marketplace_candidate()
+        return self._validate_marketplace_candidate(candidate)
+
+    def _construct_marketplace_candidate(self) -> MarketplaceChangeWorkspace:
+        """Construct a detached candidate at an independently testable seam."""
+
+        return self._marketplace_changes.build()
+
+    @staticmethod
+    def _validate_marketplace_candidate(
+        candidate: MarketplaceChangeWorkspace,
+    ) -> MarketplaceChangeWorkspace | None:
+        """Fail closed when a service returns no valid final workspace model."""
+
+        if type(candidate) is not MarketplaceChangeWorkspace:
+            raise TypeError("candidate must be a MarketplaceChangeWorkspace.")
+        if candidate.state is MarketplaceChangeWorkspaceState.ERROR:
+            return None
+        return candidate
+
+    def install_marketplace_changes(self, candidate: MarketplaceChangeWorkspace) -> MarketplaceChangeWorkspace | None:
+        """Publish a candidate only after presentation and window rendering succeed."""
+
+        if type(candidate) is not MarketplaceChangeWorkspace:
+            raise TypeError("candidate must be a MarketplaceChangeWorkspace.")
+        previous = self._marketplace_cache
+        self._marketplace_cache = candidate
+        return previous
+
+    def restore_marketplace_changes(self, previous: MarketplaceChangeWorkspace | None) -> None:
+        """Restore the exact prior cache when window publication fails."""
+
+        if previous is not None and type(previous) is not MarketplaceChangeWorkspace:
+            raise TypeError("previous must be a MarketplaceChangeWorkspace or None.")
+        self._marketplace_cache = previous
+
+    @property
+    def marketplace_cache(self) -> MarketplaceChangeWorkspace | None:
+        return self._marketplace_cache
+
+    def render_marketplace_candidate(
+        self,
+        homepage: DashboardHomepageViewModel,
+        candidate: MarketplaceChangeWorkspace,
+        *,
+        selected_destination: CollectionExplorerDestination,
+    ) -> DesktopCollectionExplorerView:
+        """Render a detached candidate without changing the installed cache."""
+
+        if type(candidate) is not MarketplaceChangeWorkspace:
+            raise TypeError("candidate must be a MarketplaceChangeWorkspace.")
+        explorer = self.present_marketplace_candidate(
+            homepage,
+            candidate,
+            selected_destination=selected_destination,
+        )
+        return self.render_marketplace_presentation(explorer)
+
+    def present_marketplace_candidate(
+        self,
+        homepage: DashboardHomepageViewModel,
+        candidate: MarketplaceChangeWorkspace,
+        *,
+        selected_destination: CollectionExplorerDestination,
+    ):
+        """Construct candidate presentation without rendering or cache mutation."""
+
+        if type(candidate) is not MarketplaceChangeWorkspace:
+            raise TypeError("candidate must be a MarketplaceChangeWorkspace.")
+        return self._presentation.explorer_for_homepage(
+            homepage,
+            selected_destination=selected_destination,
+            price_changes_detail=candidate.price_changes,
+            supply_changes_detail=candidate.supply_changes,
+            marketplace_change_outcome=_presentation_outcome(candidate.outcome_reason),
+        )
+
+    def render_marketplace_presentation(self, explorer):
+        """Invoke the installed Explorer renderer at a distinct refresh stage."""
+
+        renderer = self._marketplace_renderer_for_refresh()
+        return renderer.render(explorer)
+
+    def _marketplace_renderer_for_refresh(self) -> DesktopCollectionExplorerRenderer:
+        """Return the renderer at a distinct construction/acquisition seam."""
+
+        return self._renderer
+
+    @property
+    def has_marketplace_cache(self) -> bool:
+        return self._marketplace_cache is not None
 
     @staticmethod
     def can_open(homepage: DashboardHomepageViewModel) -> bool:
@@ -483,9 +603,17 @@ class DesktopCollectionExplorerController:
         marketplace_stability_result: IntelligenceResult | None = None,
         marketplace_scarcity_result: IntelligenceResult | None = None,
         marketplace_opportunity_result: IntelligenceResult | None = None,
+        refresh_marketplace: bool = False,
+        collector_run_active: bool = False,
     ) -> DesktopCollectionExplorerView:
         """Build and render one Explorer; tab changes need no further service call."""
 
+        if type(selected_destination) is not CollectionExplorerDestination:
+            selected_destination = CollectionExplorerDestination.OVERVIEW
+        disabled = frozenset((CollectionExplorerDestination.WEEKEND_LISTINGS, CollectionExplorerDestination.RARE_APPEARANCES, CollectionExplorerDestination.MARKETPLACE_ACTIVITY, CollectionExplorerDestination.LISTING_LIFECYCLE, CollectionExplorerDestination.MARKETPLACE_MOMENTUM, CollectionExplorerDestination.MARKETPLACE_STABILITY, CollectionExplorerDestination.MARKETPLACE_SCARCITY, CollectionExplorerDestination.MARKETPLACE_OPPORTUNITY))
+        disabled_request = selected_destination in disabled
+        if disabled_request:
+            selected_destination = CollectionExplorerDestination.OVERVIEW
         result_arguments = {}
         if weekend_listings_result is not None:
             result_arguments["weekend_listings_result"] = weekend_listings_result
@@ -509,12 +637,27 @@ class DesktopCollectionExplorerController:
             result_arguments["marketplace_scarcity_result"] = marketplace_scarcity_result
         if marketplace_opportunity_result is not None:
             result_arguments["marketplace_opportunity_result"] = marketplace_opportunity_result
+        if disabled_request:
+            result_arguments.clear()
+        candidate = None
+        if self._marketplace_changes is not None and price_changes_result is None and supply_changes_result is None and not disabled_request:
+            refresh_allowed = not collector_run_active and self._marketplace_refresh_allowed()
+            if refresh_allowed and (refresh_marketplace or self._marketplace_cache is None):
+                candidate = self._marketplace_changes.build()
+            supplied = candidate or self._marketplace_cache
+            if supplied is not None:
+                result_arguments["price_changes_detail"] = supplied.price_changes
+                result_arguments["supply_changes_detail"] = supplied.supply_changes
+                result_arguments["marketplace_change_outcome"] = _presentation_outcome(getattr(supplied, "outcome_reason", None))
         explorer = self._presentation.explorer_for_homepage(
             homepage,
             selected_destination=selected_destination,
             **result_arguments,
         )
-        return self._renderer.render(explorer)
+        rendered = self._renderer.render(explorer)
+        if candidate is not None:
+            self._marketplace_cache = candidate
+        return rendered
 
 
 def _state_heading(state: CollectionExplorerState) -> str:
@@ -529,6 +672,33 @@ def _state_heading(state: CollectionExplorerState) -> str:
         CollectionExplorerState.INSUFFICIENT_DATA: "Insufficient data",
     }
     return labels[state]
+
+
+def _presentation_outcome(
+    reason: MarketplaceChangeOutcomeReason | None,
+) -> MarketplaceChangePresentationOutcome | None:
+    if reason is None:
+        return None
+    if type(reason) is not MarketplaceChangeOutcomeReason:
+        raise TypeError("Marketplace outcome reason must be typed.")
+    return MarketplaceChangePresentationOutcome(reason.value)
+
+
+def _marketplace_outcome_copy(
+    outcome: MarketplaceChangePresentationOutcome | None,
+) -> str | None:
+    if outcome is None:
+        return None
+    if type(outcome) is not MarketplaceChangePresentationOutcome:
+        raise TypeError("Marketplace presentation outcome must be typed.")
+    return {
+        MarketplaceChangePresentationOutcome.NO_ELIGIBLE_CURRENT: "No eligible Marketplace snapshot is available.",
+        MarketplaceChangePresentationOutcome.NO_COMPATIBLE_BASELINE: "No earlier compatible Marketplace snapshot is available for comparison.",
+        MarketplaceChangePresentationOutcome.NO_COMPARABLE_FACTS: "The selected snapshots do not contain comparable Price or Supply evidence.",
+        MarketplaceChangePresentationOutcome.HISTORY_UNREADABLE: "Saved Marketplace history could not be read safely.",
+        MarketplaceChangePresentationOutcome.HISTORY_INVALID: "Saved Marketplace history is not valid for comparison.",
+        MarketplaceChangePresentationOutcome.COMPARISON_FAILED: "Marketplace changes could not be calculated safely.",
+    }[outcome]
 
 
 def _count(value: int | None) -> str:

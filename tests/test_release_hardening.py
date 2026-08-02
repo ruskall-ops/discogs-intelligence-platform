@@ -45,15 +45,15 @@ class ReleaseHardeningTestCase(unittest.TestCase):
         for document in documents:
             with self.subTest(document=document[:40]):
                 lowered = document.lower()
-                self.assertIn("0.5.0", lowered)
                 self.assertNotIn("prepared release candidate", lowered)
                 self.assertNotIn("awaiting release completion", lowered)
         combined = "\n".join(documents).lower()
+        self.assertIn("0.5.1", combined)
         self.assertIn("released on 31 july 2026", combined)
         self.assertIn("current public personal-use release", combined)
 
     def test_runtime_packaging_entry_point_and_schema_contract(self) -> None:
-        self.assertEqual(dip.__version__, "0.5.0")
+        self.assertEqual(dip.__version__, "0.5.1")
         distribution = importlib.metadata.distribution(
             "discogs-intelligence-platform"
         )
@@ -262,8 +262,6 @@ class ReleaseHardeningTestCase(unittest.TestCase):
             frozenset(
                 (
                     CollectionExplorerDestination.WEEKEND_LISTINGS,
-                    CollectionExplorerDestination.PRICE_CHANGES,
-                    CollectionExplorerDestination.SUPPLY_CHANGES,
                     CollectionExplorerDestination.RARE_APPEARANCES,
                     CollectionExplorerDestination.MARKETPLACE_ACTIVITY,
                     CollectionExplorerDestination.LISTING_LIFECYCLE,

@@ -31,9 +31,8 @@ class PriceChangesHistorySerializationTestCase(unittest.TestCase):
     def test_typed_price_changes_result_round_trips_without_type_or_scale_loss(
         self,
     ) -> None:
-        result = PriceChangesModule().analyse(
-            IntelligenceContext(
-                marketplace_comparison=MarketplaceSnapshotComparisonInput(
+        result = PriceChangesModule().calculate_listing_pair(
+                MarketplaceSnapshotComparisonInput(
                     previous_snapshot=snapshot(
                         "previous",
                         datetime(2026, 7, 21, 9, tzinfo=timezone.utc),
@@ -55,7 +54,6 @@ class PriceChangesHistorySerializationTestCase(unittest.TestCase):
                         listing="13.000",
                     ),
                 )
-            )
         )
         record = IntelligenceHistoryRecord(
             record_id=None,
@@ -72,6 +70,10 @@ class PriceChangesHistorySerializationTestCase(unittest.TestCase):
         restored = loads_intelligence_value(dumps_intelligence_value(record))
 
         self.assertEqual(restored, record)
+        self.assertEqual(
+            (restored.module_id, restored.module_version),
+            ("listing_price_changes", "1.0"),
+        )
         self.assertIs(restored.status, IntelligenceStatus.COMPLETED)
         output = restored.metrics["output"]
         self.assertIs(type(output), PriceChangesOutput)

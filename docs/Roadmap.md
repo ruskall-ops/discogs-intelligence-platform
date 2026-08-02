@@ -94,7 +94,7 @@ refresh, existing intelligence execution, history recording, presentation
 refresh, Collector Review, and primary desktop continuity through current
 application boundaries.
 
-### Version 0.5.1 — Collector Run Application Boundary
+### Version 0.5 development slice 1 — Collector Run Application Boundary
 
 **Status: Released in Version 0.5.0**
 
@@ -109,7 +109,7 @@ This slice deliberately does not capture canonical aggregate Marketplace
 History, execute intelligence, record Intelligence History, import a CSV, or
 scope data by Project.
 
-### Version 0.5.2 — Canonical Marketplace Capture
+### Version 0.5 development slice 2 — Canonical Marketplace Capture
 
 **Status: Released in Version 0.5.0**
 
@@ -127,7 +127,7 @@ later write fails. This slice added no schema, Project scope, Intelligence
 execution, Intelligence History, CSV reconciliation, scheduling, cancellation,
 or package-version change.
 
-### Version 0.5.3 — Coherent Intelligence Execution and History
+### Version 0.5 development slice 3 — Coherent Intelligence Execution and History
 
 **Status: Released in Version 0.5.0**
 
@@ -143,7 +143,7 @@ semantics. CSV import is disabled and guarded during a run. Project scoping,
 scheduling, collection-history architecture, and scoring changes remain
 deferred.
 
-### Version 0.5.4 — Collector Review Workflow and Weekend Review Queue
+### Version 0.5 development slice 4 — Collector Review Workflow and Weekend Review Queue
 
 **Status: Released in Version 0.5.0**
 
@@ -157,7 +157,7 @@ source evidence, deterministic ordering, explicit add, notes, active/resolved
 states, reopen, confirmed removal, and optimistic conflict detection. Queue
 population is never automatic and Collection Decisions remain separate.
 
-### Version 0.5.5 — Session Restoration
+### Version 0.5 development slice 5 — Session Restoration
 
 **Status: Released in Version 0.5.0**
 
@@ -176,7 +176,7 @@ Search text, drafts, calculated models, secrets, secondary windows, non-normal
 window states, Project partitioning, and resumable Collector Runs remain
 excluded. See [Session Restoration](SessionRestoration.md).
 
-### Version 0.5.6 — Personal-Use Release Hardening
+### Version 0.5 development slice 6 — Personal-Use Release Hardening
 
 **Status: Released in Version 0.5.0**
 
@@ -188,6 +188,18 @@ and packaging validation, and release documentation.
 
 It adds no schema migration: migrations remain 1–7. Automatic backup,
 retention, in-app restore, and Windows support remain outside Version 0.5.
+
+These six internal development slices were consolidated into the public v0.5.0
+release; their numbering does not represent later public releases.
+
+## Version 0.5.1 — Marketplace Change Execution
+
+**Status: Implemented, unreleased**
+
+Version 0.5.1 enables release-level observed lowest-price and copies-for-sale
+changes in Collection Explorer. Both views share one exact-source/version
+snapshot pair, use current catalogue labels only for identification, and remain
+read-only. Listing-dependent and composite Marketplace features remain disabled.
 
 Candidate follow-on slices include:
 

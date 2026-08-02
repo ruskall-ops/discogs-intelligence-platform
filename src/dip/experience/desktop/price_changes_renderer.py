@@ -157,6 +157,7 @@ def _release_change(
 ) -> DesktopReleasePriceChange:
     body = "\n".join(
         (
+            f"Release ID: {change.release_id}",
             f"Metric: {_label(change.metric.value)}",
             f"Change: {_label(change.change_kind.value)}",
             f"Previous value: {_optional_money(change.previous_value)}",
@@ -164,15 +165,18 @@ def _release_change(
             f"Delta: {_optional_delta(change.delta)}",
             f"Previous snapshot: {change.previous_snapshot_id}",
             f"Latest snapshot: {change.latest_snapshot_id}",
+            f"Previous observed: {_optional_timestamp(change.previous_observed_at)}",
+            f"Current observed: {_optional_timestamp(change.latest_observed_at)}",
             "Evidence:",
             *(f"• {value}" for value in change.evidence),
+            *(f"• {value}" for value in change.observation_diagnostics),
         )
     )
     return DesktopReleasePriceChange(
         position=position,
         release_id=change.release_id,
         heading=(
-            f"Release {change.release_id} · {_label(change.metric.value)}"
+            f"{change.display_label or f'Release {change.release_id}'} · {_label(change.metric.value)}"
         ),
         body=body,
     )

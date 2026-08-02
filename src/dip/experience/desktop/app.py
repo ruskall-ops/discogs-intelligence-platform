@@ -87,8 +87,6 @@ _DECISION_FILTER_LABELS = {
 _UNAVAILABLE_EXPLORER_DESTINATIONS = frozenset(
     (
         CollectionExplorerDestination.WEEKEND_LISTINGS,
-        CollectionExplorerDestination.PRICE_CHANGES,
-        CollectionExplorerDestination.SUPPLY_CHANGES,
         CollectionExplorerDestination.RARE_APPEARANCES,
         CollectionExplorerDestination.MARKETPLACE_ACTIVITY,
         CollectionExplorerDestination.LISTING_LIFECYCLE,
@@ -161,6 +159,14 @@ class App(tk.Tk):
             dependencies, "database_backup", None
         )
         self._collector_run_active = False
+        set_refresh_allowed = getattr(
+            self.collection_explorer_controller,
+            "set_marketplace_refresh_allowed",
+            None,
+        )
+        if set_refresh_allowed is not None:
+            set_refresh_allowed(lambda: not self._collector_run_active)
+        self._marketplace_explorer_handles = {}
         self._database_backup_active = False
         self._session_restoring = True
         self.current_observation_workspace = (
@@ -1673,6 +1679,10 @@ class App(tk.Tk):
         succeeded = result.successful_releases
         failed = result.failed_releases
         self._restore_refresh_controls()
+        explorer_controller = self.__dict__.get("collection_explorer_controller")
+        if explorer_controller is not None:
+            explorer_controller.invalidate_marketplace_changes()
+        self._mark_marketplace_explorers_stale()
         if result.status is CollectorRunStatus.FAILED:
             self.status_var.set(
                 f"Refresh failed — 0 successful, {failed:,} errors"
@@ -1964,19 +1974,30 @@ class App(tk.Tk):
             pady=(0, 12)
         )
 
-    def open_intelligence_explorer(self):
+    def open_intelligence_explorer(self, *, refresh_marketplace=False, selected_destination=CollectionExplorerDestination.OVERVIEW, _rendered=None, _register=True):
+        window = None
         try:
-            rendered = self.collection_explorer_controller.open(
-                self.current_dashboard_homepage
-            )
+            rendered = _rendered or self.collection_explorer_controller.open(
+                    self.current_dashboard_homepage,
+                    refresh_marketplace=refresh_marketplace,
+                    selected_destination=selected_destination,
+                    collector_run_active=self._collector_run_active,
+                )
+            window = tk.Toplevel(self)
+            return self._populate_intelligence_explorer_window(window, rendered, register=_register)
+        except (KeyboardInterrupt, SystemExit):
+            if window is not None:
+                self._marketplace_explorer_handles.pop(window, None)
+                self._destroy_marketplace_window(window)
+            raise
         except Exception:
-            messagebox.showerror(
-                "Collection Explorer unavailable",
-                "Collection Explorer could not be displayed.",
-            )
-            return
+            if window is not None:
+                self._marketplace_explorer_handles.pop(window, None)
+                self._destroy_marketplace_window(window)
+            messagebox.showerror("Collection Explorer unavailable", "Collection Explorer could not be displayed.")
+            return None
 
-        window = tk.Toplevel(self)
+    def _populate_intelligence_explorer_window(self, window, rendered, *, register=True):
         window.title(rendered.title)
         window.geometry("1050x720")
         window.minsize(800, 560)
@@ -2009,9 +2030,192 @@ class App(tk.Tk):
             text.pack(side="left", fill="both", expand=True)
             scrollbar.pack(side="right", fill="y")
         notebook.select(selected_index)
-        ttk.Button(window, text="Close", command=window.destroy).pack(
-            pady=(0, 12)
+        controls = ttk.Frame(window)
+        controls.pack(pady=(0, 12))
+        stale = ttk.Label(controls, text=(
+            "Marketplace changes can be refreshed after the Collector Run finishes."
+            if self._collector_run_active else ""
+        ))
+        stale.pack(side="top", pady=2)
+        refresh_button = ttk.Button(
+            controls,
+            text="Refresh Marketplace Changes",
+            command=lambda: self._marketplace_refresh_callback(
+                window, notebook, rendered
+            ),
         )
+        refresh_button.pack(side="left", padx=4)
+        if self._collector_run_active:
+            refresh_button.state(["disabled"])
+        close = lambda: (self._marketplace_explorer_handles.pop(window, None), window.destroy())
+        ttk.Button(controls, text="Close", command=close).pack(
+            side="left", padx=4
+        )
+        window._dip_marketplace_registration = (stale, refresh_button, close)
+        self._bind_marketplace_refresh_shortcuts(
+            window,
+            lambda event: self._marketplace_refresh_callback(
+                window, notebook, rendered, event
+            ),
+        )
+        if register:
+            self._register_marketplace_explorer_window(window)
+        return window
+
+    def _register_marketplace_explorer_window(self, window):
+        """Register only a fully populated Explorer replacement."""
+
+        stale, refresh_button, close = window._dip_marketplace_registration
+        self._marketplace_explorer_handles[window] = (stale, refresh_button)
+        try:
+            window.protocol("WM_DELETE_WINDOW", close)
+            window.bind("<Destroy>", lambda event: self._marketplace_explorer_handles.pop(window, None) if event.widget is window else None, add="+")
+        except (KeyboardInterrupt, SystemExit):
+            self._marketplace_explorer_handles.pop(window, None)
+            raise
+        except Exception:
+            self._marketplace_explorer_handles.pop(window, None)
+            raise
+
+    @staticmethod
+    def _destroy_marketplace_window(window):
+        """Contain ordinary Tk cleanup failures without hiding process control."""
+
+        try:
+            window.destroy()
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception:
+            pass
+
+    def _create_marketplace_replacement_toplevel(self):
+        """Create one unregistered replacement Toplevel."""
+
+        return tk.Toplevel(self)
+
+    def _populate_marketplace_replacement(self, window, rendered):
+        """Fully populate one replacement without registering it."""
+
+        return self._populate_intelligence_explorer_window(
+            window, rendered, register=False
+        )
+
+    def _unregister_marketplace_window(self, window):
+        """Remove one retired window from authoritative bookkeeping."""
+
+        self._marketplace_explorer_handles.pop(window, None)
+
+    def _marketplace_refresh_callback(
+        self, window, notebook, rendered, event=None
+    ):
+        """Shared button and keyboard boundary for explicit Marketplace refresh."""
+
+        self._refresh_marketplace_explorer(window, notebook, rendered)
+        return "break" if event is not None else None
+
+    @staticmethod
+    def _bind_marketplace_refresh_shortcuts(window, callback):
+        """Bind both supported shortcuts to the shared refresh callback."""
+
+        window.bind("<Command-r>", callback, add="+")
+        window.bind("<Control-r>", callback, add="+")
+
+    def _refresh_marketplace_explorer(self, window, notebook, rendered):
+        """Explicitly rebuild while preserving an enabled Explorer destination."""
+
+        if self._collector_run_active:
+            return
+        replacement = None
+        installed_previous = None
+        cache_installed = False
+        try:
+            index = notebook.index(notebook.select())
+            destination = rendered.sections[index].destination
+        except Exception:
+            destination = CollectionExplorerDestination.OVERVIEW
+        if destination in _UNAVAILABLE_EXPLORER_DESTINATIONS:
+            destination = CollectionExplorerDestination.OVERVIEW
+        try:
+            candidate = self.collection_explorer_controller.refresh_marketplace_changes()
+            if candidate is None:
+                raise RuntimeError("safe Marketplace refresh failure")
+            candidate_presentation = self.collection_explorer_controller.present_marketplace_candidate(
+                self.current_dashboard_homepage,
+                candidate,
+                selected_destination=destination,
+            )
+            candidate_rendered = self.collection_explorer_controller.render_marketplace_presentation(
+                candidate_presentation
+            )
+            replacement = self._create_marketplace_replacement_toplevel()
+            self._populate_marketplace_replacement(replacement, candidate_rendered)
+            if replacement is None:
+                raise RuntimeError("Marketplace presentation refresh failure")
+            installed_previous = self.collection_explorer_controller.install_marketplace_changes(candidate)
+            cache_installed = True
+            try:
+                self._register_marketplace_explorer_window(replacement)
+            except BaseException:
+                self.collection_explorer_controller.restore_marketplace_changes(installed_previous)
+                cache_installed = False
+                raise
+        except (KeyboardInterrupt, SystemExit):
+            if replacement is not None:
+                self._marketplace_explorer_handles.pop(replacement, None)
+                self._destroy_marketplace_window(replacement)
+            raise
+        except Exception:
+            if cache_installed:
+                self.collection_explorer_controller.restore_marketplace_changes(installed_previous)
+            if replacement is not None:
+                self._marketplace_explorer_handles.pop(replacement, None)
+                self._destroy_marketplace_window(replacement)
+            handle = self._marketplace_explorer_handles.get(window)
+            if handle is not None:
+                handle[0].configure(text="Marketplace changes could not be refreshed. The previous results remain stale; retry is available.")
+                handle[1].state(["!disabled"])
+            messagebox.showerror("Marketplace Changes", "Marketplace changes could not be refreshed. The previous results remain available and stale.")
+            return
+        try:
+            self._unregister_marketplace_window(window)
+        except (KeyboardInterrupt, SystemExit):
+            self._marketplace_explorer_handles.pop(window, None)
+            raise
+        except Exception:
+            self._marketplace_explorer_handles.pop(window, None)
+        self._destroy_marketplace_window(window)
+        self._clear_marketplace_window_stale(replacement)
+
+    def _clear_marketplace_window_stale(self, window):
+        """Leave a published replacement visibly current after safe cleanup."""
+
+        handle = self._marketplace_explorer_handles.get(window)
+        if handle is None:
+            return
+        try:
+            handle[0].configure(text="")
+            handle[1].state(["!disabled"])
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception:
+            pass
+
+    def _mark_marketplace_explorers_stale(self):
+        """Mark every live Explorer stale on the Tk callback thread."""
+
+        copy = "Marketplace history has changed. Refresh Marketplace Changes to update these results."
+        handles = self.__dict__.setdefault("_marketplace_explorer_handles", {})
+        for window, (label, button) in tuple(handles.items()):
+            try:
+                if not window.winfo_exists():
+                    handles.pop(window, None)
+                    continue
+                label.configure(text=copy)
+                button.state(["!disabled"])
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except Exception:
+                handles.pop(window, None)
 
     def open_portfolio_overview(self, destination=None):
         """Open the separate Portfolio experience from a supplied completed result."""

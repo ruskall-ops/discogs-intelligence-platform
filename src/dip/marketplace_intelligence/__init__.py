@@ -15,6 +15,7 @@ from .models import (
 from .price_changes import (
     ListingPriceChange,
     ListingPriceChangeKind,
+    ListingPriceChangesModule,
     MarketplaceSnapshotComparisonInput,
     PriceChangeDelta,
     PriceChangesComparisonState,
@@ -106,6 +107,7 @@ __all__ = [
     "MarketplaceSnapshotComparisonInput",
     "ListingPriceChange",
     "ListingPriceChangeKind",
+    "ListingPriceChangesModule",
     "PriceChangeDelta",
     "PriceChangesComparisonState",
     "PriceChangesDomainError",

@@ -13,6 +13,9 @@ from dip.app.collector_run import (
     CollectorRunUnavailableError,
 )
 from dip.experience.desktop.app import App
+from dip.experience.desktop.collection_explorer_renderer import (
+    DesktopCollectionExplorerController,
+)
 
 
 class _Service:
@@ -81,6 +84,130 @@ def _assert_import_available(app):
 
 
 class CollectorRunDesktopTestCase(unittest.TestCase):
+    def test_every_terminal_outcome_invalidates_cache_and_marks_only_live_windows_stale(self):
+        stale_copy = "Marketplace history has changed. Refresh Marketplace Changes to update these results."
+        class History:
+            def __init__(self, operations): self.operations = operations
+            def all_snapshots(self):
+                self.operations["history"] += 1
+                return ()
+        class Metadata:
+            def __init__(self, operations): self.operations = operations
+            def metadata_for_release_ids(self, release_ids):
+                self.operations["metadata"] += 1
+                return ()
+        class WorkspaceService:
+            def __init__(self, operations):
+                self.operations = operations
+                self.history = History(operations)
+                self.metadata = Metadata(operations)
+            def build(self):
+                self.operations["workspace"] += 1
+                self.history.all_snapshots()
+                self.metadata.metadata_for_release_ids(())
+                return object()
+        class Presentation:
+            def explorer_for_homepage(self, homepage, **kwargs): return kwargs
+        class Renderer:
+            def render(self, value): return value
+        class Window:
+            def __init__(self, live): self.live = live
+            def winfo_exists(self): return self.live
+        class Label:
+            def __init__(self): self.text = "old"
+            def configure(self, *, text): self.text = text
+        class Button:
+            def __init__(self): self.states = []
+            def state(self, value): self.states.append(value)
+        cases = {
+            "zero": (),
+            "one": (True,),
+            "multiple": (True, True),
+            "destroyed": (False,),
+            "closed": (False,),
+            "mixed": (True, False, True),
+        }
+        for status in CollectorRunStatus:
+            for name, live_states in cases.items():
+                with self.subTest(status=status, windows=name):
+                    app = _app()
+                    operations = {
+                        "history": 0,
+                        "metadata": 0,
+                        "workspace": 0,
+                        "replacement": 0,
+                        "provider": 0,
+                        "persistence": 0,
+                    }
+                    app._collector_run_active = True
+                    app.collector_run_service = Mock()
+                    app.db = Mock()
+                    app._create_marketplace_replacement_toplevel = Mock(
+                        side_effect=lambda: operations.__setitem__(
+                            "replacement", operations["replacement"] + 1
+                        )
+                    )
+                    workspace = WorkspaceService(operations)
+                    controller = DesktopCollectionExplorerController(
+                        Presentation(), Renderer(), workspace,
+                        lambda: not app._collector_run_active,
+                    )
+                    old_cache = object()
+                    controller._marketplace_cache = old_cache
+                    controller._validate_marketplace_candidate = lambda value: value
+                    app.collection_explorer_controller = controller
+                    windows = tuple(Window(live) for live in live_states)
+                    labels = {window: Label() for window in windows}
+                    buttons = {window: Button() for window in windows}
+                    app._marketplace_explorer_handles = {
+                        window: (labels[window], buttons[window]) for window in windows
+                    }
+                    app.open_intelligence_explorer = Mock(
+                        side_effect=lambda: operations.__setitem__(
+                            "replacement", operations["replacement"] + 1
+                        )
+                    )
+                    with patch("dip.experience.desktop.app.messagebox.showinfo"), patch("dip.experience.desktop.app.messagebox.showwarning"), patch("dip.experience.desktop.app.messagebox.showerror"):
+                        app.finish_refresh(_result(status))
+                    self.assertFalse(app._collector_run_active)
+                    self.assertIsNone(controller.marketplace_cache)
+                    app.open_intelligence_explorer.assert_not_called()
+                    app._create_marketplace_replacement_toplevel.assert_not_called()
+                    self.assertEqual(app.collector_run_service.mock_calls, [])
+                    self.assertEqual(app.db.mock_calls, [])
+                    self.assertEqual(
+                        operations,
+                        {
+                            "history": 0,
+                            "metadata": 0,
+                            "workspace": 0,
+                            "replacement": 0,
+                            "provider": 0,
+                            "persistence": 0,
+                        },
+                    )
+                    for window in windows:
+                        if window.live:
+                            self.assertIn(window, app._marketplace_explorer_handles)
+                            self.assertEqual(labels[window].text, stale_copy)
+                            self.assertEqual(buttons[window].states, [["!disabled"]])
+                        else:
+                            self.assertNotIn(window, app._marketplace_explorer_handles)
+                    app.refresh_discogs_button.configure.assert_called_with(state="normal")
+                    app.import_csv_button.configure.assert_called_with(state="normal")
+                    candidate = controller.refresh_marketplace_changes()
+                    self.assertIsNotNone(candidate)
+                    self.assertEqual(
+                        operations,
+                        {
+                            "history": 1,
+                            "metadata": 1,
+                            "workspace": 1,
+                            "replacement": 0,
+                            "provider": 0,
+                            "persistence": 0,
+                        },
+                    )
     def test_duplicate_start_is_prevented(self):
         app = _app()
         app._collector_run_active = True

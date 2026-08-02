@@ -9,6 +9,10 @@ from .collector_review import (
     SQLiteHotNowCalculatedStateRepository,
     SQLiteWeekendReviewQueueRepository,
 )
+from .current_release_metadata import (
+    CurrentReleaseMetadataPersistenceError,
+    SQLiteCurrentReleaseMetadataRepository,
+)
 from .repository import Database
 
 __all__ = [
@@ -16,6 +20,8 @@ __all__ = [
     "SQLiteDatabaseBackupAdapter",
     "SQLiteDatabaseBackupError",
     "SQLiteIntelligenceHistoryRepository",
+    "SQLiteCurrentReleaseMetadataRepository",
+    "CurrentReleaseMetadataPersistenceError",
     "SQLiteHotNowCalculatedStateRepository",
     "SQLiteMarketplaceHistoryRepository",
     "SQLiteProjectRepository",

@@ -17,6 +17,7 @@ from .models import (
     MarketplaceDataStatus,
     MarketplaceDiagnostic,
     MarketplaceMoney,
+    MarketplaceReleaseObservation,
     MarketplaceSnapshot,
 )
 
@@ -75,9 +76,9 @@ class ReleasePriceMetric(str, Enum):
 class MarketplaceSnapshotComparisonInput:
     """Already-selected Marketplace snapshots supplied to Price Changes.
 
-    Equal capture instants are retained so the module can return a typed
-    insufficient-data result. A later ``previous_snapshot`` is malformed input
-    and is rejected here.
+    Pair-specific source, source-version, and strict chronological compatibility
+    is enforced by both Price and Supply calculators. A later
+    ``previous_snapshot`` is malformed input and is rejected here as well.
     """
 
     previous_snapshot: MarketplaceSnapshot | None = None
@@ -311,20 +312,24 @@ class ReleasePriceChange:
                     "A no-longer-available release price requires only a previous value."
                 )
             return
-        if self.previous_value is None or self.latest_value is None:
-            raise PriceChangesDomainError(
-                "Continuing release price changes require previous and latest values."
-            )
         if self.change_kind is ReleasePriceChangeKind.INCOMPARABLE:
             if self.delta is not None:
                 raise PriceChangesDomainError(
                     "An incomparable release price cannot contain a calculated delta."
                 )
-            if self.previous_value.currency == self.latest_value.currency:
+            if (
+                self.previous_value is not None
+                and self.latest_value is not None
+                and self.previous_value.currency == self.latest_value.currency
+            ):
                 raise PriceChangesDomainError(
                     "An incomparable release price requires differing currencies."
                 )
             return
+        if self.previous_value is None or self.latest_value is None:
+            raise PriceChangesDomainError(
+                "Continuing release price changes require previous and latest values."
+            )
         _validate_comparable_delta(
             self.previous_value,
             self.latest_value,
@@ -391,6 +396,23 @@ class PriceChangesSummary:
         """Return changed, incomparable, and unchanged supported price facts."""
 
         return self.detected_change_count + self.unchanged_count
+
+    @property
+    def comparable_price_count(self) -> int:
+        """Return only facts for which an exact comparison was possible."""
+
+        return (
+            self.listing_increased_count
+            + self.listing_decreased_count
+            + self.listing_unchanged_count
+            + self.listing_newly_observed_count
+            + self.listing_no_longer_observed_count
+            + self.release_increased_count
+            + self.release_decreased_count
+            + self.release_unchanged_count
+            + self.release_newly_available_count
+            + self.release_no_longer_available_count
+        )
 
 
 @dataclass(frozen=True)
@@ -491,9 +513,16 @@ class PriceChangesOutput:
             PriceChangesComparisonState.INSUFFICIENT_DATA,
             PriceChangesComparisonState.FAILED,
         }:
-            if has_successful_values:
+            if self.comparison_state is PriceChangesComparisonState.FAILED and has_successful_values:
                 raise PriceChangesDomainError(
                     "An unsuccessful comparison cannot contain successful output."
+                )
+            if (
+                self.comparison_state is PriceChangesComparisonState.INSUFFICIENT_DATA
+                and self.summary.comparable_price_count != 0
+            ):
+                raise PriceChangesDomainError(
+                    "Insufficient data cannot contain comparable price facts."
                 )
             has_failed_input = (
                 self.previous_snapshot.status is MarketplaceDataStatus.FAILED
@@ -521,7 +550,7 @@ class PriceChangesOutput:
                     self.previous_snapshot.status is MarketplaceDataStatus.EMPTY
                     and self.latest_snapshot.status is MarketplaceDataStatus.EMPTY
                 )
-                and self.summary.assessed_price_count == 0
+                and self.summary.comparable_price_count == 0
             )
             if has_failed_input or not (
                 has_unavailable_input
@@ -621,7 +650,7 @@ class PriceChangesModule:
     """Compare exactly the supplied immutable Marketplace snapshot pair."""
 
     module_id = "price_changes"
-    module_version = "1.0"
+    module_version = "2.0"
 
     def analyse(self, context: IntelligenceContext) -> IntelligenceResult:
         """Return factual price differences without querying or using time."""
@@ -636,10 +665,46 @@ class PriceChangesModule:
                 "marketplace_comparison must be a "
                 "MarketplaceSnapshotComparisonInput or None."
             )
+        return self.calculate_pair(comparison)
+
+    def calculate_pair(
+        self,
+        comparison: MarketplaceSnapshotComparisonInput,
+    ) -> IntelligenceResult:
+        """Apply the authoritative release-level lowest-price contract."""
+
+        return self._calculate_pair(comparison, include_listing_prices=False)
+
+    def calculate_listing_pair(
+        self,
+        comparison: MarketplaceSnapshotComparisonInput,
+    ) -> IntelligenceResult:
+        """Delegate to the distinctly identified historical listing capability."""
+
+        return ListingPriceChangesModule().calculate_pair(comparison)
+
+    def _calculate_pair(
+        self,
+        comparison: MarketplaceSnapshotComparisonInput,
+        *,
+        include_listing_prices: bool,
+        result_module_id: str = "price_changes",
+        result_module_version: str = "2.0",
+    ) -> IntelligenceResult:
+        """Calculate from an already-selected pair without querying History."""
+
+        if type(comparison) is not MarketplaceSnapshotComparisonInput:
+            raise TypeError("comparison must be a MarketplaceSnapshotComparisonInput.")
         previous = comparison.previous_snapshot
         latest = comparison.latest_snapshot
         if previous is None or latest is None:
-            return self._insufficient_history(latest)
+            return self._insufficient_history(
+                latest,
+                module_id=result_module_id,
+                module_version=result_module_version,
+            )
+
+        _validate_pair(previous, latest)
 
         previous_reference = _snapshot_reference(previous)
         latest_reference = _snapshot_reference(latest)
@@ -665,6 +730,8 @@ class PriceChangesModule:
                     *diagnostics,
                     "A supplied Marketplace snapshot has failed status.",
                 ),
+                module_id=result_module_id,
+                module_version=result_module_version,
             )
         if (
             previous.status is MarketplaceDataStatus.UNAVAILABLE
@@ -685,46 +752,20 @@ class PriceChangesModule:
                     *diagnostics,
                     "A supplied Marketplace snapshot is unavailable.",
                 ),
+                module_id=result_module_id,
+                module_version=result_module_version,
             )
-        if _utc(previous.captured_at) == _utc(latest.captured_at):
-            output = PriceChangesOutput(
-                previous_reference,
-                latest_reference,
-                previous.source if previous.source == latest.source else None,
-                PriceChangesComparisonState.INSUFFICIENT_DATA,
-                diagnostics=source_diagnostics,
-            )
-            return self._result(
-                IntelligenceStatus.SKIPPED,
-                "Price Changes requires snapshots captured at different times.",
-                output,
-                diagnostics=(
-                    *diagnostics,
-                    "Equal capture times do not define analytical ordering.",
-                ),
-            )
-        if previous.source != latest.source:
-            output = PriceChangesOutput(
-                previous_reference,
-                latest_reference,
-                None,
-                PriceChangesComparisonState.INSUFFICIENT_DATA,
-                diagnostics=source_diagnostics,
-            )
-            return self._result(
-                IntelligenceStatus.SKIPPED,
-                "Price Changes requires snapshots from the same Marketplace source.",
-                output,
-                diagnostics=(
-                    *diagnostics,
-                    "Snapshot sources differ; no prices were compared.",
-                ),
-            )
-
-        listing_changes, listing_counts = _compare_listings(previous, latest)
-        release_changes, release_counts = _compare_releases(previous, latest)
+        if include_listing_prices:
+            listing_changes, listing_counts = _compare_listings(previous, latest)
+            release_changes, release_counts = _compare_releases(previous, latest)
+            comparison_fact_diagnostics = ()
+        else:
+            listing_changes, listing_counts = (), _empty_listing_counts()
+            release_changes, release_counts, comparison_fact_diagnostics = _compare_release_lowest_prices(previous, latest)
+        safe_output_diagnostics = (*source_diagnostics, *comparison_fact_diagnostics)
         summary = PriceChangesSummary(**listing_counts, **release_counts)
-        if summary.assessed_price_count == 0 and not (
+        assessed = summary.assessed_price_count if include_listing_prices else summary.comparable_price_count
+        if assessed == 0 and not (
             previous.status is MarketplaceDataStatus.EMPTY
             and latest.status is MarketplaceDataStatus.EMPTY
         ):
@@ -733,20 +774,23 @@ class PriceChangesModule:
                 latest_reference,
                 previous.source,
                 PriceChangesComparisonState.INSUFFICIENT_DATA,
-                diagnostics=source_diagnostics,
+                summary,
+                listing_changes,
+                release_changes,
+                diagnostics=safe_output_diagnostics,
             )
             return self._result(
                 IntelligenceStatus.SKIPPED,
                 "Price Changes found no supported price evidence to compare.",
                 output,
-                diagnostics=(
-                    *diagnostics,
-                    "No supported price evidence was supplied: the snapshot pair "
-                    "contained neither listing prices nor release-level lowest/highest "
-                    "price evidence within this module's scope.",
-                ),
+                diagnostics=(*diagnostics, *(f"{value.code}: {value.message}" for value in comparison_fact_diagnostics), *(
+                    ("No comparable listing or release-price evidence was supplied.",)
+                    if include_listing_prices
+                    else ("No comparable release-level lowest-price evidence was supplied.",)
+                )),
+                module_id=result_module_id,
+                module_version=result_module_version,
             )
-        version_changed = previous.source_version != latest.source_version
         partial = (
             previous.status is MarketplaceDataStatus.PARTIAL
             or latest.status is MarketplaceDataStatus.PARTIAL
@@ -765,37 +809,26 @@ class PriceChangesModule:
             summary,
             listing_changes,
             release_changes,
-            source_diagnostics,
+            safe_output_diagnostics,
         )
-        comparison_diagnostics = list(diagnostics)
-        if version_changed:
-            comparison_diagnostics.append(
-                "Snapshot source versions differ; supplied fields were compared without conversion."
-            )
+        comparison_diagnostics = [*diagnostics, *(f"{value.code}: {value.message}" for value in comparison_fact_diagnostics)]
         for change in listing_changes:
             if change.change_kind is ListingPriceChangeKind.INCOMPARABLE:
                 comparison_diagnostics.append(
                     f"Listing {change.listing_id} for release {change.release_id} "
                     "uses different currencies across the snapshots."
                 )
-        for change in release_changes:
-            if change.change_kind is ReleasePriceChangeKind.INCOMPARABLE:
-                comparison_diagnostics.append(
-                    f"Release {change.release_id} {change.metric.value} uses different "
-                    "currencies across the snapshots."
-                )
-
         if summary.detected_change_count == 0:
             result_summary = (
-                "No listing or supplied release-price changes were detected between "
-                "the two snapshots."
+                "No listing or supplied release-price changes were detected between the two snapshots."
+                if include_listing_prices
+                else "No observed release-level lowest-price changes were detected between the selected snapshots."
             )
         else:
             result_summary = (
-                f"Detected {summary.listing_change_count} listing price-change "
-                f"record{'s' if summary.listing_change_count != 1 else ''} and "
-                f"{summary.release_change_count} supplied release-price change "
-                f"record{'s' if summary.release_change_count != 1 else ''}."
+                f"Detected {summary.listing_change_count} listing price-change record{'s' if summary.listing_change_count != 1 else ''} and {summary.release_change_count} supplied release-price change record{'s' if summary.release_change_count != 1 else ''}."
+                if include_listing_prices
+                else f"Detected {summary.release_change_count} observed release-level lowest-price change record{'s' if summary.release_change_count != 1 else ''}."
             )
         return self._result(
             IntelligenceStatus.COMPLETED,
@@ -807,11 +840,16 @@ class PriceChangesModule:
                 for evidence in value.evidence
             ),
             diagnostics=tuple(comparison_diagnostics),
+            module_id=result_module_id,
+            module_version=result_module_version,
         )
 
     def _insufficient_history(
         self,
         latest: MarketplaceSnapshot | None,
+        *,
+        module_id: str = "price_changes",
+        module_version: str = "2.0",
     ) -> IntelligenceResult:
         output = PriceChangesOutput(
             None,
@@ -833,6 +871,8 @@ class PriceChangesModule:
             "Price Changes requires two historical Marketplace snapshots.",
             output,
             diagnostics=diagnostics,
+            module_id=module_id,
+            module_version=module_version,
         )
 
     def _result(
@@ -843,15 +883,35 @@ class PriceChangesModule:
         *,
         evidence: tuple[str, ...] = (),
         diagnostics: tuple[str, ...] = (),
+        module_id: str = "price_changes",
+        module_version: str = "2.0",
     ) -> IntelligenceResult:
         return IntelligenceResult(
-            module_id=self.module_id,
-            module_version=self.module_version,
+            module_id=module_id,
+            module_version=module_version,
             status=status,
             summary=summary,
             metrics=MappingProxyType({"output": output}),
             evidence=evidence,
             diagnostics=diagnostics,
+        )
+
+
+class ListingPriceChangesModule:
+    """Non-production listing/highest-price capability with distinct identity."""
+
+    module_id = "listing_price_changes"
+    module_version = "1.0"
+
+    def calculate_pair(
+        self,
+        comparison: MarketplaceSnapshotComparisonInput,
+    ) -> IntelligenceResult:
+        return PriceChangesModule()._calculate_pair(
+            comparison,
+            include_listing_prices=True,
+            result_module_id=self.module_id,
+            result_module_version=self.module_version,
         )
 
 
@@ -980,6 +1040,116 @@ def _compare_listings(
             )
         )
     return _ordered_listing_changes(tuple(changes)), counts
+
+
+def _empty_listing_counts() -> dict[str, int]:
+    return {
+        "listing_increased_count": 0,
+        "listing_decreased_count": 0,
+        "listing_unchanged_count": 0,
+        "listing_newly_observed_count": 0,
+        "listing_no_longer_observed_count": 0,
+        "listing_incomparable_count": 0,
+    }
+
+
+def _compare_release_lowest_prices(
+    previous: MarketplaceSnapshot,
+    latest: MarketplaceSnapshot,
+) -> tuple[tuple[ReleasePriceChange, ...], dict[str, int], tuple[MarketplaceDiagnostic, ...]]:
+    """Compare only current-scope lowest prices; absence is incomparable."""
+
+    old = {value.release_id: value for value in previous.release_observations}
+    new = {value.release_id: value for value in latest.release_observations}
+    counts = {
+        "release_increased_count": 0,
+        "release_decreased_count": 0,
+        "release_unchanged_count": 0,
+        "release_newly_available_count": 0,
+        "release_no_longer_available_count": 0,
+        "release_incomparable_count": 0,
+    }
+    changes: list[ReleasePriceChange] = []
+    diagnostics: list[MarketplaceDiagnostic] = []
+    usable = {MarketplaceDataStatus.COMPLETE, MarketplaceDataStatus.PARTIAL}
+    for release_id in sorted(old.keys() | new.keys()):
+        before, after = old.get(release_id), new.get(release_id)
+        previous_value = (
+            before.lowest_price if before is not None and before.status in usable else None
+        )
+        latest_value = (
+            after.lowest_price if after is not None and after.status in usable else None
+        )
+        if (
+            previous_value is None
+            or latest_value is None
+            or previous_value.currency != latest_value.currency
+        ):
+            code, copy = _lowest_price_incomparable_reason(before, after)
+            diagnostics.append(MarketplaceDiagnostic(code, copy))
+            counts["release_incomparable_count"] += 1
+            changes.append(
+                ReleasePriceChange(
+                    release_id,
+                    ReleasePriceMetric.LOWEST_PRICE,
+                    ReleasePriceChangeKind.INCOMPARABLE,
+                    previous_value,
+                    latest_value,
+                    None,
+                    previous.snapshot_id,
+                    latest.snapshot_id,
+                    (copy,),
+                )
+            )
+            continue
+        delta = _exact_decimal_delta(latest_value.amount, previous_value.amount)
+        if delta == 0:
+            counts["release_unchanged_count"] += 1
+            continue
+        kind = (
+            ReleasePriceChangeKind.INCREASED
+            if delta > 0
+            else ReleasePriceChangeKind.DECREASED
+        )
+        counts[
+            "release_increased_count" if delta > 0 else "release_decreased_count"
+        ] += 1
+        changes.append(
+            ReleasePriceChange(
+                release_id,
+                ReleasePriceMetric.LOWEST_PRICE,
+                kind,
+                previous_value,
+                latest_value,
+                PriceChangeDelta(delta, latest_value.currency),
+                previous.snapshot_id,
+                latest.snapshot_id,
+                ("Observed lowest price changed between the selected snapshots.",),
+            )
+        )
+    return tuple(changes), counts, tuple(diagnostics)
+
+
+def _lowest_price_incomparable_reason(
+    previous: MarketplaceReleaseObservation | None,
+    latest: MarketplaceReleaseObservation | None,
+) -> tuple[str, str]:
+    usable = {MarketplaceDataStatus.COMPLETE, MarketplaceDataStatus.PARTIAL}
+    if previous is None:
+        return "missing_baseline_release", "The baseline release observation is missing."
+    if latest is None:
+        return "missing_current_release", "The current release observation is missing."
+    if previous.status not in usable:
+        return "unusable_baseline_observation", "The baseline release observation is not usable for comparison."
+    if latest.status not in usable:
+        return "unusable_current_observation", "The current release observation is not usable for comparison."
+    if previous.lowest_price is None:
+        return "missing_baseline_lowest_price", "The baseline lowest-price observation is missing."
+    if latest.lowest_price is None:
+        return "missing_current_lowest_price", "The current lowest-price observation is missing."
+    if previous.lowest_price.currency != latest.lowest_price.currency:
+        return "lowest_price_currency_mismatch", "The observed lowest prices use different currencies."
+    return "marketplace_evidence_incomplete", "Marketplace evidence was incomplete for this observation."
 
 
 def _compare_releases(
@@ -1131,9 +1301,9 @@ def _snapshot_diagnostics(
     snapshot: MarketplaceSnapshot,
 ) -> tuple[MarketplaceDiagnostic, ...]:
     return (
-        *snapshot.diagnostics,
+        *(_safe_diagnostic(value) for value in snapshot.diagnostics),
         *(
-            diagnostic
+            _safe_diagnostic(diagnostic)
             for release in snapshot.release_observations
             for diagnostic in release.diagnostics
         ),
@@ -1158,10 +1328,24 @@ def _diagnostic_texts(
 
 
 def _diagnostic_text(value: MarketplaceDiagnostic) -> str:
-    details = "".join(
-        f"; {key}={value.details[key]}" for key in sorted(value.details)
-    )
-    return f"{value.severity.value}:{value.code}: {value.message}{details}"
+    safe = _safe_diagnostic(value)
+    return f"{safe.severity.value}:{safe.code}: {safe.message}"
+
+
+def _safe_diagnostic(value: MarketplaceDiagnostic) -> MarketplaceDiagnostic:
+    """Copy only structured identity and application-owned neutral text."""
+
+    known = {"source_unavailable", "partial_observation", "missing_field"}
+    code = value.code if value.code in known else "marketplace_evidence_incomplete"
+    return MarketplaceDiagnostic(code, _safe_diagnostic_copy(code), value.severity)
+
+
+def _safe_diagnostic_copy(code: str) -> str:
+    return {
+        "source_unavailable": "Marketplace evidence was unavailable for this observation.",
+        "partial_observation": "Marketplace evidence was incomplete for this observation.",
+        "missing_field": "Marketplace evidence was incomplete for this observation.",
+    }.get(code, "Marketplace evidence was incomplete for this observation.")
 
 
 def _listing_change_tuple(values: Any) -> tuple[ListingPriceChange, ...]:
@@ -1331,6 +1515,17 @@ def _utc(value: datetime) -> datetime:
     return value.astimezone(timezone.utc)
 
 
+def _validate_pair(previous: MarketplaceSnapshot, latest: MarketplaceSnapshot) -> None:
+    """Reject analytically incompatible pairs at the public calculation boundary."""
+
+    if previous.source != latest.source:
+        raise PriceChangesDomainError("Price Changes requires matching snapshot sources.")
+    if previous.source_version != latest.source_version:
+        raise PriceChangesDomainError("Price Changes requires matching snapshot source versions.")
+    if _utc(previous.captured_at) >= _utc(latest.captured_at):
+        raise PriceChangesDomainError("Price Changes requires a strictly earlier baseline snapshot.")
+
+
 def _positive_integer(value: Any, name: str) -> None:
     if type(value) is not int:
         raise TypeError(f"{name} must be an integer.")
@@ -1363,6 +1558,7 @@ def _stable_identifier(value: Any, name: str) -> None:
 __all__ = [
     "ListingPriceChange",
     "ListingPriceChangeKind",
+    "ListingPriceChangesModule",
     "MarketplaceSnapshotComparisonInput",
     "PriceChangeDelta",
     "PriceChangesComparisonState",

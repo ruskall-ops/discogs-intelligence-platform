@@ -138,19 +138,30 @@ class MarketplaceActivityModule:
         by_module: dict[str, IntelligenceResult] = {}
         for source in sources:
             if source.module_id in by_module:
-                raise MarketplaceActivityDomainError(f"Duplicate source result for {source.module_id!r}.")
+                raise MarketplaceActivityDomainError(
+                    "Marketplace Activity source identities must be unique."
+                )
             by_module[source.module_id] = source
         required = ("price_changes", "supply_changes", "rare_appearances")
         missing = tuple(module_id for module_id in required if module_id not in by_module)
         if missing:
             diagnostic = f"Missing required source intelligence: {', '.join(missing)}."
             return self._insufficient((diagnostic,))
+        optional = tuple(source for source in sources if source.module_id not in required)
+        if len(optional) > 1 or (
+            optional
+            and (optional[0].module_id, optional[0].module_version)
+            != ("weekend_listings", "1.0")
+        ):
+            return self._insufficient(
+                ("The optional Marketplace Activity source is incompatible.",)
+            )
         try:
-            price_result, price = _typed_source(by_module["price_changes"], PriceChangesOutput)
-            supply_result, supply = _typed_source(by_module["supply_changes"], SupplyChangesOutput)
-            rare_result, rare = _typed_source(by_module["rare_appearances"], RareAppearancesOutput)
-        except (TypeError, MarketplaceActivityDomainError) as exc:
-            return self._insufficient((f"Source intelligence is incompatible: {exc}",))
+            price_result, price = _typed_source(by_module["price_changes"], "price_changes", "2.0", PriceChangesOutput)
+            supply_result, supply = _typed_source(by_module["supply_changes"], "supply_changes", "2.0", SupplyChangesOutput)
+            rare_result, rare = _typed_source(by_module["rare_appearances"], "rare_appearances", "1.0", RareAppearancesOutput)
+        except (TypeError, MarketplaceActivityDomainError):
+            return self._insufficient(("A required Marketplace Activity source is incompatible.",))
         diagnostics = tuple(value for source in sources for value in source.diagnostics)
         if rare.analysis_state is RareAppearancesAnalysisState.INSUFFICIENT_HISTORY:
             return self._insufficient((*diagnostics, "Rare Appearances contains no analyzed Marketplace history."))
@@ -202,12 +213,23 @@ class MarketplaceActivityModule:
         return IntelligenceResult(self.module_id, IntelligenceStatus.SKIPPED, "Marketplace Activity requires compatible Price Changes, Supply Changes, and Rare Appearances results.", metrics={"output": output}, diagnostics=diagnostics, module_version=self.module_version)
 
 
-def _typed_source(result: IntelligenceResult, output_type: type) -> tuple[IntelligenceResult, object]:
+def _typed_source(
+    result: IntelligenceResult,
+    module_id: str,
+    module_version: str,
+    output_type: type,
+) -> tuple[IntelligenceResult, object]:
+    if (result.module_id, result.module_version) != (module_id, module_version):
+        raise MarketplaceActivityDomainError(
+            "A required Marketplace Activity source has an incompatible identity."
+        )
     if not isinstance(result.metrics, Mapping):
-        raise TypeError(f"{result.module_id} metrics must be a mapping.")
+        raise TypeError("A required Marketplace Activity source has invalid metrics.")
     output = result.metrics.get("output")
     if type(output) is not output_type:
-        raise MarketplaceActivityDomainError(f"{result.module_id} requires its typed output.")
+        raise MarketplaceActivityDomainError(
+            "A required Marketplace Activity source requires its typed output."
+        )
     return result, output
 
 

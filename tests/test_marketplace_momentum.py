@@ -51,7 +51,9 @@ def provenance(
         values.append(
             SourceProvenance(
                 module_id=module_id,
-                module_version="1.0",
+                module_version="2.0"
+                if module_id in {"price_changes", "supply_changes"}
+                else "1.0",
                 result_status=IntelligenceStatus.COMPLETED,
                 compatible=True,
                 partial=module_id == partial_source,

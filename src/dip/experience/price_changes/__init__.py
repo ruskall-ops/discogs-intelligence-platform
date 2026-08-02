@@ -1,6 +1,6 @@
 """Read-only Price Changes presentation models and builder."""
 
-from .builder import PriceChangesDetailViewModelBuilder
+from .builder import ListingPriceChangesDetailViewModelBuilder, PriceChangesDetailViewModelBuilder
 from .models import (
     ListingPriceChangeViewModel,
     PriceChangesDetailConsistencyError,
@@ -12,6 +12,7 @@ from .models import (
 
 __all__ = [
     "ListingPriceChangeViewModel",
+    "ListingPriceChangesDetailViewModelBuilder",
     "PriceChangesDetailConsistencyError",
     "PriceChangesDetailState",
     "PriceChangesDetailViewModel",

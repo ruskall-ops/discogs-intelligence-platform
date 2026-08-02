@@ -50,7 +50,10 @@ _SOURCE_ORDER = (
     "listing_lifecycle",
 )
 _REQUIRED_SOURCE_IDS = _SOURCE_ORDER[:3]
-_SUPPORTED_SOURCE_VERSIONS = {source_id: "1.0" for source_id in _SOURCE_ORDER}
+_SUPPORTED_SOURCE_VERSIONS = {
+    source_id: ("2.0" if source_id in {"price_changes", "supply_changes"} else "1.0")
+    for source_id in _SOURCE_ORDER
+}
 
 
 class _ResultExecution(Protocol):
@@ -277,7 +280,7 @@ def _prepare_source(
                 MarketplaceMomentumDiagnosticCode.UNSUPPORTED_SOURCE_VERSION,
                 (
                     f"{source_id} uses unsupported version "
-                    f"{result.module_version!r}; version 1.0 is required."
+                    f"{result.module_version!r}; version {_SUPPORTED_SOURCE_VERSIONS[source_id]} is required."
                 ),
                 source_module_id=source_id,
             )

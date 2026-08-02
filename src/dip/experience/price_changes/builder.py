@@ -24,6 +24,9 @@ from .models import (
 class PriceChangesDetailViewModelBuilder:
     """Copy typed comparison output without comparing, classifying, or sorting."""
 
+    module_id = "price_changes"
+    module_version = "2.0"
+
     def build(
         self,
         result: IntelligenceResult | None,
@@ -32,9 +35,9 @@ class PriceChangesDetailViewModelBuilder:
             return PriceChangesDetailViewModel.unavailable()
         if type(result) is not IntelligenceResult:
             raise TypeError("result must be an IntelligenceResult or None.")
-        if result.module_id != "price_changes":
+        if result.module_id != self.module_id or result.module_version != self.module_version:
             raise PriceChangesDetailConsistencyError(
-                "Price Changes detail requires the price_changes result."
+                "Price Changes detail requires the supported Price Changes contract."
             )
         if type(result.status) is not IntelligenceStatus:
             raise TypeError("Price Changes result status must be IntelligenceStatus.")
@@ -130,6 +133,13 @@ class PriceChangesDetailViewModelBuilder:
         }[output.comparison_state]
 
 
+class ListingPriceChangesDetailViewModelBuilder(PriceChangesDetailViewModelBuilder):
+    """Present only the distinctly identified non-production listing capability."""
+
+    module_id = "listing_price_changes"
+    module_version = "1.0"
+
+
 def _snapshot(
     value: PriceChangesSnapshotReference | None,
 ) -> PriceChangesSnapshotViewModel | None:
@@ -144,4 +154,4 @@ def _snapshot(
     )
 
 
-__all__ = ["PriceChangesDetailViewModelBuilder"]
+__all__ = ["ListingPriceChangesDetailViewModelBuilder", "PriceChangesDetailViewModelBuilder"]

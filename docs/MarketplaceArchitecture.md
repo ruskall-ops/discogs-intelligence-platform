@@ -119,25 +119,76 @@ not forecast outcomes or recommend buying, selling, or trading.
 
 ## Supply Changes Intelligence
 
-The first Supply Changes slice compares exactly two snapshots selected by the
-application layer. `SupplyChangesExecutionService` performs one bounded
-`recent_snapshots(2)` query and runs an explicitly registered
-`SupplyChangesModule`. The module never selects history, uses persistence,
-reads the clock, or derives supply from listing observations.
+### Production Marketplace Change window (v0.5.1)
+
+The production Collection Explorer uses one application-owned Marketplace
+Change workspace rather than the older independent recent-pair execution
+services. It calls `all_snapshots()` once and selects the newest eligible
+current snapshot plus the newest strictly earlier snapshot with exactly equal
+source and source version. `None` is compatible only with `None`; equal UTC
+capture instants cannot establish direction. Failed, unavailable, incompatible,
+and equal-time snapshots remain immutable History and are skipped neutrally.
+
+The workspace supplies the one selected pair to pair-explicit Price and Supply
+domain calculators. Those calculators own comparison, classification, counts,
+states, evidence, and fixed diagnostic projection; the application only
+coordinates them and the presentation builders only project their typed immutable
+results. Both calculators independently reject source, source-version, equal-time,
+or reverse-time incompatible pairs with fixed value-neutral contract errors. The
+selector, rather than the calculators, represents missing compatible History;
+a valid selected pair with zero comparable facts produces insufficient data.
+The production calculation compares only release-level lowest price and `num_for_sale`.
+Complete and partial release observations may contribute present facts; missing,
+empty, unavailable, failed, or absent observations are incomparable and never
+fabricated as zero or appearance events. Price preserves exact Decimal and
+currency; Supply reserves availability labels for explicit zero/positive
+transitions. Both outputs share the exact selected provenance and ascending
+release-ID order.
+
+Persisted free-form diagnostic messages, detail values, release observations,
+listing observations, and raw snapshots never cross the public workspace or
+Explorer boundary. The workspace exposes detached allowlisted provenance only.
+Known structured codes map to fixed application-owned categories and explanations;
+every unknown code uses the single `marketplace_evidence_incomplete` category
+and neutral incomplete-evidence copy. Supply presents explicit
+zero-to-positive as **Became available for sale** and positive-to-zero as **No
+copies observed for sale**.
+
+Snapshot-specific exclusions use detached typed reasons. Separate typed workspace
+outcomes distinguish no eligible current snapshot, no compatible baseline,
+unreadable History, invalid reconstructed History, calculation failure, and a
+valid pair with no comparable facts. Public copy comes only from a fixed allowlist;
+exception messages, SQL, paths, provider values, and stored payloads are never
+projected.
+
+One optional batch collection-metadata read attaches current artist/title labels
+after comparison. These labels are presentation identification, not snapshot
+evidence, and cannot affect selection, classification, counts, or state.
+
+The workspace and the older Price/Supply execution services all query canonical
+History through `all_snapshots()` and use the same deterministic selector. They
+then invoke the same pair-explicit domain calculators. No caller-selectable
+strict or permissive mode exists. The modules never select history, use
+persistence, read the clock, or derive release-level facts from listings.
 
 Its authoritative input is the provider-supplied release observation
 `supply_count` domain property, a backwards-compatible name for the existing
 version-1 `num_for_sale` field. Releases align only by `release_id`. Comparable
 integer values produce the exact signed `latest - previous` delta. Missing
-facts become newly available, no longer available, or incomparable without a
-fabricated zero. Unchanged releases are counted but omitted from detail, and
+facts are incomparable without a fabricated zero. Availability changes require
+explicit zero-to-positive or positive-to-zero facts. Unchanged releases are counted but omitted from detail, and
 emitted records use ascending release ID order.
+
+Supply Changes 2.0 ignores wants and makes no demand, liquidity, scarcity,
+sale, desirability, scoring, recommendation, or advisory inference.
 
 Complete and empty snapshot pairs are valid. Partial inputs or incomparable
 records produce a partial result with preserved source diagnostics.
 Unavailable inputs are skipped and failed inputs fail. The standard
 `IntelligenceResult` contains immutable typed output under stable module ID
-`supply_changes`, version `1.0`; the default engine registry remains unchanged.
+`supply_changes`, version `2.0`; the default engine registry remains unchanged.
+Persisted historical Supply Changes 1.0 results retain their recorded identity
+and are not reinterpreted as 2.0.
 
 ## Rare Appearances Intelligence
 
@@ -170,6 +221,18 @@ Changes, and Rare Appearances results, validates their snapshot identities, and
 then executes Marketplace Activity once. Weekend Listings may be supplied but
 is not required. The composite module never receives or analyzes Marketplace
 snapshots and never executes its source modules.
+
+Both the application orchestration and direct domain boundary require the
+current authoritative `price_changes` 2.0 and `supply_changes` 2.0 contracts,
+alongside the established `rare_appearances` 1.0 contract. Historical or
+arbitrary source versions are rejected rather than reinterpreted. The separate
+`listing_price_changes` 1.0 capability cannot substitute for authoritative
+Price Changes. The direct domain boundary also validates optional evidence:
+absence is valid, and the only accepted optional result is exactly
+`weekend_listings` 1.0. Unknown, duplicate, historical, future, and
+listing-specific optional identities or versions are rejected with fixed
+value-neutral diagnostics. Marketplace Activity remains disabled and is not
+production-wired in Collection Explorer.
 
 Release profiles are anchored to the threshold-qualified typed appearances
 exposed by Rare Appearances. Price and supply event counts are aggregated from
@@ -1053,7 +1116,8 @@ result and never runs the module on navigation.
 
 ## Price Changes Intelligence
 
-Price Changes is the first two-snapshot Marketplace Intelligence module. It
+Price Changes 2.0 is the authoritative release-level two-snapshot Marketplace
+Intelligence module. It
 compares exactly the previous and latest immutable snapshots supplied in a
 dedicated `MarketplaceSnapshotComparisonInput` through
 `IntelligenceContext.marketplace_comparison`. The existing singular
@@ -1077,23 +1141,22 @@ PriceChangesModule
 IntelligenceResult
 ```
 
-The application service performs one bounded newest-first history query and
-supplies at most the newest two snapshots in explicit previous/latest roles.
-It does not filter sources or statuses, calculate changes, write history or
-format presentation values. The module does not query a repository, select a
-different historical pair, read a clock or contact a provider. Neither the
-service nor the module runs automatically during startup, Explorer navigation
-or tab selection.
+The application workspace performs one chronological History query and uses the
+canonical selector to supply the newest eligible current snapshot and newest
+strictly earlier exact-source/exact-source-version baseline. It does not
+calculate changes, write history, format presentation values, read a clock, or
+contact a provider. Neither the service nor the module runs automatically during
+startup, Explorer navigation, or tab selection.
 
 ### Snapshot comparability
 
 A comparison requires two distinct snapshot identifiers, a previous
-`captured_at` strictly earlier than the latest value in absolute time, and the
-same stable Marketplace source. The Marketplace History snapshot-ID tie-break
-continues to make repository queries deterministic, but it does not make
-equal-time snapshots analytically ordered. Different source versions do not by
-themselves prevent comparison of canonical domain fields; their difference is
-retained as diagnostic evidence.
+`captured_at` strictly earlier than the latest value in absolute time, the same
+stable Marketplace source, and exactly the same source version. `None` is
+compatible only with `None`. Both pair-explicit calculators reject source,
+source-version, equal-time, and reverse-time incompatibility with fixed
+value-neutral domain errors. The Marketplace History snapshot-ID tie-break
+makes selection deterministic but cannot make equal instants directional.
 
 `COMPLETE`, `PARTIAL` and `EMPTY` snapshots are eligible. A partial input keeps
 valid comparisons and source diagnostics and makes the typed comparison
@@ -1103,18 +1166,21 @@ pair, while an empty latest snapshot can establish only that a previous
 observation is no longer observed in that pair. It does not prove that a
 listing is new to the entire Marketplace, sold, withdrawn or expired.
 
-Missing or single-snapshot input produces a skipped result with insufficient
-history. An input whose previous capture follows the latest capture is rejected
-at construction. Equal capture times remain representable so the module can
-return a skipped result with insufficient data; different sources and
-unavailable input use the same skipped comparison outcome. Failed input
-produces a failed result. None of these outcomes fabricates change records.
-Two non-empty snapshots that supply no listing prices and no lowest or highest
-release-price facts also produce insufficient data: absence of supported
-evidence is not presented as evidence that prices were unchanged. Two explicit
-`EMPTY` observations remain a valid no-change comparison.
+The canonical selector represents missing or incompatible History as a typed
+insufficient-history workspace outcome. Invalid pairs never return insufficient
+data. A valid pair with no comparable `lowest_price` facts produces insufficient
+data: absence of supported evidence is not presented as evidence that prices
+were unchanged. Two explicit `EMPTY` snapshots remain a valid no-change
+comparison.
 
-### Listing price changes
+### Separately named listing-specific Price capability
+
+The separately named listing-specific calculator preserves the following
+historical capability when callers supply real listing observations. It is not
+the default `PriceChangesModule.analyse()` or production Explorer contract and
+is not production-wired because Collector Run stores no listing observations.
+Its distinct identity is `listing_price_changes`, version `1.0`; it can never
+be accepted, presented, or persisted as authoritative `price_changes` 2.0.
 
 Listing identity is the established `(release_id, listing_id)` pair. Source
 order, artist, title, condition, seller region and price are never used to
@@ -1139,10 +1205,11 @@ the module never calculates a price-plus-shipping total.
 
 ### Release price changes
 
-Release observations align only by `release_id`. This first slice compares the
-two supplied monetary fields `lowest_price` and `highest_price`; it does not
+Release observations align only by `release_id`. Price Changes 2.0 compares
+only the supplied `lowest_price`; it emits no highest-price or listing output
+and does not
 compare supply, demand, last-sold dates or status as Price Changes, and it does
-not derive release aggregates from listings. Each field independently becomes
+not derive release aggregates from listings. The fact becomes
 increased, decreased, newly available, no longer available, incomparable or
 unchanged. Missing money is absence, never zero. Presence on only one side is
 described as observation availability relative to the supplied snapshots, not
@@ -1165,22 +1232,57 @@ Listing changes have the canonical order:
 3. listing identifier ascending;
 4. stable change-kind order only if another tie remains.
 
-Release changes are ordered by release identifier ascending and then by the
-fixed metric order `lowest_price`, `highest_price`. Neither sequence is ranked
+Release changes are ordered by release identifier ascending. Neither sequence is ranked
 by price, delta, desirability or display text.
 
 The module returns the standard `IntelligenceResult` with module ID
-`price_changes`, version `1.0`, and an immutable typed output containing narrow
-snapshot references, comparison completeness, ordered listing and release
-changes, summary counts and diagnostics. A valid comparison with no detailed
+`price_changes`, version `2.0`, and an immutable typed output containing narrow
+snapshot references, comparison completeness, ordered release changes, summary
+counts and diagnostics. It emits no percentage, recommendation, score, or
+advisory output. A valid comparison with no detailed
 changes is completed and empty, not unavailable. Price Changes remains outside
 the Version 0.2 default registry because that registry cannot supply its
 historical pair without separate application orchestration.
+
+Persisted historical Price Changes 1.0 results and the separately named
+listing-specific capability retain their recorded identities. They are not
+silently reinterpreted as the authoritative release-level 2.0 behavior.
 
 Its presentation service consumes only an already-produced result. The sixth
 Collection Explorer destination preserves the domain order and classifications
 and performs no history query, comparison, delta calculation, currency
 conversion or sorting.
+
+Current Price and Supply execution services and presentation builders require
+their exact `price_changes` 2.0 and `supply_changes` 2.0 identities. Recorded
+1.0 results remain reconstructable history but are never coerced into current
+presentation semantics.
+
+Explorer refresh publishes cache and window state transactionally. It builds
+and renders an unregistered replacement while the exact old cache and stale
+window remain live, installs the candidate cache only after rendering succeeds,
+then registers the replacement before retiring the old window. Any failure
+before registration restores the exact old cache and destroys the partial
+replacement. An ordinary old-window cleanup failure after publication is
+contained with the replacement remaining registered and usable. Collector Run
+terminal callbacks only invalidate the cache and mark surviving windows stale;
+they perform no History, metadata, comparison, provider, or replacement work.
+Direct regression coverage injects failures before cache publication, during
+registration and during old-window cleanup, and verifies exact rollback plus a
+later successful retry. Candidate construction, final-model validation,
+presentation construction, Toplevel creation, renderer acquisition and
+invocation, partial population, cache installation, registration, cleanup,
+old-window retirement, and stale-state clearing have independent failure
+seams. Pre-publication failures preserve the exact old cache/window;
+post-publication cleanup failures preserve truthful replacement bookkeeping.
+Ordinary cleanup failures preserve the published replacement. Hostile stored
+or exception values are replaced by fixed allowlisted presentation and dialog
+copy rather than crossing the public UI boundary.
+
+Current collection metadata is read-only and performs no adapter-owned commit
+or rollback. Reads preserve a caller-owned outer transaction and any explicit
+nested savepoint so the caller may release, roll back, or commit its boundary
+afterward.
 
 ## Marketplace Intelligence foundation exclusions
 

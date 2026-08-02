@@ -6,10 +6,11 @@ from typing import Protocol
 
 from dip.intelligence import IntelligenceContext, IntelligenceExecution, IntelligenceResult
 from dip.marketplace_intelligence import MarketplaceSnapshot, MarketplaceSnapshotComparisonInput
+from dip.app.marketplace_change_workspace import MarketplaceSnapshotWindowSelector
 
 
 class _MarketplaceHistoryQueries(Protocol):
-    def recent_snapshots(self, limit: int) -> tuple[MarketplaceSnapshot, ...]: ...
+    def all_snapshots(self) -> tuple[MarketplaceSnapshot, ...]: ...
 
 
 class _IntelligenceEngine(Protocol):
@@ -23,15 +24,16 @@ class SupplyChangesExecutionConsistencyError(RuntimeError):
 class SupplyChangesExecutionService:
     """Load the newest snapshot pair and execute Supply Changes once."""
 
-    def __init__(self, history_queries: _MarketplaceHistoryQueries, engine: _IntelligenceEngine) -> None:
+    def __init__(self, history_queries: _MarketplaceHistoryQueries, engine: _IntelligenceEngine, selector: MarketplaceSnapshotWindowSelector | None = None) -> None:
         self._history_queries = history_queries
         self._engine = engine
+        self._selector = selector or MarketplaceSnapshotWindowSelector()
 
     def execute(self) -> IntelligenceResult:
-        snapshots = self._history_queries.recent_snapshots(2)
+        selected = self._selector._select(self._history_queries.all_snapshots())
         comparison = MarketplaceSnapshotComparisonInput(
-            previous_snapshot=snapshots[1] if len(snapshots) > 1 else None,
-            latest_snapshot=snapshots[0] if snapshots else None,
+            previous_snapshot=selected.baseline,
+            latest_snapshot=selected.current,
         )
         execution = self._engine.execute(IntelligenceContext(marketplace_comparison=comparison))
         if type(execution) is not IntelligenceExecution:
@@ -39,7 +41,7 @@ class SupplyChangesExecutionService:
         if len(execution.results) != 1:
             raise SupplyChangesExecutionConsistencyError("Supply Changes engine must return exactly one result.")
         result = execution.results[0]
-        if type(result) is not IntelligenceResult or result.module_id != "supply_changes":
+        if type(result) is not IntelligenceResult or result.module_id != "supply_changes" or result.module_version != "2.0":
             raise SupplyChangesExecutionConsistencyError("Supply Changes engine returned an unexpected result.")
         return result
 

@@ -14,6 +14,7 @@ from dip.experience.dashboard import (
 from dip.experience.explorer import (
     CollectionExplorerDestination,
     CollectionExplorerViewModel,
+    MarketplaceChangePresentationOutcome,
 )
 from dip.experience.hidden_gems import HiddenGemsDetailViewModel
 from dip.experience.price_changes import PriceChangesDetailViewModel
@@ -62,6 +63,7 @@ class _CollectionExplorerBuilder(Protocol):
         marketplace_opportunity: MarketplaceOpportunityDetailViewModel,
         *,
         selected_destination: CollectionExplorerDestination,
+        marketplace_change_outcome: MarketplaceChangePresentationOutcome | None = None,
     ) -> CollectionExplorerViewModel: ...
 
 
@@ -118,6 +120,9 @@ class CollectionExplorerPresentationService:
         marketplace_stability_result: IntelligenceResult | None = None,
         marketplace_scarcity_result: IntelligenceResult | None = None,
         marketplace_opportunity_result: IntelligenceResult | None = None,
+        price_changes_detail: PriceChangesDetailViewModel | None = None,
+        supply_changes_detail: SupplyChangesDetailViewModel | None = None,
+        marketplace_change_outcome: MarketplaceChangePresentationOutcome | None = None,
     ) -> CollectionExplorerViewModel:
         """Build every destination once from the exact same homepage model."""
 
@@ -152,7 +157,7 @@ class CollectionExplorerPresentationService:
                 else WeekendListingsDetailViewModel.unavailable()
             )
         )
-        price_changes = (
+        price_changes = price_changes_detail or (
             PriceChangesDetailViewModel.loading()
             if overview_loading
             else (
@@ -161,7 +166,7 @@ class CollectionExplorerPresentationService:
                 else PriceChangesDetailViewModel.unavailable()
             )
         )
-        supply_changes = (
+        supply_changes = supply_changes_detail or (
             SupplyChangesDetailViewModel.loading()
             if overview_loading
             else (self._supply_changes.detail_for_result(supply_changes_result) if self._supply_changes is not None else SupplyChangesDetailViewModel.unavailable())
@@ -223,6 +228,7 @@ class CollectionExplorerPresentationService:
             marketplace_scarcity,
             marketplace_opportunity,
             selected_destination=selected_destination,
+            marketplace_change_outcome=marketplace_change_outcome,
         )
 
 
