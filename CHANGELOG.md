@@ -1,21 +1,48 @@
 # Changelog
 
-# Version 0.5.1 — Marketplace Change Execution
+# Version 0.5.1 — Marketplace Change Explorer
 
-**Status: Unreleased**
+Released 2 August 2026.
 
-- Added one shared, deterministic Marketplace snapshot window for release-level
-  Price and Supply Changes.
-- Enabled Price Changes and Supply Changes in Collection Explorer with lazy
-  caching and explicit Marketplace refresh.
-- Added current catalogue artist/title enrichment without changing historical
-  Marketplace evidence.
-- Established release-level Price Changes 2.0 and Supply Changes 2.0 contracts;
-  persisted historical 1.0 identities remain unchanged.
-- Added typed safe workspace outcomes, controller-level Collector Run
-  serialization, and transactional non-destructive refresh replacement.
-- Kept migrations at 1–7 and listing-dependent or composite Marketplace
-  destinations disabled.
+## Marketplace comparison and Explorer
+
+- Added one shared canonical Marketplace comparison-window selector for Price
+  Changes and Supply Changes. It selects the newest structurally eligible
+  snapshot and the newest strictly earlier snapshot with exactly matching
+  source and source version.
+- Enabled release-level Price Changes and Supply Changes in Collection Explorer
+  from that same immutable snapshot pair.
+- Price Changes 2.0 compares exact same-currency observed lowest prices without
+  conversion, rounding, or listing-derived reconstruction.
+- Supply Changes 2.0 compares explicit observed copies-for-sale facts. Missing
+  evidence remains incomparable, and availability wording is limited to
+  factual zero-to-positive and positive-to-zero transitions.
+- Enriched presentation with current catalogue artist/title labels while
+  preserving release ID as identity and keeping those labels separate from
+  historical Marketplace evidence.
+
+## Workspace lifecycle and evidence safety
+
+- Added lazy immutable workspace caching, explicit refresh, and preservation of
+  the selected Explorer destination across successful refreshes.
+- Blocked Marketplace refresh during an active Collector Run and invalidated
+  stale cached comparison windows when a run completes.
+- Added fixed value-neutral diagnostics and detached allowlisted provenance so
+  stored payloads, provider values, paths, SQL, and exception text do not cross
+  the public presentation boundary.
+- Kept `listing_price_changes` 1.0 as a distinct non-production capability;
+  it cannot substitute for authoritative `price_changes` 2.0.
+
+## Important limits
+
+- There is no listing acquisition or listing-specific production comparison.
+- Rare Appearances, Marketplace Activity, Listing Lifecycle, Marketplace
+  Momentum, Stability, Scarcity, and Opportunity remain unavailable in the
+  production desktop path. Marketplace Activity remains non-production-wired.
+- Dashboard Marketplace and Marketplace Workspace remain unavailable.
+- There is no wants analysis, schema/session/persistence expansion, or schema
+  migration; migrations remain exactly 1–7.
+- One practical `Current Collection` remains the supported scope.
 
 All notable changes to the Discogs Intelligence Platform will be documented here.
 

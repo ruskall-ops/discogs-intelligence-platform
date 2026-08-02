@@ -38,9 +38,10 @@ calculated screen models are not included.
 
 Restore a backup with the same DIP version or a newer compatible version that
 can migrate its schema. Do not open a newer-schema backup with an older DIP
-version. Schema version 7 and application version 0.5.0 are separate version
-identities. The implemented application/package version is 0.5.1 and remains
-unreleased; DIP v0.5.0 remains the current public personal-use release.
+version. Schema version 7 and application version 0.5.1 are separate version
+identities. DIP v0.5.1 is the prepared release candidate. It is implemented and
+validated and is awaiting release completion. DIP v0.5.0 remains the latest
+completed, tagged public personal-use release.
 
 ## Manual recovery
 

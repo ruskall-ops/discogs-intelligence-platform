@@ -16,17 +16,18 @@ for every buying, selling, pricing, and collection decision.
 
 ## Current release and development state
 
-**Version 0.5.1 — Marketplace Change Execution (unreleased)**
+**Version 0.5.1 — Marketplace Change Explorer (prepared release candidate)**
 
-DIP v0.5.0 was released on 31 July 2026 and is the current public personal-use
-release. Version 0.5 connects the single-collection Collector Run to canonical
-Marketplace History, Collection Intelligence, immutable Intelligence History,
-Dashboard and Collector Review workflows, the user-owned Weekend Review Queue,
-Collection Decisions, primary desktop session restoration, and explicit
-verified SQLite backup.
+DIP v0.5.1 is the prepared release candidate. It is implemented and validated
+and is awaiting release completion. DIP v0.5.0 remains the latest completed,
+tagged public personal-use release. Version 0.5 connects the single-collection
+Collector Run to canonical Marketplace History, Collection Intelligence,
+immutable Intelligence History, Dashboard and Collector Review workflows, the
+user-owned Weekend Review Queue, Collection Decisions, primary desktop session
+restoration, and explicit verified SQLite backup.
 
-The implemented but unreleased v0.5.1 preparation enables release-level
-observed lowest-price and copies-for-sale changes in Collection Explorer. It
+Version 0.5.1 enables release-level observed lowest-price and copies-for-sale
+changes in Collection Explorer. It
 uses one compatible Marketplace snapshot pair and current catalogue metadata
 only as clearly identified display labels.
 
@@ -105,11 +106,11 @@ recalculate the original modules or predict a future state.
 - **Dashboard** is the command centre. Eight summary cards answer what changed,
   what deserves attention, and where to investigate next.
 - **Collection Explorer** provides production-wired Overview, Collection
-  Health, Hidden Gems, and Collection Trends.
+  Health, Hidden Gems, Collection Trends, Price Changes, and Supply Changes.
 - Portfolio, secondary Historical Intelligence, Marketplace Workspace, and
-  Marketplace-oriented Explorer destinations retain architectural foundations
-  but are visibly disabled as **Not available in this release** until a real
-  production data path supplies them.
+  the remaining Marketplace-oriented Explorer destinations retain architectural
+  foundations but are visibly disabled as **Not available in this release**
+  until a real production data path supplies them.
 
 Workspace builders compose immutable presentation models. They do not execute
 intelligence, query persistence, or duplicate application and presentation
@@ -211,10 +212,10 @@ src/dip/
 - **0.2 — Collection Intelligence:** released.
 - **0.3 — Marketplace Intelligence and Decision Support:** released.
 - **0.4 — SQLite Project Persistence:** released.
-- **0.5.0 — Collector Workflow Foundation:** released on 31 July 2026; current
-  public personal-use release.
-- **0.5.1 — Marketplace Change Execution:** implemented, unreleased; current
-  package/runtime version is 0.5.1.
+- **0.5.0 — Collector Workflow Foundation:** released on 31 July 2026; latest
+  completed, tagged public personal-use release.
+- **0.5.1 — Marketplace Change Explorer:** prepared, implemented, and validated;
+  awaiting release completion. Package/runtime version is 0.5.1.
 
 See the [Roadmap](docs/Roadmap.md) for release scope and future direction.
 
