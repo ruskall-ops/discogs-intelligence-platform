@@ -5,6 +5,7 @@ from .models import (
     SupplyChangesDetailState,
     SupplyChangesDetailViewModel,
     SupplyChangesSnapshotViewModel,
+    supply_presentation_state_kind,
 )
 
-__all__ = ["ReleaseSupplyChangeViewModel", "SupplyChangesDetailConsistencyError", "SupplyChangesDetailState", "SupplyChangesDetailViewModel", "SupplyChangesDetailViewModelBuilder", "SupplyChangesSnapshotViewModel"]
+__all__ = ["ReleaseSupplyChangeViewModel", "SupplyChangesDetailConsistencyError", "SupplyChangesDetailState", "SupplyChangesDetailViewModel", "SupplyChangesDetailViewModelBuilder", "SupplyChangesSnapshotViewModel", "supply_presentation_state_kind"]

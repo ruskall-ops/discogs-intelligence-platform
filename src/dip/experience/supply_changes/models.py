@@ -6,6 +6,14 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 
+from dip.experience.results_presentation import (
+    ComparisonContextViewModel,
+    PresentationStateCopy,
+    PresentationStateKind,
+    SummaryCount,
+    SummaryCountIdentifier,
+    presentation_state_copy,
+)
 from dip.marketplace_intelligence import MarketplaceDataStatus, SupplyChangeKind, SupplyChangesComparisonState
 
 
@@ -119,6 +127,12 @@ class SupplyChangesDetailViewModel:
     changes: tuple[ReleaseSupplyChangeViewModel, ...] = ()
     diagnostics: tuple[str, ...] = ()
     title: str = field(init=False, default="Supply Changes")
+    state_copy: PresentationStateCopy | None = field(init=False, default=None)
+    comparison_context: ComparisonContextViewModel | None = field(
+        init=False,
+        default=None,
+    )
+    summary_counts: tuple[SummaryCount, ...] = field(init=False, default=())
 
     def __post_init__(self) -> None:
         if type(self.state) is not SupplyChangesDetailState:
@@ -131,6 +145,7 @@ class SupplyChangesDetailViewModel:
         if self.state in {SupplyChangesDetailState.LOADING, SupplyChangesDetailState.UNAVAILABLE}:
             if self.comparison_state is not None or self.previous_snapshot is not None or self.latest_snapshot is not None or self.source is not None or self.changes or any(value is not None for value in (self.change_count, self.unchanged_count, self.incomparable_count)):
                 raise SupplyChangesDetailConsistencyError("Loading or unavailable detail cannot contain result context.")
+            _set_shared_presentation(self)
             return
         if self.comparison_state is None or self.change_count is None or self.unchanged_count is None or self.incomparable_count is None:
             raise SupplyChangesDetailConsistencyError("A supplied result requires comparison state and summary counts.")
@@ -174,6 +189,7 @@ class SupplyChangesDetailViewModel:
             raise SupplyChangesDetailConsistencyError("Insufficient data may contain only incomparable details.")
         if self.state is SupplyChangesDetailState.ERROR and (self.changes or any((self.change_count, self.unchanged_count, self.incomparable_count))):
             raise SupplyChangesDetailConsistencyError("An error result cannot contain successful supply evidence.")
+        _set_shared_presentation(self)
 
     @classmethod
     def loading(cls) -> "SupplyChangesDetailViewModel":
@@ -182,6 +198,106 @@ class SupplyChangesDetailViewModel:
     @classmethod
     def unavailable(cls) -> "SupplyChangesDetailViewModel":
         return cls(SupplyChangesDetailState.UNAVAILABLE, "Supply Changes is unavailable.")
+
+
+def supply_presentation_state_kind(
+    detail: SupplyChangesDetailViewModel,
+) -> PresentationStateKind | None:
+    """Adapt the typed Supply state without parsing copy or recalculating facts."""
+
+    if type(detail) is not SupplyChangesDetailViewModel:
+        raise TypeError("detail must be a SupplyChangesDetailViewModel.")
+    if detail.state in {
+        SupplyChangesDetailState.LOADING,
+        SupplyChangesDetailState.UNAVAILABLE,
+    }:
+        return None
+    if detail.state is SupplyChangesDetailState.EMPTY:
+        return (
+            PresentationStateKind.NO_CHANGES
+            if detail.unchanged_count
+            else PresentationStateKind.EMPTY
+        )
+    return {
+        SupplyChangesDetailState.AVAILABLE: PresentationStateKind.AVAILABLE,
+        SupplyChangesDetailState.PARTIAL: PresentationStateKind.PARTIAL,
+        SupplyChangesDetailState.INSUFFICIENT_HISTORY: (
+            PresentationStateKind.INSUFFICIENT_HISTORY
+        ),
+        SupplyChangesDetailState.INSUFFICIENT_DATA: (
+            PresentationStateKind.INSUFFICIENT_DATA
+        ),
+        SupplyChangesDetailState.ERROR: PresentationStateKind.ERROR,
+    }[detail.state]
+
+
+def _set_shared_presentation(detail: SupplyChangesDetailViewModel) -> None:
+    kind = supply_presentation_state_kind(detail)
+    object.__setattr__(
+        detail,
+        "state_copy",
+        None if kind is None else presentation_state_copy(kind),
+    )
+    previous = detail.previous_snapshot
+    latest = detail.latest_snapshot
+    context = None
+    if previous is not None and latest is not None:
+        context = ComparisonContextViewModel.from_snapshot_values(
+            previous_snapshot_id=previous.snapshot_id,
+            previous_captured_at=previous.captured_at,
+            previous_source=previous.source,
+            previous_source_version=previous.source_version,
+            latest_snapshot_id=latest.snapshot_id,
+            latest_captured_at=latest.captured_at,
+            latest_source=latest.source,
+            latest_source_version=latest.source_version,
+        )
+    object.__setattr__(detail, "comparison_context", context)
+    values = (
+        (
+            SummaryCountIdentifier.RELEASE_CHANGES,
+            "Release changes",
+            detail.change_count,
+        ),
+        (
+            SummaryCountIdentifier.UNCHANGED,
+            "Unchanged releases",
+            detail.unchanged_count,
+        ),
+        (
+            SummaryCountIdentifier.INCOMPARABLE,
+            "Incomparable releases",
+            detail.incomparable_count,
+        ),
+    )
+    if detail.state in {
+        SupplyChangesDetailState.ERROR,
+        SupplyChangesDetailState.INSUFFICIENT_HISTORY,
+    }:
+        counts = ()
+    elif detail.state is SupplyChangesDetailState.INSUFFICIENT_DATA:
+        counts = (
+            ()
+            if detail.incomparable_count is None or detail.incomparable_count == 0
+            else (
+                SummaryCount(
+                    SummaryCountIdentifier.INCOMPARABLE,
+                    "Incomparable releases",
+                    detail.incomparable_count,
+                ),
+            )
+        )
+    else:
+        counts = (
+            ()
+            if any(value is None for _, _, value in values)
+            else tuple(
+                SummaryCount(identifier, label, value)
+                for identifier, label, value in values
+                if value is not None
+            )
+        )
+    object.__setattr__(detail, "summary_counts", counts)
 
 
 def _text(value: object, name: str) -> None:

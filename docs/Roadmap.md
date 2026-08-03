@@ -207,7 +207,7 @@ The released target also includes truthful transactional CSV-import feedback.
 
 ## Results Presentation and UX Refinement
 
-**Status: Future milestone; no public version assigned**
+**Status: Future milestone; implementation in progress; no public version assigned**
 
 This milestone makes existing factual results easier to understand, navigate,
 compare, and act upon without changing their evidence semantics. Presentation
@@ -237,6 +237,16 @@ The presentation scope is:
 - exact preservation of Decimal values, currencies, release IDs, snapshot
   provenance, current-metadata labelling, and evidence limitations;
 - macOS visual smoke coverage using realistic result volumes.
+
+The first implementation slice establishes the shared immutable factual-state
+copy, existing Price/Supply summary-count projection, and detached Marketplace
+comparison context. Price and Supply now use the same allowlisted headings and
+concise explanations for equivalent available, no-change, empty, partial,
+insufficient-history, insufficient-data, and safe-error states. This slice does
+not implement the planned summary-first layout, compact tables, grouping,
+filtering, sorting, Dashboard restructuring, navigation changes, or new actions.
+The existing stale-window lifecycle remains unchanged until its dedicated
+navigation slice.
 
 The milestone explicitly excludes new Marketplace evidence, listing acquisition
 or history, Rare Appearances or Marketplace Activity activation, scoring,

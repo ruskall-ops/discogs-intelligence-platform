@@ -165,6 +165,25 @@ One optional batch collection-metadata read attaches current artist/title labels
 after comparison. These labels are presentation identification, not snapshot
 evidence, and cannot affect selection, classification, counts, or state.
 
+The first Results Presentation refinement projects the selected pair into one
+detached immutable comparison-context value shared by Price and Supply. It
+retains only the two exact snapshot identifiers, their original timezone-aware
+capture values, source, and exactly equal source version. Construction rejects
+blank or duplicate identifiers, naive, equal or reversed instants, and source
+or version disagreement. It contains no observations, diagnostics, prices,
+supply facts, paths, SQL, or provider payloads and does not select or compare
+snapshots. The workspace requires both presentation contexts to match the
+selected window's snapshot identifiers, original capture representations,
+source, and source version exactly; UTC-equivalent timestamps with different
+offset representations are not interchangeable at this identity boundary.
+
+Price and Supply presentation also adapt their existing typed states to a small
+allowlisted factual-state vocabulary. Presentation copy and existing summary
+counts are immutable projections; domain modules remain authoritative for
+comparison, classification, delta, incomparability, evidence, and ordering.
+The shared vocabulary does not activate a destination, wire an action, or alter
+the established stale-window, query, cache, or refresh lifecycle.
+
 The workspace and the older Price/Supply execution services all query canonical
 History through `all_snapshots()` and use the same deterministic selector. They
 then invoke the same pair-explicit domain calculators. No caller-selectable

@@ -38,6 +38,14 @@ The current authoritative Price Changes and Supply Changes modules use version
 2.0 semantics. Historical persisted 1.0 results retain their original module
 identity and are not silently reinterpreted.
 
+Unreleased work on the unversioned Results Presentation milestone has begun
+with shared immutable factual-state copy and Price/Supply comparison-context
+and existing-count projection. It changes presentation wording only: the
+released Price/Supply evidence, values, ordering, query/cache lifecycle, and
+desktop layout remain unchanged. The broader summary-first Price/Supply,
+Dashboard, Collection Review, navigation, keyboard, filtering, and sorting
+refinements remain future slices and are not part of the v0.5.1 release.
+
 ## Available after sufficient history
 
 - What Changed;

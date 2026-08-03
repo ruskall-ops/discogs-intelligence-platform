@@ -7,6 +7,14 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
+from dip.experience.results_presentation import (
+    ComparisonContextViewModel,
+    PresentationStateCopy,
+    PresentationStateKind,
+    SummaryCount,
+    SummaryCountIdentifier,
+    presentation_state_copy,
+)
 from dip.marketplace_intelligence import (
     ListingPriceChangeKind,
     MarketplaceDataStatus,
@@ -177,6 +185,12 @@ class PriceChangesDetailViewModel:
     release_changes: tuple[ReleasePriceChangeViewModel, ...] = ()
     diagnostics: tuple[str, ...] = ()
     title: str = field(init=False, default="Price Changes")
+    state_copy: PresentationStateCopy | None = field(init=False, default=None)
+    comparison_context: ComparisonContextViewModel | None = field(
+        init=False,
+        default=None,
+    )
+    summary_counts: tuple[SummaryCount, ...] = field(init=False, default=())
 
     def __post_init__(self) -> None:
         if type(self.state) is not PriceChangesDetailState:
@@ -279,6 +293,14 @@ class PriceChangesDetailViewModel:
         object.__setattr__(self, "listing_changes", listing_changes)
         object.__setattr__(self, "release_changes", release_changes)
         object.__setattr__(self, "diagnostics", diagnostics)
+        kind = price_presentation_state_kind(self)
+        object.__setattr__(
+            self,
+            "state_copy",
+            None if kind is None else presentation_state_copy(kind),
+        )
+        object.__setattr__(self, "comparison_context", _comparison_context(self))
+        object.__setattr__(self, "summary_counts", _summary_counts(self))
 
     @property
     def message(self) -> str:
@@ -313,6 +335,107 @@ class PriceChangesDetailViewModel:
             PriceChangesDetailState.UNAVAILABLE,
             "No Price Changes result was supplied to this Explorer workspace.",
         )
+
+
+def price_presentation_state_kind(
+    detail: PriceChangesDetailViewModel,
+) -> PresentationStateKind | None:
+    """Adapt the typed Price state without parsing copy or recalculating facts."""
+
+    if type(detail) is not PriceChangesDetailViewModel:
+        raise TypeError("detail must be a PriceChangesDetailViewModel.")
+    if detail.state in {
+        PriceChangesDetailState.LOADING,
+        PriceChangesDetailState.UNAVAILABLE,
+    }:
+        # Loading has no shared canonical state. The legacy unavailable state means
+        # a result was not supplied, not that this production destination is disabled.
+        return None
+    if detail.state is PriceChangesDetailState.EMPTY:
+        return (
+            PresentationStateKind.NO_CHANGES
+            if detail.unchanged_count
+            else PresentationStateKind.EMPTY
+        )
+    return {
+        PriceChangesDetailState.AVAILABLE: PresentationStateKind.AVAILABLE,
+        PriceChangesDetailState.PARTIAL: PresentationStateKind.PARTIAL,
+        PriceChangesDetailState.INSUFFICIENT_HISTORY: (
+            PresentationStateKind.INSUFFICIENT_HISTORY
+        ),
+        PriceChangesDetailState.INSUFFICIENT_DATA: (
+            PresentationStateKind.INSUFFICIENT_DATA
+        ),
+        PriceChangesDetailState.ERROR: PresentationStateKind.ERROR,
+    }[detail.state]
+
+
+def _comparison_context(
+    detail: PriceChangesDetailViewModel,
+) -> ComparisonContextViewModel | None:
+    previous = detail.previous_snapshot
+    latest = detail.latest_snapshot
+    if previous is None or latest is None:
+        return None
+    return ComparisonContextViewModel.from_snapshot_values(
+        previous_snapshot_id=previous.snapshot_id,
+        previous_captured_at=previous.captured_at,
+        previous_source=previous.source,
+        previous_source_version=previous.source_version,
+        latest_snapshot_id=latest.snapshot_id,
+        latest_captured_at=latest.captured_at,
+        latest_source=latest.source,
+        latest_source_version=latest.source_version,
+    )
+
+
+def _summary_counts(
+    detail: PriceChangesDetailViewModel,
+) -> tuple[SummaryCount, ...]:
+    if detail.state in {
+        PriceChangesDetailState.ERROR,
+        PriceChangesDetailState.INSUFFICIENT_HISTORY,
+    }:
+        return ()
+    if detail.state is PriceChangesDetailState.INSUFFICIENT_DATA:
+        if detail.incomparable_count is None or detail.incomparable_count == 0:
+            return ()
+        return (
+            SummaryCount(
+                SummaryCountIdentifier.INCOMPARABLE,
+                "Incomparable changes",
+                detail.incomparable_count,
+            ),
+        )
+    values = (
+        (
+            SummaryCountIdentifier.LISTING_CHANGES,
+            "Listing changes",
+            detail.listing_change_count,
+        ),
+        (
+            SummaryCountIdentifier.RELEASE_CHANGES,
+            "Release-level changes",
+            detail.release_change_count,
+        ),
+        (
+            SummaryCountIdentifier.UNCHANGED,
+            "Unchanged supplied values",
+            detail.unchanged_count,
+        ),
+        (
+            SummaryCountIdentifier.INCOMPARABLE,
+            "Incomparable changes",
+            detail.incomparable_count,
+        ),
+    )
+    if any(value is None for _, _, value in values):
+        return ()
+    return tuple(
+        SummaryCount(identifier, label, value)
+        for identifier, label, value in values
+        if value is not None
+    )
 
 
 def _validate_result_state(detail: PriceChangesDetailViewModel) -> None:
@@ -678,4 +801,5 @@ __all__ = [
     "PriceChangesDetailViewModel",
     "PriceChangesSnapshotViewModel",
     "ReleasePriceChangeViewModel",
+    "price_presentation_state_kind",
 ]
