@@ -194,11 +194,9 @@ Potential future settings include:
 
 Persistent user preferences and a graphical settings screen are not
 implemented. The default `application_version` is the canonical runtime
-`dip.__version__`, which is 0.5.1 for the prepared Marketplace Change Explorer
-candidate.
-DIP v0.5.1 is the prepared release candidate. It is implemented and validated
-and is awaiting release completion. DIP v0.5.0 remains the latest completed,
-tagged public personal-use release.
+`dip.__version__`, which is 0.5.1 for the released Marketplace Change Explorer.
+DIP v0.5.1 was released on 2 August 2026 and is the latest completed, tagged
+public personal-use release. Its annotated tag and GitHub release exist.
 The `DIP_APPLICATION_VERSION` environment variable may override it for a specific
 runtime without changing package metadata. The Discogs client uses the
 canonical runtime version in its User-Agent.

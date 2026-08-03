@@ -16,11 +16,11 @@ for every buying, selling, pricing, and collection decision.
 
 ## Current release and development state
 
-**Version 0.5.1 — Marketplace Change Explorer (prepared release candidate)**
+**Version 0.5.1 — Marketplace Change Explorer**
 
-DIP v0.5.1 is the prepared release candidate. It is implemented and validated
-and is awaiting release completion. DIP v0.5.0 remains the latest completed,
-tagged public personal-use release. Version 0.5 connects the single-collection
+DIP v0.5.1 was released on 2 August 2026 and is the latest completed, tagged
+public personal-use release. Its annotated tag and GitHub release exist.
+Version 0.5 connects the single-collection
 Collector Run to canonical Marketplace History, Collection Intelligence,
 immutable Intelligence History, Dashboard and Collector Review workflows, the
 user-owned Weekend Review Queue, Collection Decisions, primary desktop session
@@ -212,10 +212,10 @@ src/dip/
 - **0.2 — Collection Intelligence:** released.
 - **0.3 — Marketplace Intelligence and Decision Support:** released.
 - **0.4 — SQLite Project Persistence:** released.
-- **0.5.0 — Collector Workflow Foundation:** released on 31 July 2026; latest
-  completed, tagged public personal-use release.
-- **0.5.1 — Marketplace Change Explorer:** prepared, implemented, and validated;
-  awaiting release completion. Package/runtime version is 0.5.1.
+- **0.5.0 — Collector Workflow Foundation:** released on 31 July 2026.
+- **0.5.1 — Marketplace Change Explorer:** released on 2 August 2026; latest
+  completed, tagged public personal-use release. Package/runtime version is
+  0.5.1. The released target includes truthful transactional CSV-import feedback.
 
 See the [Roadmap](docs/Roadmap.md) for release scope and future direction.
 

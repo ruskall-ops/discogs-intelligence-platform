@@ -56,6 +56,11 @@ fails, the committed import remains successful. Dashboard and table refreshes
 are attempted independently; any failure prevents the success notification and
 produces one fixed committed-import warning. Reopening the view or application
 is safe, and the CSV should not be imported again merely to recover the display.
+Completion feedback is shown only when both `refresh_dashboard()` and
+`load_table()` return the literal boolean `True`; every other return value, or
+an ordinary exception from either boundary, is treated as a post-commit display
+failure. Process-control exceptions such as `KeyboardInterrupt` and `SystemExit`
+continue to propagate.
 Standalone table loading retains its established failure feedback.
 
 ## Historical storage
