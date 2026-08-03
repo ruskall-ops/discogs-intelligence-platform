@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Protocol
@@ -19,6 +19,7 @@ from dip.experience.price_changes import (
     PriceChangesSnapshotViewModel,
     ReleasePriceChangeViewModel,
 )
+from dip.experience.results_presentation import ComparisonContextViewModel
 from dip.experience.supply_changes import (
     SupplyChangesDetailViewModelBuilder,
     ReleaseSupplyChangeViewModel,
@@ -171,6 +172,8 @@ class MarketplaceChangeWorkspace:
                 raise ValueError("An error workspace requires zero comparison counts.")
             if self.outcome_reason not in {MarketplaceChangeOutcomeReason.HISTORY_UNREADABLE, MarketplaceChangeOutcomeReason.HISTORY_INVALID, MarketplaceChangeOutcomeReason.COMPARISON_FAILED}:
                 raise ValueError("An error workspace requires a safe failure outcome reason.")
+            if self.price_changes.comparison_context is not None or self.supply_changes.comparison_context is not None:
+                raise ValueError("A workspace without a selected pair cannot retain presentation context.")
             return
         if self.state is MarketplaceChangeWorkspaceState.INSUFFICIENT_HISTORY:
             if self.outcome_reason not in {MarketplaceChangeOutcomeReason.NO_ELIGIBLE_CURRENT, MarketplaceChangeOutcomeReason.NO_COMPATIBLE_BASELINE}:
@@ -188,6 +191,17 @@ class MarketplaceChangeWorkspace:
                 actual = (detail.previous_snapshot.snapshot_id, detail.latest_snapshot.snapshot_id) if detail.previous_snapshot and detail.latest_snapshot else None
                 if actual != expected:
                     raise ValueError("Price and Supply must use the selected snapshot pair.")
+            if self.price_changes.comparison_context != self.supply_changes.comparison_context:
+                raise ValueError("Price and Supply must share one presentation context.")
+            context = self.price_changes.comparison_context
+            if context is None or not _context_matches_window(
+                context,
+                self.window.baseline,
+                self.window.current,
+            ):
+                raise ValueError("Presentation context must match the selected snapshot window exactly.")
+        elif self.price_changes.comparison_context is not None or self.supply_changes.comparison_context is not None:
+            raise ValueError("A workspace without a selected pair cannot retain presentation context.")
         if self.state is not _workspace_state(self.price_changes, self.supply_changes):
             raise ValueError("Workspace state must be derived from its child results.")
 
@@ -362,11 +376,11 @@ class MarketplaceChangeWorkspaceService:
 
 
 def _enrich_price(detail: PriceChangesDetailViewModel, metadata: dict[int, CurrentReleaseMetadata], failed: bool) -> PriceChangesDetailViewModel:
-    return PriceChangesDetailViewModel(**{**detail.__dict__, "release_changes": tuple(_replace_price_label(value, metadata.get(value.release_id)) for value in detail.release_changes), "diagnostics": (*detail.diagnostics, METADATA_COPY, *((METADATA_FAILURE_COPY,) if failed else ()))})
+    return replace(detail, release_changes=tuple(_replace_price_label(value, metadata.get(value.release_id)) for value in detail.release_changes), diagnostics=(*detail.diagnostics, METADATA_COPY, *((METADATA_FAILURE_COPY,) if failed else ())))
 
 
 def _enrich_supply(detail: SupplyChangesDetailViewModel, metadata: dict[int, CurrentReleaseMetadata], failed: bool) -> SupplyChangesDetailViewModel:
-    return SupplyChangesDetailViewModel(**{**detail.__dict__, "changes": tuple(_replace_supply_label(value, metadata.get(value.release_id)) for value in detail.changes), "diagnostics": (*detail.diagnostics, METADATA_COPY, *((METADATA_FAILURE_COPY,) if failed else ()))})
+    return replace(detail, changes=tuple(_replace_supply_label(value, metadata.get(value.release_id)) for value in detail.changes), diagnostics=(*detail.diagnostics, METADATA_COPY, *((METADATA_FAILURE_COPY,) if failed else ())))
 
 
 def _replace_price_label(value: ReleasePriceChangeViewModel, metadata: CurrentReleaseMetadata | None) -> ReleasePriceChangeViewModel:
@@ -395,6 +409,29 @@ def _utc(value: datetime) -> datetime:
     return value.astimezone(timezone.utc)
 
 
+def _same_capture_value(left: datetime, right: datetime) -> bool:
+    """Compare original aware timestamp representations without normalizing them."""
+
+    return left.isoformat() == right.isoformat() and left.fold == right.fold
+
+
+def _context_matches_window(
+    context: ComparisonContextViewModel,
+    baseline: MarketplaceSnapshotProvenance,
+    current: MarketplaceSnapshotProvenance,
+) -> bool:
+    return (
+        context.previous_snapshot_id == baseline.snapshot_id
+        and _same_capture_value(context.previous_captured_at, baseline.captured_at)
+        and context.latest_snapshot_id == current.snapshot_id
+        and _same_capture_value(context.latest_captured_at, current.captured_at)
+        and context.source == baseline.source
+        and context.source == current.source
+        and context.source_version == baseline.source_version
+        and context.source_version == current.source_version
+    )
+
+
 def _provenance(snapshot: MarketplaceSnapshot) -> MarketplaceSnapshotProvenance:
     return MarketplaceSnapshotProvenance(snapshot.snapshot_id, snapshot.captured_at, snapshot.source, snapshot.source_version, snapshot.status)
 
@@ -412,11 +449,11 @@ def _supply_snapshot(snapshot: MarketplaceSnapshot) -> SupplyChangesSnapshotView
 
 
 def _append_price_diagnostics(detail: PriceChangesDetailViewModel, values: tuple[str, ...]) -> PriceChangesDetailViewModel:
-    return PriceChangesDetailViewModel(**{**detail.__dict__, "diagnostics": (*detail.diagnostics, *values)})
+    return replace(detail, diagnostics=(*detail.diagnostics, *values))
 
 
 def _append_supply_diagnostics(detail: SupplyChangesDetailViewModel, values: tuple[str, ...]) -> SupplyChangesDetailViewModel:
-    return SupplyChangesDetailViewModel(**{**detail.__dict__, "diagnostics": (*detail.diagnostics, *values)})
+    return replace(detail, diagnostics=(*detail.diagnostics, *values))
 
 
 def _workspace_state(price: PriceChangesDetailViewModel, supply: SupplyChangesDetailViewModel) -> MarketplaceChangeWorkspaceState:

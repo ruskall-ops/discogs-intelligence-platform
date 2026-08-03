@@ -129,6 +129,15 @@ Presentation may select, validate, label, and format already-produced facts.
 It must not recalculate scores, interpret history, query persistence, contact a
 provider, or create domain conclusions.
 
+Shared factual result presentation lives under
+`dip.experience.results_presentation`. It contains only frozen validated state
+copy, established summary-count values, and detached Marketplace comparison
+context. Destination adapters map existing typed states explicitly; unknown raw
+strings fail closed. The shared package performs no I/O and does not replace
+domain, application, workspace, or desktop state machines. Desktop renderers
+format these supplied values and do not infer state by parsing text or
+recomparing evidence.
+
 ### Application Services
 
 Application services coordinate complete use cases. Implemented examples

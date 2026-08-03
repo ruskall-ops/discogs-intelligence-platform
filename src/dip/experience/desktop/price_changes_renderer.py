@@ -60,8 +60,16 @@ class DesktopPriceChangesRenderer:
         return DesktopPriceChangesView(
             title=detail.title,
             state=detail.state,
-            headline=_headline(detail),
-            summary=detail.summary,
+            headline=(
+                detail.state_copy.heading
+                if detail.state_copy is not None
+                else _legacy_headline(detail)
+            ),
+            summary=(
+                detail.state_copy.body
+                if detail.state_copy is not None
+                else detail.summary
+            ),
             context=_context(detail),
             counts=_counts(detail),
             listing_changes=tuple(
@@ -79,14 +87,16 @@ class DesktopPriceChangesRenderer:
 
 
 def _context(detail: PriceChangesDetailViewModel) -> str:
-    if detail.previous_snapshot is None and detail.latest_snapshot is None:
+    context = detail.comparison_context
+    if context is None:
+        if detail.latest_snapshot is None:
+            return ""
+        return "\n".join(_snapshot_lines("Latest snapshot", detail.latest_snapshot))
+    if detail.previous_snapshot is None or detail.latest_snapshot is None:
         return ""
-    lines: list[str] = []
-    if detail.previous_snapshot is not None:
-        lines.extend(_snapshot_lines("Previous snapshot", detail.previous_snapshot))
-    if detail.latest_snapshot is not None:
-        lines.extend(_snapshot_lines("Latest snapshot", detail.latest_snapshot))
-    lines.append(f"Comparison source: {detail.source or 'Unavailable'}")
+    lines = list(_snapshot_lines("Previous snapshot", detail.previous_snapshot))
+    lines.extend(_snapshot_lines("Latest snapshot", detail.latest_snapshot))
+    lines.append(f"Comparison source: {context.source}")
     if detail.comparison_state is not None:
         lines.append(
             "Comparison state: "
@@ -109,16 +119,7 @@ def _snapshot_lines(
 
 
 def _counts(detail: PriceChangesDetailViewModel) -> str:
-    if detail.listing_change_count is None:
-        return ""
-    return "\n".join(
-        (
-            f"Listing changes: {detail.listing_change_count}",
-            f"Release-level changes: {detail.release_change_count}",
-            f"Unchanged supplied values: {detail.unchanged_count}",
-            f"Incomparable changes: {detail.incomparable_count}",
-        )
-    )
+    return "\n".join(f"{count.label}: {count.value}" for count in detail.summary_counts)
 
 
 def _listing_change(
@@ -182,26 +183,10 @@ def _release_change(
     )
 
 
-def _headline(detail: PriceChangesDetailViewModel) -> str:
+def _legacy_headline(detail: PriceChangesDetailViewModel) -> str:
     labels = {
         PriceChangesDetailState.LOADING: "Loading Price Changes",
-        PriceChangesDetailState.AVAILABLE: (
-            f"{detail.listing_change_count} listing changes · "
-            f"{detail.release_change_count} release-level changes"
-        ),
-        PriceChangesDetailState.PARTIAL: (
-            f"{detail.listing_change_count} listing changes · "
-            f"{detail.release_change_count} release-level changes · partial evidence"
-        ),
-        PriceChangesDetailState.EMPTY: "No price changes detected",
         PriceChangesDetailState.UNAVAILABLE: "Price Changes unavailable",
-        PriceChangesDetailState.ERROR: "Price Changes could not be evaluated",
-        PriceChangesDetailState.INSUFFICIENT_HISTORY: (
-            "Insufficient Marketplace history for Price Changes"
-        ),
-        PriceChangesDetailState.INSUFFICIENT_DATA: (
-            "Insufficient data for Price Changes"
-        ),
     }
     return labels[detail.state]
 

@@ -187,6 +187,37 @@ two snapshots as
 `insufficient_data`, and a valid comparison with no detailed changes as
 `empty`.
 
+### Shared factual state presentation
+
+The first Results Presentation refinement adds a small immutable shared
+presentation vocabulary without replacing destination or domain states. Its
+closed factual kinds cover available, no changes, empty, partial, insufficient
+history, insufficient data, stale, unavailable, safe error, no imported
+collection, imported but not analysed, and post-import display warning. A
+deterministic allowlist supplies the exact heading, concise body, and optional
+action label for each kind; callers cannot interpolate exception, diagnostic,
+path, SQL, provider, snapshot, release, price, supply, or personal values into
+that copy.
+
+Price and Supply use explicit typed adapters for the states their current
+results can represent truthfully. A complete comparison with one or more
+established unchanged facts is **No changes observed**. A complete result with
+no changed or unchanged facts remains **No matching results**. Partial,
+insufficient-history, insufficient-data, and safe-error states remain distinct.
+The legacy loading state has no shared factual equivalent. The legacy
+unavailable detail means that no result was supplied, while the canonical
+unavailable copy is reserved for a destination with no production data path;
+both therefore retain their existing explicit destination copy rather than
+being mapped falsely.
+
+The same presentation boundary now exposes immutable existing summary counts
+and one detached Price/Supply comparison context containing only the exact
+snapshot identifiers, original aware capture times, source, and equal source
+version. It performs no comparison or pair selection. The current text layout,
+detail ordering, metadata labels, warnings, provenance, and refresh/cache
+lifecycle are otherwise unchanged. Summary-first count bands and compact result
+rows remain a later slice.
+
 ## Desktop navigation
 
 The Dashboard's **Open Collection Explorer** action opens Overview in a

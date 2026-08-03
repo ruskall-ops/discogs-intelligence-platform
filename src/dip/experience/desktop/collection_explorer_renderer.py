@@ -18,6 +18,8 @@ from dip.experience.explorer import (
     CollectionExplorerViewModel,
     MarketplaceChangePresentationOutcome,
 )
+from dip.experience.explorer.state_adapter import marketplace_outcome_state_kind
+from dip.experience.results_presentation import presentation_state_copy
 from dip.intelligence import IntelligenceResult
 
 from .collection_health_renderer import DesktopCollectionHealthRenderer
@@ -691,14 +693,7 @@ def _marketplace_outcome_copy(
         return None
     if type(outcome) is not MarketplaceChangePresentationOutcome:
         raise TypeError("Marketplace presentation outcome must be typed.")
-    return {
-        MarketplaceChangePresentationOutcome.NO_ELIGIBLE_CURRENT: "No eligible Marketplace snapshot is available.",
-        MarketplaceChangePresentationOutcome.NO_COMPATIBLE_BASELINE: "No earlier compatible Marketplace snapshot is available for comparison.",
-        MarketplaceChangePresentationOutcome.NO_COMPARABLE_FACTS: "The selected snapshots do not contain comparable Price or Supply evidence.",
-        MarketplaceChangePresentationOutcome.HISTORY_UNREADABLE: "Saved Marketplace history could not be read safely.",
-        MarketplaceChangePresentationOutcome.HISTORY_INVALID: "Saved Marketplace history is not valid for comparison.",
-        MarketplaceChangePresentationOutcome.COMPARISON_FAILED: "Marketplace changes could not be calculated safely.",
-    }[outcome]
+    return presentation_state_copy(marketplace_outcome_state_kind(outcome)).heading
 
 
 def _count(value: int | None) -> str:

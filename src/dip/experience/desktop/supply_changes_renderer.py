@@ -31,14 +31,24 @@ class DesktopSupplyChangesRenderer:
         if type(detail) is not SupplyChangesDetailViewModel:
             raise TypeError("detail must be a SupplyChangesDetailViewModel.")
         context: list[str] = []
+        comparison = detail.comparison_context
         for label, snapshot in (("Previous", detail.previous_snapshot), ("Latest", detail.latest_snapshot)):
             if snapshot is not None:
                 context.extend((f"{label} snapshot: {snapshot.snapshot_id}", f"{label} captured: {snapshot.captured_at.isoformat()}", f"{label} status: {snapshot.status.value.replace('_', ' ').title()}"))
-        if context:
-            context.append(f"Comparison source: {detail.source or 'Unavailable'}")
+        if comparison is not None:
+            context.append(f"Comparison source: {comparison.source}")
         changes = tuple(DesktopReleaseSupplyChange(index, value.release_id, f"{value.display_label or f'Release {value.release_id}'} — {_kind_copy(value.change_kind)}", "\n".join((f"Release ID: {value.release_id}", f"Previous supply: {_value(value.previous_supply)}", f"Latest supply: {_value(value.latest_supply)}", f"Delta: {_delta(value.delta)}", f"Previous snapshot: {value.previous_snapshot_id}", f"Latest snapshot: {value.latest_snapshot_id}", f"Previous observed: {_timestamp(value.previous_observed_at)}", f"Current observed: {_timestamp(value.latest_observed_at)}", *(f"Evidence: {item}" for item in value.evidence), *(f"Diagnostic: {item}" for item in value.observation_diagnostics)))) for index, value in enumerate(detail.changes, 1))
-        counts = "" if detail.change_count is None else "\n".join((f"Release changes: {detail.change_count}", f"Unchanged releases: {detail.unchanged_count}", f"Incomparable releases: {detail.incomparable_count}"))
-        return DesktopSupplyChangesView(detail.title, detail.state, detail.state.value.replace("_", " ").title(), detail.summary, "\n".join(context), counts, changes, "\n".join(f"• {item}" for item in detail.diagnostics))
+        counts = "\n".join(f"{count.label}: {count.value}" for count in detail.summary_counts)
+        headline = (
+            detail.state_copy.heading
+            if detail.state_copy is not None
+            else {
+                SupplyChangesDetailState.LOADING: "Loading Supply Changes",
+                SupplyChangesDetailState.UNAVAILABLE: "Supply Changes unavailable",
+            }[detail.state]
+        )
+        summary = detail.state_copy.body if detail.state_copy is not None else detail.summary
+        return DesktopSupplyChangesView(detail.title, detail.state, headline, summary, "\n".join(context), counts, changes, "\n".join(f"• {item}" for item in detail.diagnostics))
 
 
 def _value(value: int | None) -> str:

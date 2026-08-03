@@ -58,20 +58,19 @@ NOW = datetime(2026, 7, 31, 12, tzinfo=timezone.utc)
 
 
 class MarketplaceOutcomeCopyTest(unittest.TestCase):
-    def test_every_typed_outcome_has_distinct_fixed_safe_copy(self):
+    def test_every_typed_outcome_uses_fixed_canonical_state_copy(self):
         expected = {
-            MarketplaceChangePresentationOutcome.NO_ELIGIBLE_CURRENT: "No eligible Marketplace snapshot is available.",
-            MarketplaceChangePresentationOutcome.NO_COMPATIBLE_BASELINE: "No earlier compatible Marketplace snapshot is available for comparison.",
-            MarketplaceChangePresentationOutcome.NO_COMPARABLE_FACTS: "The selected snapshots do not contain comparable Price or Supply evidence.",
-            MarketplaceChangePresentationOutcome.HISTORY_UNREADABLE: "Saved Marketplace history could not be read safely.",
-            MarketplaceChangePresentationOutcome.HISTORY_INVALID: "Saved Marketplace history is not valid for comparison.",
-            MarketplaceChangePresentationOutcome.COMPARISON_FAILED: "Marketplace changes could not be calculated safely.",
+            MarketplaceChangePresentationOutcome.NO_ELIGIBLE_CURRENT: "More history required",
+            MarketplaceChangePresentationOutcome.NO_COMPATIBLE_BASELINE: "More history required",
+            MarketplaceChangePresentationOutcome.NO_COMPARABLE_FACTS: "No comparable facts",
+            MarketplaceChangePresentationOutcome.HISTORY_UNREADABLE: "Results could not be displayed",
+            MarketplaceChangePresentationOutcome.HISTORY_INVALID: "Results could not be displayed",
+            MarketplaceChangePresentationOutcome.COMPARISON_FAILED: "Results could not be displayed",
         }
         self.assertEqual(
             {value: _marketplace_outcome_copy(value) for value in expected},
             expected,
         )
-        self.assertEqual(len(set(expected.values())), len(expected))
         with self.assertRaises(TypeError):
             _marketplace_outcome_copy("no_eligible_current")  # type: ignore[arg-type]
 
@@ -268,6 +267,20 @@ class WorkspaceTest(unittest.TestCase):
         self.assertEqual(result.price_changes.release_changes[0].display_label, "Artist — Title")
         self.assertEqual(result.supply_changes.changes[1].display_label, "Release 2")
         self.assertEqual(result.price_changes.previous_snapshot.snapshot_id, result.supply_changes.previous_snapshot.snapshot_id)
+        self.assertEqual(result.price_changes.comparison_context, result.supply_changes.comparison_context)
+        self.assertEqual(
+            result.price_changes.comparison_context.previous_captured_at.isoformat(),
+            result.window.baseline.captured_at.isoformat(),
+        )
+        self.assertEqual(
+            result.price_changes.comparison_context.latest_captured_at.isoformat(),
+            result.window.current.captured_at.isoformat(),
+        )
+        self.assertEqual(result.price_changes.comparison_context.source, result.window.current.source)
+        self.assertEqual(
+            result.price_changes.comparison_context.source_version,
+            result.window.current.source_version,
+        )
         headings = tuple(value.heading for value in DesktopSupplyChangesRenderer().render(result.supply_changes).changes)
         self.assertTrue(any("No copies observed for sale" in value for value in headings))
         self.assertTrue(any("Became available for sale" in value for value in headings))

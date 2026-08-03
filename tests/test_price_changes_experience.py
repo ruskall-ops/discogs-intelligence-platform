@@ -220,14 +220,18 @@ class PriceChangesRendererTestCase(unittest.TestCase):
         )
         error = self.renderer.render(self.builder.build(failed_result()))
 
-        self.assertIn("partial evidence", partial.headline)
+        self.assertEqual(partial.headline, "Partial evidence")
+        self.assertEqual(
+            partial.summary,
+            "Some supplied evidence was incomplete; available comparisons remain shown.",
+        )
         self.assertIn("Delta: Unavailable", partial.listing_changes[0].body)
         self.assertIn("different currencies", partial.listing_changes[0].body)
-        self.assertIn("No price changes", empty.headline)
+        self.assertEqual(empty.headline, "No changes observed")
         self.assertIn("unavailable", unavailable.headline.lower())
-        self.assertIn("history", insufficient_history.headline.lower())
-        self.assertIn("Insufficient data", insufficient_data.headline)
-        self.assertIn("could not", error.headline)
+        self.assertEqual(insufficient_history.headline, "More history required")
+        self.assertEqual(insufficient_data.headline, "No comparable facts")
+        self.assertEqual(error.headline, "Results could not be displayed")
 
     def test_renderer_has_neutral_wording_and_no_comparison_calculations(self) -> None:
         source = (
