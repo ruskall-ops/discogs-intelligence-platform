@@ -48,6 +48,16 @@ copies are represented by quantity rather than duplicated release rows.
 Collection import updates current release and ownership facts. These current
 facts are distinct from append-only historical observations.
 
+CSV parsing and the release, ownership, and initial-decision writes form one
+transactional import boundary. A failed import rolls back that boundary; DIP
+does not retain a partial import or retry it automatically. After the import
+commits, the desktop refreshes its displayed data. If that display refresh
+fails, the committed import remains successful. Dashboard and table refreshes
+are attempted independently; any failure prevents the success notification and
+produces one fixed committed-import warning. Reopening the view or application
+is safe, and the CSV should not be imported again merely to recover the display.
+Standalone table loading retains its established failure feedback.
+
 ## Historical storage
 
 ### Legacy collection and market history

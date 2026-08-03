@@ -83,15 +83,22 @@ def _validate_artifact(artifact: Path, environment_root: Path) -> None:
     environment = dict(os.environ)
     environment.pop("PYTHONPATH", None)
     environment["DIP_DATABASE_FILENAME"] = str(database)
+    environment["DIP_VALIDATION_CHECKOUT"] = str(ROOT.resolve())
     check = """
 import importlib.metadata
 import importlib.resources
+import os
+from pathlib import Path
 from unittest.mock import Mock, patch
 import dip
+from dip.collection.services import ImportService
 from dip.composition import build_desktop_application_dependencies
 
 assert dip.__version__ == "0.5.1"
 assert importlib.metadata.version("discogs-intelligence-platform") == "0.5.1"
+assert os.environ["DIP_VALIDATION_CHECKOUT"] not in str(
+    Path(dip.__file__).resolve()
+)
 entry_points = {
     value.name: value.value
     for value in importlib.metadata.distribution(
@@ -124,6 +131,34 @@ try:
     assert len(dependencies.project_management.list_projects()) == 1
     assert dependencies.collector_run._provider_factory is provider
     provider.assert_not_called()
+    csv_path = Path("installed-validation.csv")
+    csv_path.write_text(
+        "Catalog#,Artist,Title,Label,Format,Rating,Released,release_id,"
+        "CollectionFolder,Date Added,Collection Media Condition,"
+        "Collection Sleeve Condition,Collection Notes\\n"
+        "CAT,Fixture Artist,Fixture Title,Fixture Label,Vinyl,5,2026,1101,"
+        "Folder,2026-08-01,Mint,Mint,\\n"
+        "CAT,Fixture Artist,Fixture Title,Fixture Label,Vinyl,5,2026,1101,"
+        "Folder,2026-08-01,Mint,Mint,\\n"
+        "CAT,Fixture Artist,Fixture Title,Fixture Label,Vinyl,5,2026,1202,"
+        "Folder,2026-08-01,Mint,Mint,\\n",
+        encoding="utf-8",
+    )
+    summary = ImportService(dependencies.database).import_collection(csv_path)
+    assert summary.imported_records == 3
+    assert dependencies.database.conn.execute(
+        "SELECT COUNT(*) FROM releases"
+    ).fetchone()[0] == 2
+    assert dependencies.database.conn.execute(
+        "SELECT COUNT(*) FROM collection_ownership"
+    ).fetchone()[0] == 2
+    assert dependencies.database.conn.execute(
+        "SELECT COUNT(*) FROM decisions"
+    ).fetchone()[0] == 2
+    assert dependencies.database.conn.execute(
+        "SELECT quantity FROM collection_ownership "
+        "ORDER BY release_id LIMIT 1"
+    ).fetchone()[0] == 2
 finally:
     dependencies.database.close()
 
@@ -137,6 +172,24 @@ try:
     projects = reopened.project_management.list_projects()
     assert len(projects) == 1
     assert projects[0].project_id == current_id
+    assert reopened.database.conn.execute(
+        "SELECT COUNT(*) FROM releases"
+    ).fetchone()[0] == 2
+    assert reopened.database.conn.execute(
+        "SELECT COUNT(*) FROM collection_ownership"
+    ).fetchone()[0] == 2
+    assert reopened.database.conn.execute(
+        "SELECT COUNT(*) FROM decisions"
+    ).fetchone()[0] == 2
+    assert reopened.database.conn.execute(
+        "SELECT COUNT(*) FROM analysis_runs"
+    ).fetchone()[0] == 0
+    assert reopened.database.conn.execute(
+        "SELECT COUNT(*) FROM marketplace_snapshots"
+    ).fetchone()[0] == 0
+    assert reopened.database.conn.execute(
+        "SELECT COUNT(*) FROM desktop_session"
+    ).fetchone()[0] == 0
     provider.assert_not_called()
 finally:
     reopened.database.close()

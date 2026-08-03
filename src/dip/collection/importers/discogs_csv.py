@@ -62,6 +62,14 @@ class DiscogsCSVImporter:
                 f"Unable to read the Discogs CSV:\n{exc}"
             ) from exc
 
+        if any(
+            None in row or any(value is None for value in row.values())
+            for row in rows
+        ):
+            raise CollectionImportError(
+                "The CSV rows do not match the header structure."
+            )
+
         release_id_column = self._find_release_id_column(fieldnames)
 
         valid_release_ids = 0
