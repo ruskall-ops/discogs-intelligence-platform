@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
 from types import SimpleNamespace
+import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
+from dip.collection.services import ImportService, ImportSummary
 from dip.app.collector_run import (
     CollectorRunExecutionError,
     CollectorRunProgress,
@@ -16,6 +19,7 @@ from dip.experience.desktop.app import App
 from dip.experience.desktop.collection_explorer_renderer import (
     DesktopCollectionExplorerController,
 )
+from dip.persistence.sqlite import Database
 
 
 class _Service:
@@ -63,8 +67,8 @@ def _app():
     app.database_backup_button = Mock()
     app.progress = Mock()
     app.status_var = Mock()
-    app.refresh_dashboard = Mock()
-    app.load_table = Mock()
+    app.refresh_dashboard = Mock(return_value=True)
+    app.load_table = Mock(return_value=True)
     return app
 
 
@@ -81,6 +85,45 @@ def _assert_import_available(app):
         app.import_csv()
     chooser.assert_called_once()
     warning.assert_not_called()
+
+
+class _Variable:
+    def __init__(self, value=""):
+        self.value = value
+
+    def get(self):
+        return self.value
+
+
+class _Tree:
+    def get_children(self):
+        return ()
+
+    def delete(self, item):
+        raise AssertionError("an empty tree must not delete rows")
+
+    def insert(self, *args, **kwargs):
+        raise AssertionError("the test display database returns no rows")
+
+
+class _DisplayDatabase:
+    def __init__(self, *, dashboard_fails=False, table_fails=False):
+        self.dashboard_fails = dashboard_fails
+        self.table_fails = table_fails
+        self.dashboard_calls = 0
+        self.table_calls = 0
+
+    def dashboard(self):
+        self.dashboard_calls += 1
+        if self.dashboard_fails:
+            raise RuntimeError("HOSTILE DASHBOARD")
+        return {}
+
+    def review_rows(self, **kwargs):
+        self.table_calls += 1
+        if self.table_fails:
+            raise RuntimeError("HOSTILE TABLE")
+        return []
 
 
 class CollectorRunDesktopTestCase(unittest.TestCase):
@@ -523,6 +566,424 @@ class CollectorRunDesktopTestCase(unittest.TestCase):
         self.assertFalse(app._collector_run_active)
         app.import_csv_button.configure.assert_called_with(state="normal")
         _assert_import_available(app)
+
+
+class CSVImportDesktopLifecycleTestCase(unittest.TestCase):
+    @staticmethod
+    def _import_app(*, import_effect=None):
+        app = _app()
+        summary = ImportSummary(3, 3, 3, 0)
+        app.import_service = SimpleNamespace(
+            import_collection=Mock(
+                side_effect=import_effect,
+                return_value=summary,
+            )
+        )
+        return app
+
+    @staticmethod
+    def _real_display_app(display_database):
+        app = _app()
+        app.db = display_database
+        app.refresh_dashboard = App.refresh_dashboard.__get__(app, App)
+        app.load_table = App.load_table.__get__(app, App)
+        app.tree = _Tree()
+        app.search_var = _Variable()
+        app.priority_var = _Variable("All")
+        app.decision_filter_var = _Variable("All")
+        app.kpis = {}
+        app.collector_review_observations = None
+        app._apply_hot_now_dashboard_state = Mock()
+        app._render_observations = Mock()
+        app.refresh_intelligence_dashboard = Mock()
+        return app
+
+    def test_success_runs_each_phase_once_and_notifies_completion(self):
+        app = self._import_app()
+
+        with (
+            patch(
+                "dip.experience.desktop.app.filedialog.askopenfilename",
+                return_value="collection.csv",
+            ),
+            patch("dip.experience.desktop.app.messagebox.showinfo") as info,
+            patch("dip.experience.desktop.app.messagebox.showerror") as error,
+        ):
+            app.import_csv()
+
+        app.import_service.import_collection.assert_called_once_with(
+            Path("collection.csv")
+        )
+        app.status_var.set.assert_called_once_with(
+            "Imported 3 collection rows (0 invalid rows skipped)"
+        )
+        app.refresh_dashboard.assert_called_once_with()
+        app.load_table.assert_called_once_with(report_failure=False)
+        info.assert_called_once()
+        error.assert_not_called()
+
+    def test_import_failure_shows_only_fixed_import_failure_copy(self):
+        hostile = "HOSTILE ROW PATH SQL TOKEN"
+        app = self._import_app(import_effect=RuntimeError(hostile))
+
+        with (
+            patch(
+                "dip.experience.desktop.app.filedialog.askopenfilename",
+                return_value="collection.csv",
+            ),
+            patch("dip.experience.desktop.app.messagebox.showinfo") as info,
+            patch("dip.experience.desktop.app.messagebox.showerror") as error,
+        ):
+            app.import_csv()
+
+        error.assert_called_once_with(
+            "Import failed",
+            "The selected collection file could not be imported.",
+        )
+        info.assert_not_called()
+        app.status_var.set.assert_not_called()
+        app.refresh_dashboard.assert_not_called()
+        app.load_table.assert_not_called()
+        self.assertNotIn(hostile, repr(error.call_args))
+
+    def test_post_commit_display_failures_are_truthful_and_do_not_retry(self):
+        refresh_copy = (
+            "The collection was imported, but the displayed data could not be "
+            "refreshed. Reopen the view or application; do not import the file "
+            "again."
+        )
+        for phase in ("dashboard", "table"):
+            with self.subTest(phase=phase):
+                app = self._import_app()
+                if phase == "dashboard":
+                    app.refresh_dashboard.side_effect = RuntimeError("HOSTILE")
+                else:
+                    app.load_table.side_effect = RuntimeError("HOSTILE")
+
+                with (
+                    patch(
+                        "dip.experience.desktop.app.filedialog.askopenfilename",
+                        return_value="collection.csv",
+                    ),
+                    patch("dip.experience.desktop.app.messagebox.showinfo") as info,
+                    patch("dip.experience.desktop.app.messagebox.showerror") as error,
+                ):
+                    app.import_csv()
+
+                app.import_service.import_collection.assert_called_once()
+                error.assert_called_once_with("Collection imported", refresh_copy)
+                info.assert_not_called()
+                app.refresh_dashboard.assert_called_once_with()
+                app.load_table.assert_called_once_with(report_failure=False)
+                self.assertEqual(
+                    app.status_var.set.call_args.args[0],
+                    "Collection imported; displayed data could not be refreshed.",
+                )
+
+    def test_only_literal_true_refresh_results_allow_completion(self):
+        warning = (
+            "The collection was imported, but the displayed data could not be "
+            "refreshed. Reopen the view or application; do not import the file "
+            "again."
+        )
+        unexpected_results = (
+            None,
+            Mock(),
+            object(),
+            1,
+            "success",
+            ("success",),
+            ["success"],
+        )
+        for boundary in ("dashboard", "table"):
+            for result in unexpected_results:
+                with self.subTest(boundary=boundary, result_type=type(result).__name__):
+                    app = self._import_app()
+                    if boundary == "dashboard":
+                        app.refresh_dashboard.return_value = result
+                    else:
+                        app.load_table.return_value = result
+
+                    with (
+                        patch(
+                            "dip.experience.desktop.app.filedialog.askopenfilename",
+                            return_value="collection.csv",
+                        ),
+                        patch("dip.experience.desktop.app.messagebox.showinfo") as info,
+                        patch("dip.experience.desktop.app.messagebox.showerror") as error,
+                    ):
+                        app.import_csv()
+
+                    app.import_service.import_collection.assert_called_once_with(
+                        Path("collection.csv")
+                    )
+                    app.refresh_dashboard.assert_called_once_with()
+                    app.load_table.assert_called_once_with(report_failure=False)
+                    error.assert_called_once_with("Collection imported", warning)
+                    info.assert_not_called()
+                    self.assertEqual(
+                        app.status_var.set.call_args_list[-1].args,
+                        (
+                            "Collection imported; displayed data could not be "
+                            "refreshed.",
+                        ),
+                    )
+                    self.assertNotIn(repr(result), repr(error.call_args))
+
+    def test_literal_boolean_refresh_result_combinations(self):
+        warning = (
+            "The collection was imported, but the displayed data could not be "
+            "refreshed. Reopen the view or application; do not import the file "
+            "again."
+        )
+        for dashboard_result, table_result in (
+            (True, True),
+            (True, False),
+            (False, True),
+            (False, False),
+        ):
+            with self.subTest(
+                dashboard_result=dashboard_result,
+                table_result=table_result,
+            ):
+                app = self._import_app()
+                app.refresh_dashboard.return_value = dashboard_result
+                app.load_table.return_value = table_result
+
+                with (
+                    patch(
+                        "dip.experience.desktop.app.filedialog.askopenfilename",
+                        return_value="collection.csv",
+                    ),
+                    patch("dip.experience.desktop.app.messagebox.showinfo") as info,
+                    patch("dip.experience.desktop.app.messagebox.showerror") as error,
+                ):
+                    app.import_csv()
+
+                app.import_service.import_collection.assert_called_once_with(
+                    Path("collection.csv")
+                )
+                app.refresh_dashboard.assert_called_once_with()
+                app.load_table.assert_called_once_with(report_failure=False)
+                if dashboard_result is True and table_result is True:
+                    info.assert_called_once()
+                    error.assert_not_called()
+                else:
+                    info.assert_not_called()
+                    error.assert_called_once_with("Collection imported", warning)
+
+    def test_completion_dialog_failure_does_not_reclassify_committed_import(self):
+        app = self._import_app()
+
+        with (
+            patch(
+                "dip.experience.desktop.app.filedialog.askopenfilename",
+                return_value="collection.csv",
+            ),
+            patch(
+                "dip.experience.desktop.app.messagebox.showinfo",
+                side_effect=RuntimeError("HOSTILE"),
+            ),
+            patch("dip.experience.desktop.app.messagebox.showerror") as error,
+        ):
+            app.import_csv()
+
+        app.import_service.import_collection.assert_called_once()
+        app.refresh_dashboard.assert_called_once_with()
+        app.load_table.assert_called_once_with(report_failure=False)
+        error.assert_not_called()
+
+    def test_status_failure_does_not_retry_or_prevent_display_refresh(self):
+        app = self._import_app()
+        app.status_var.set.side_effect = RuntimeError("HOSTILE")
+
+        with (
+            patch(
+                "dip.experience.desktop.app.filedialog.askopenfilename",
+                return_value="collection.csv",
+            ),
+            patch("dip.experience.desktop.app.messagebox.showinfo"),
+            patch("dip.experience.desktop.app.messagebox.showerror") as error,
+        ):
+            app.import_csv()
+
+        app.import_service.import_collection.assert_called_once()
+        app.refresh_dashboard.assert_called_once_with()
+        app.load_table.assert_called_once_with(report_failure=False)
+        error.assert_not_called()
+
+    def test_selector_failure_is_fixed_and_cancellation_is_a_no_op(self):
+        app = self._import_app()
+        with (
+            patch(
+                "dip.experience.desktop.app.filedialog.askopenfilename",
+                side_effect=RuntimeError("HOSTILE PATH"),
+            ),
+            patch("dip.experience.desktop.app.messagebox.showerror") as error,
+            patch("dip.experience.desktop.app.messagebox.showinfo") as info,
+        ):
+            app.import_csv()
+        error.assert_called_once_with(
+            "Import unavailable",
+            "The collection file selector could not be opened.",
+        )
+        info.assert_not_called()
+        app.import_service.import_collection.assert_not_called()
+        app.status_var.set.assert_not_called()
+
+        app = self._import_app()
+        with (
+            patch(
+                "dip.experience.desktop.app.filedialog.askopenfilename",
+                return_value="",
+            ),
+            patch("dip.experience.desktop.app.messagebox.showerror") as error,
+            patch("dip.experience.desktop.app.messagebox.showinfo") as info,
+        ):
+            app.import_csv()
+        error.assert_not_called()
+        info.assert_not_called()
+        app.import_service.import_collection.assert_not_called()
+        app.status_var.set.assert_not_called()
+
+    def test_refresh_boundaries_report_real_internal_failure_and_success(self):
+        dashboard_failure = self._real_display_app(
+            _DisplayDatabase(dashboard_fails=True)
+        )
+        self.assertFalse(dashboard_failure.refresh_dashboard())
+
+        table_failure = self._real_display_app(
+            _DisplayDatabase(table_fails=True)
+        )
+        with patch("dip.experience.desktop.app.messagebox.showerror") as error:
+            self.assertFalse(table_failure.load_table())
+        error.assert_called_once_with(
+            "Collection Decisions unavailable",
+            "Collection Decisions could not be loaded.",
+        )
+
+        success = self._real_display_app(_DisplayDatabase())
+        self.assertTrue(success.refresh_dashboard())
+        self.assertTrue(success.load_table())
+
+    def test_real_post_commit_display_failures_preserve_durable_import(self):
+        warning = (
+            "The collection was imported, but the displayed data could not be "
+            "refreshed. Reopen the view or application; do not import the file "
+            "again."
+        )
+        cases = (
+            ("dashboard", True, False),
+            ("table", False, True),
+            ("both", True, True),
+        )
+        for name, dashboard_fails, table_fails in cases:
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                csv_path = root / "collection.csv"
+                csv_path.write_text(
+                    "Release ID,Artist,Title\n"
+                    "1101,Fixture Artist,Fixture Title\n"
+                    "1101,Fixture Artist,Fixture Title\n",
+                    encoding="utf-8",
+                )
+                database_path = root / "collection.sqlite3"
+                database = Database(database_path)
+                service = ImportService(database)
+                display = _DisplayDatabase(
+                    dashboard_fails=dashboard_fails,
+                    table_fails=table_fails,
+                )
+                app = self._real_display_app(display)
+                app.import_service = SimpleNamespace(
+                    import_collection=Mock(wraps=service.import_collection)
+                )
+
+                with (
+                    patch(
+                        "dip.experience.desktop.app.filedialog.askopenfilename",
+                        return_value=str(csv_path),
+                    ),
+                    patch("dip.experience.desktop.app.messagebox.showinfo") as info,
+                    patch("dip.experience.desktop.app.messagebox.showerror") as error,
+                ):
+                    app.import_csv()
+
+                app.import_service.import_collection.assert_called_once_with(csv_path)
+                self.assertEqual(display.dashboard_calls, 1)
+                self.assertEqual(display.table_calls, 1)
+                error.assert_called_once_with("Collection imported", warning)
+                info.assert_not_called()
+                self.assertEqual(
+                    app.status_var.set.call_args.args[0],
+                    "Collection imported; displayed data could not be refreshed.",
+                )
+                database.close()
+
+                reopened = Database(database_path)
+                try:
+                    counts = tuple(
+                        reopened.conn.execute(
+                            f"SELECT COUNT(*) FROM {table}"
+                        ).fetchone()[0]
+                        for table in (
+                            "releases",
+                            "collection_ownership",
+                            "decisions",
+                            "analysis_runs",
+                            "marketplace_snapshots",
+                            "desktop_session",
+                        )
+                    )
+                    quantity = reopened.conn.execute(
+                        "SELECT quantity FROM collection_ownership"
+                    ).fetchone()[0]
+                finally:
+                    reopened.close()
+                self.assertEqual(counts, (1, 1, 1, 0, 0, 0))
+                self.assertEqual(quantity, 2)
+
+    def test_keyboard_interrupt_and_system_exit_propagate_from_every_phase(self):
+        for exception_type in (KeyboardInterrupt, SystemExit):
+            for phase in (
+                "selection",
+                "import",
+                "status",
+                "dashboard",
+                "table",
+                "completion",
+            ):
+                with self.subTest(exception=exception_type.__name__, phase=phase):
+                    app = self._import_app()
+                    chooser_effect = None
+                    info_effect = None
+                    if phase == "selection":
+                        chooser_effect = exception_type()
+                    elif phase == "import":
+                        app.import_service.import_collection.side_effect = exception_type()
+                    elif phase == "status":
+                        app.status_var.set.side_effect = exception_type()
+                    elif phase == "dashboard":
+                        app.refresh_dashboard.side_effect = exception_type()
+                    elif phase == "table":
+                        app.load_table.side_effect = exception_type()
+                    else:
+                        info_effect = exception_type()
+
+                    with (
+                        patch(
+                            "dip.experience.desktop.app.filedialog.askopenfilename",
+                            return_value="collection.csv",
+                            side_effect=chooser_effect,
+                        ),
+                        patch(
+                            "dip.experience.desktop.app.messagebox.showinfo",
+                            side_effect=info_effect,
+                        ),
+                        patch("dip.experience.desktop.app.messagebox.showerror"),
+                    ):
+                        with self.assertRaises(exception_type):
+                            app.import_csv()
 
 
 if __name__ == "__main__":

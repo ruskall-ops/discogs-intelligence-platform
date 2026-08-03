@@ -14,7 +14,6 @@ from dip.app.collector_run import (
     CollectorRunUnavailableError,
 )
 from dip.app.database_backup import DatabaseBackupValidationError
-from dip.collection.importers import CollectionImportError
 from dip.collection.services import ImportService
 from dip.collector_review import (
     HiddenGemObservation,
@@ -96,6 +95,26 @@ _UNAVAILABLE_EXPLORER_DESTINATIONS = frozenset(
         CollectionExplorerDestination.MARKETPLACE_OPPORTUNITY,
     )
 )
+
+
+def _show_message_safely(show_message, title, body):
+    try:
+        show_message(title, body)
+    except Exception:
+        pass
+
+
+def _show_import_display_refresh_failure():
+    _show_message_safely(
+        messagebox.showerror,
+        "Collection imported",
+        (
+            "The collection was imported, but the displayed data could not be "
+            "refreshed. Reopen the view or application; do not import the file "
+            "again."
+        ),
+    )
+
 
 class App(tk.Tk):
     def __init__(self):
@@ -1556,25 +1575,61 @@ class App(tk.Tk):
                 "Collection import is unavailable while Collector Run is active.",
             )
             return
-        path = filedialog.askopenfilename(
-            title="Select Discogs collection export",
-            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
-        )
+        try:
+            path = filedialog.askopenfilename(
+                title="Select Discogs collection export",
+                filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
+            )
+        except Exception:
+            _show_message_safely(
+                messagebox.showerror,
+                "Import unavailable",
+                "The collection file selector could not be opened.",
+            )
+            return
 
         if not path:
             return
 
         try:
             result = self.import_service.import_collection(Path(path))
+        except Exception:
+            _show_message_safely(
+                messagebox.showerror,
+                "Import failed",
+                "The selected collection file could not be imported.",
+            )
+            return
 
+        try:
             self.status_var.set(
                 f"Imported {result.imported_records:,} collection rows "
                 f"({result.invalid_release_ids:,} invalid rows skipped)"
             )
+        except Exception:
+            pass
 
-            self.refresh_dashboard()
-            self.load_table()
+        try:
+            dashboard_refreshed = self.refresh_dashboard()
+        except Exception:
+            dashboard_refreshed = False
 
+        try:
+            table_refreshed = self.load_table(report_failure=False)
+        except Exception:
+            table_refreshed = False
+
+        if dashboard_refreshed is not True or table_refreshed is not True:
+            try:
+                self.status_var.set(
+                    "Collection imported; displayed data could not be refreshed."
+                )
+            except Exception:
+                pass
+            _show_import_display_refresh_failure()
+            return
+
+        try:
             messagebox.showinfo(
                 "Import complete",
                 (
@@ -1584,18 +1639,8 @@ class App(tk.Tk):
                     f"Invalid release IDs: {result.invalid_release_ids:,}"
                 ),
             )
-
-        except CollectionImportError:
-            messagebox.showerror(
-                "Import failed",
-                "The selected collection file could not be imported.",
-            )
-
         except Exception:
-            messagebox.showerror(
-                "Import failed",
-                "The selected collection file could not be imported.",
-            )
+            pass
 
     def start_refresh(self):
         if self._collector_run_active:
@@ -1738,12 +1783,12 @@ class App(tk.Tk):
             if backup_button is not None:
                 backup_button.state(["!disabled"])
 
-    def refresh_dashboard(self):
+    def refresh_dashboard(self) -> bool:
         try:
             row = self.db.dashboard()
         except Exception:
             self.status_var.set("Dashboard information could not be loaded.")
-            return
+            return False
         for key, widget in self.kpis.items():
             if key != "hot_now":
                 widget.configure(text=f"{int(row[key] or 0):,}")
@@ -1767,6 +1812,7 @@ class App(tk.Tk):
         self._apply_hot_now_dashboard_state()
         self._render_observations()
         self.refresh_intelligence_dashboard()
+        return True
 
     def _apply_hot_now_dashboard_state(self):
         section = self.current_observation_workspace.hot_now_section
@@ -2394,7 +2440,7 @@ class App(tk.Tk):
             text.pack(fill="both", expand=True)
         ttk.Button(window, text="Close", command=window.destroy).pack(pady=(0, 12))
 
-    def load_table(self):
+    def load_table(self, *, report_failure: bool = True) -> bool:
         for item in self.tree.get_children():
             self.tree.delete(item)
         try:
@@ -2405,11 +2451,13 @@ class App(tk.Tk):
             )
         except Exception:
             self.status_var.set("Collection Decisions could not be loaded.")
-            messagebox.showerror(
-                "Collection Decisions unavailable",
-                "Collection Decisions could not be loaded.",
-            )
-            return
+            if report_failure:
+                _show_message_safely(
+                    messagebox.showerror,
+                    "Collection Decisions unavailable",
+                    "Collection Decisions could not be loaded.",
+                )
+            return False
         for row in rows:
             self.tree.insert("", "end", iid=str(row["release_id"]), values=(
                 row["artist"], row["title"], f"{row['lowest_price']:.2f}",
@@ -2417,6 +2465,7 @@ class App(tk.Tk):
                 row["sell_window"], row["priority"], row["decision"]
             ))
         self.status_var.set(f"Showing {len(rows):,} records")
+        return True
 
     def edit_selected(self, event=None):
         selection = self.tree.selection()
