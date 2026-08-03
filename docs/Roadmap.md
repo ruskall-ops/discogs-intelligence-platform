@@ -194,15 +194,57 @@ release; their numbering does not represent later public releases.
 
 ## Version 0.5.1 — Marketplace Change Explorer
 
-**Status: Prepared release candidate; implemented and validated; awaiting
-release completion**
+**Status: Released on 2 August 2026**
 
-DIP v0.5.0 remains the latest completed, tagged public personal-use release.
+DIP v0.5.1 was released on 2 August 2026 and is the latest completed, tagged
+public personal-use release. Its annotated tag and GitHub release exist.
 
 Version 0.5.1 enables release-level observed lowest-price and copies-for-sale
 changes in Collection Explorer. Both views share one exact-source/version
 snapshot pair, use current catalogue labels only for identification, and remain
 read-only. Listing-dependent and composite Marketplace features remain disabled.
+The released target also includes truthful transactional CSV-import feedback.
+
+## Results Presentation and UX Refinement
+
+**Status: Future milestone; no public version assigned**
+
+This milestone makes existing factual results easier to understand, navigate,
+compare, and act upon without changing their evidence semantics. Presentation
+must consume existing immutable typed results; it cannot reinterpret missing
+evidence or change domain calculations. It aligns with the established
+[Collection Explorer](Explorer.md), [Dashboard](Dashboard.md),
+[Marketplace Architecture](MarketplaceArchitecture.md), [Architecture](Architecture.md),
+and [Current Product State](CurrentProductState.md) boundaries.
+
+The presentation scope is:
+
+- a clearer summary-first hierarchy with compact overview counts before detail;
+- concise plain-language explanations for available, partial, empty,
+  insufficient-history, insufficient-data, stale, and safe-error states;
+- clearer separation of comparison context, totals, factual details, current
+  metadata labels, provenance, evidence limitations, and warnings;
+- clearer Price and Supply change grouping, with consistent positive, negative,
+  unchanged, incomparable, and availability-transition presentation;
+- more readable tables through deliberate spacing, headings, alignment, and
+  scanning, plus user-friendly filtering and sorting over already calculated
+  results;
+- stable selection and navigation, clearer refresh and stale-state affordances,
+  and useful empty states with next-step guidance;
+- accessibility improvements for keyboard navigation, focus order, selectable
+  text, contrast, and screen-reader-friendly labels where Tk supports them;
+- consistent terminology across Dashboard, Explorer, exports, and documentation;
+- exact preservation of Decimal values, currencies, release IDs, snapshot
+  provenance, current-metadata labelling, and evidence limitations;
+- macOS visual smoke coverage using realistic result volumes.
+
+The milestone explicitly excludes new Marketplace evidence, listing acquisition
+or history, Rare Appearances or Marketplace Activity activation, scoring,
+recommendations, demand, liquidity, scarcity, opportunity, or advisory
+conclusions. It also excludes presentation-driven schema changes, persisted
+presentation caches, provider calls during tab switching, automatic refresh or
+Collector Run, Project partitioning, Dashboard Marketplace activation without
+separate approval, and web, cloud, account, or commercial-distribution work.
 
 Candidate follow-on slices include:
 

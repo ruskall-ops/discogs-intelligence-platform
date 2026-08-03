@@ -26,7 +26,7 @@ from tests.test_portfolio_workspace import presentation as portfolio_presentatio
 
 
 class ReleaseHardeningTestCase(unittest.TestCase):
-    def test_current_documents_describe_the_prepared_release_candidate(self) -> None:
+    def test_current_documents_describe_the_completed_public_release(self) -> None:
         root = Path(__file__).resolve().parents[1]
         names = (
             "README.md",
@@ -56,19 +56,25 @@ class ReleaseHardeningTestCase(unittest.TestCase):
         for name, document in documents:
             with self.subTest(document=name):
                 normalized = " ".join(document.lower().split())
-                self.assertNotIn("v0.5.1 was released", normalized)
-                self.assertNotIn("v0.5.1 is the current public", normalized)
-                self.assertNotIn("v0.5.1 is tagged", normalized)
-                self.assertNotIn("v0.5.1 is published", normalized)
-                self.assertNotIn("released dip v0.5.1", normalized)
-                self.assertNotIn("status: released 2 august 2026", normalized)
                 if name in current_state_names:
-                    self.assertIn("prepared release candidate", normalized)
-                    self.assertIn("implemented and validated", normalized)
-                    self.assertIn("awaiting release completion", normalized)
+                    self.assertIn("v0.5.1 was released on 2 august 2026", normalized)
+                    self.assertIn(
+                        "latest completed, tagged public personal-use release",
+                        normalized,
+                    )
+                    self.assertIn("annotated tag and github release exist", normalized)
+                    for stale in (
+                        "prepared release candidate",
+                        "awaiting release completion",
+                        "v0.5.1 is untagged",
+                        "v0.5.1 is unpublished",
+                        "v0.5.1 is unreleased",
+                        "v0.5.0 remains the latest",
+                    ):
+                        self.assertNotIn(stale, normalized)
         combined = "\n".join(document for _, document in documents).lower()
         self.assertIn("0.5.1", combined)
-        self.assertIn("v0.5.0 remains the latest completed", combined)
+        self.assertNotIn("v0.5.0 remains the latest completed", combined)
 
         changelog = (root / "CHANGELOG.md").read_text(encoding="utf-8")
         self.assertIn(
@@ -76,6 +82,39 @@ class ReleaseHardeningTestCase(unittest.TestCase):
             changelog,
         )
         self.assertIn("Released 2 August 2026.", changelog)
+
+        database_document = dict(documents)["docs/Database.md"]
+        database_contract = " ".join(database_document.lower().split())
+        self.assertIn("refresh_dashboard()", database_contract)
+        self.assertIn("load_table()", database_contract)
+        self.assertIn("literal boolean `true`", database_contract)
+        self.assertIn("every other return value", database_contract)
+        self.assertIn("ordinary exception", database_contract)
+        self.assertIn("post-commit display failure", database_contract)
+
+    def test_roadmap_has_unversioned_results_presentation_milestone(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        roadmap = (root / "docs/Roadmap.md").read_text(encoding="utf-8")
+
+        release_position = roadmap.index(
+            "## Version 0.5.1 — Marketplace Change Explorer"
+        )
+        milestone_position = roadmap.index(
+            "## Results Presentation and UX Refinement"
+        )
+        follow_on_position = roadmap.index("Candidate follow-on slices include:")
+        self.assertLess(release_position, milestone_position)
+        self.assertLess(milestone_position, follow_on_position)
+        self.assertIn("no public version assigned", roadmap)
+        self.assertNotIn(
+            "Version 0.5.2 — Results Presentation and UX Refinement",
+            roadmap,
+        )
+        self.assertIn("consume existing immutable typed results", roadmap)
+        self.assertIn("cannot reinterpret missing", roadmap)
+        self.assertIn("excludes new Marketplace evidence", roadmap)
+        self.assertIn("provider calls during tab switching", roadmap)
+        self.assertIn("commercial-distribution work", roadmap)
 
     def test_release_checklist_targets_v0_5_1_in_required_order(self) -> None:
         root = Path(__file__).resolve().parents[1]
