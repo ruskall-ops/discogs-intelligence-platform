@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 
 from dip.intelligence import IntelligenceResult, IntelligenceStatus
+from dip.experience.results_presentation import SAFE_ERROR_SUMMARY
 from dip.marketplace_intelligence import (
     PriceChangesComparisonState,
     PriceChangesOutput,
@@ -50,13 +51,14 @@ class PriceChangesDetailViewModelBuilder:
             )
 
         state = self._state(result, output)
+        expose_provenance = state is not PriceChangesDetailState.ERROR
         return PriceChangesDetailViewModel(
             state=state,
-            summary=result.summary,
+            summary=SAFE_ERROR_SUMMARY if state is PriceChangesDetailState.ERROR else result.summary,
             comparison_state=output.comparison_state,
-            previous_snapshot=_snapshot(output.previous_snapshot),
-            latest_snapshot=_snapshot(output.latest_snapshot),
-            source=output.source,
+            previous_snapshot=_snapshot(output.previous_snapshot) if expose_provenance else None,
+            latest_snapshot=_snapshot(output.latest_snapshot) if expose_provenance else None,
+            source=output.source if expose_provenance else None,
             listing_change_count=output.summary.listing_change_count,
             release_change_count=output.summary.release_change_count,
             unchanged_count=output.summary.unchanged_count,

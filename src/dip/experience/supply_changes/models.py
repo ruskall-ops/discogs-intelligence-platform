@@ -8,11 +8,15 @@ from enum import Enum
 
 from dip.experience.results_presentation import (
     ComparisonContextViewModel,
+    CURRENT_METADATA_EXPLANATION,
+    EvidenceLimitationState,
     PresentationStateCopy,
     PresentationStateKind,
     SummaryCount,
     SummaryCountIdentifier,
+    SAFE_ERROR_SUMMARY,
     presentation_state_copy,
+    safe_evidence_limitations,
 )
 from dip.marketplace_intelligence import MarketplaceDataStatus, SupplyChangeKind, SupplyChangesComparisonState
 
@@ -30,6 +34,15 @@ class SupplyChangesDetailState(str, Enum):
     ERROR = "error"
     INSUFFICIENT_HISTORY = "insufficient_history"
     INSUFFICIENT_DATA = "insufficient_data"
+
+
+class SupplyResultGroupIdentifier(str, Enum):
+    INCREASED = "increased"
+    DECREASED = "decreased"
+    UNCHANGED = "unchanged"
+    BECAME_AVAILABLE = "became_available"
+    NO_COPIES_OBSERVED = "no_copies_observed"
+    INCOMPARABLE = "incomparable"
 
 
 @dataclass(frozen=True)
@@ -114,6 +127,44 @@ class ReleaseSupplyChangeViewModel:
 
 
 @dataclass(frozen=True)
+class SupplyResultGroup:
+    identifier: SupplyResultGroupIdentifier
+    heading: str
+    count: int
+    rows: tuple[ReleaseSupplyChangeViewModel, ...] = ()
+
+    def __post_init__(self) -> None:
+        if type(self.identifier) is not SupplyResultGroupIdentifier:
+            raise TypeError("identifier must be a SupplyResultGroupIdentifier.")
+        _text(self.heading, "heading")
+        _count(self.count, "count")
+        rows = tuple(self.rows)
+        if any(type(value) is not ReleaseSupplyChangeViewModel for value in rows):
+            raise TypeError("rows must contain ReleaseSupplyChangeViewModel values.")
+        expected_kind = {
+            SupplyResultGroupIdentifier.INCREASED: SupplyChangeKind.INCREASED,
+            SupplyResultGroupIdentifier.DECREASED: SupplyChangeKind.DECREASED,
+            SupplyResultGroupIdentifier.BECAME_AVAILABLE: SupplyChangeKind.NEWLY_AVAILABLE,
+            SupplyResultGroupIdentifier.NO_COPIES_OBSERVED: SupplyChangeKind.NO_LONGER_AVAILABLE,
+            SupplyResultGroupIdentifier.INCOMPARABLE: SupplyChangeKind.INCOMPARABLE,
+        }.get(self.identifier)
+        if expected_kind is None:
+            if rows:
+                raise SupplyChangesDetailConsistencyError(
+                    "Unchanged Supply groups cannot fabricate detail rows."
+                )
+        elif any(row.change_kind is not expected_kind for row in rows):
+            raise SupplyChangesDetailConsistencyError(
+                "Supply group rows must match the typed classification."
+            )
+        if self.count != len(rows) and self.identifier is not SupplyResultGroupIdentifier.UNCHANGED:
+            raise SupplyChangesDetailConsistencyError(
+                "Supply group count must match its authoritative detail rows."
+            )
+        object.__setattr__(self, "rows", rows)
+
+
+@dataclass(frozen=True)
 class SupplyChangesDetailViewModel:
     state: SupplyChangesDetailState
     summary: str
@@ -133,15 +184,32 @@ class SupplyChangesDetailViewModel:
         default=None,
     )
     summary_counts: tuple[SummaryCount, ...] = field(init=False, default=())
+    result_groups: tuple[SupplyResultGroup, ...] = field(init=False, default=())
+    metadata_explanation: str = field(init=False, default="")
 
     def __post_init__(self) -> None:
         if type(self.state) is not SupplyChangesDetailState:
             raise TypeError("state must be a SupplyChangesDetailState.")
+        if self.state is SupplyChangesDetailState.ERROR:
+            object.__setattr__(self, "summary", SAFE_ERROR_SUMMARY)
         _text(self.summary, "summary")
         object.__setattr__(self, "changes", tuple(self.changes))
         if any(type(value) is not ReleaseSupplyChangeViewModel for value in self.changes):
             raise TypeError("changes must contain ReleaseSupplyChangeViewModel values.")
-        object.__setattr__(self, "diagnostics", _strings(self.diagnostics, "diagnostics"))
+        raw_diagnostics = _strings(self.diagnostics, "diagnostics")
+        object.__setattr__(
+            self,
+            "diagnostics",
+            safe_evidence_limitations(
+                raw_diagnostics,
+                state={
+                    SupplyChangesDetailState.ERROR: EvidenceLimitationState.ERROR,
+                    SupplyChangesDetailState.INSUFFICIENT_HISTORY: EvidenceLimitationState.INSUFFICIENT_HISTORY,
+                    SupplyChangesDetailState.PARTIAL: EvidenceLimitationState.PARTIAL,
+                    SupplyChangesDetailState.INSUFFICIENT_DATA: EvidenceLimitationState.INSUFFICIENT_DATA,
+                }.get(self.state, EvidenceLimitationState.SUCCESSFUL),
+            ),
+        )
         if self.state in {SupplyChangesDetailState.LOADING, SupplyChangesDetailState.UNAVAILABLE}:
             if self.comparison_state is not None or self.previous_snapshot is not None or self.latest_snapshot is not None or self.source is not None or self.changes or any(value is not None for value in (self.change_count, self.unchanged_count, self.incomparable_count)):
                 raise SupplyChangesDetailConsistencyError("Loading or unavailable detail cannot contain result context.")
@@ -189,6 +257,14 @@ class SupplyChangesDetailViewModel:
             raise SupplyChangesDetailConsistencyError("Insufficient data may contain only incomparable details.")
         if self.state is SupplyChangesDetailState.ERROR and (self.changes or any((self.change_count, self.unchanged_count, self.incomparable_count))):
             raise SupplyChangesDetailConsistencyError("An error result cannot contain successful supply evidence.")
+        if self.state is SupplyChangesDetailState.ERROR and (
+            self.previous_snapshot is not None
+            or self.latest_snapshot is not None
+            or self.source is not None
+        ):
+            raise SupplyChangesDetailConsistencyError(
+                "An error result cannot retain comparison provenance."
+            )
         _set_shared_presentation(self)
 
     @classmethod
@@ -253,22 +329,16 @@ def _set_shared_presentation(detail: SupplyChangesDetailViewModel) -> None:
             latest_source_version=latest.source_version,
         )
     object.__setattr__(detail, "comparison_context", context)
+    counts_by_kind = {kind: 0 for kind in SupplyChangeKind}
+    for change in detail.changes:
+        counts_by_kind[change.change_kind] += 1
     values = (
-        (
-            SummaryCountIdentifier.RELEASE_CHANGES,
-            "Release changes",
-            detail.change_count,
-        ),
-        (
-            SummaryCountIdentifier.UNCHANGED,
-            "Unchanged releases",
-            detail.unchanged_count,
-        ),
-        (
-            SummaryCountIdentifier.INCOMPARABLE,
-            "Incomparable releases",
-            detail.incomparable_count,
-        ),
+        (SummaryCountIdentifier.INCREASED, "Increased", counts_by_kind[SupplyChangeKind.INCREASED]),
+        (SummaryCountIdentifier.DECREASED, "Decreased", counts_by_kind[SupplyChangeKind.DECREASED]),
+        (SummaryCountIdentifier.UNCHANGED, "Unchanged", detail.unchanged_count),
+        (SummaryCountIdentifier.SUPPLY_AVAILABLE, "Became available for sale", counts_by_kind[SupplyChangeKind.NEWLY_AVAILABLE]),
+        (SummaryCountIdentifier.SUPPLY_UNAVAILABLE, "No copies observed for sale", counts_by_kind[SupplyChangeKind.NO_LONGER_AVAILABLE]),
+        (SummaryCountIdentifier.INCOMPARABLE, "Incomparable", counts_by_kind[SupplyChangeKind.INCOMPARABLE]),
     )
     if detail.state in {
         SupplyChangesDetailState.ERROR,
@@ -298,6 +368,37 @@ def _set_shared_presentation(detail: SupplyChangesDetailViewModel) -> None:
             )
         )
     object.__setattr__(detail, "summary_counts", counts)
+    object.__setattr__(detail, "result_groups", _result_groups(detail))
+    object.__setattr__(
+        detail,
+        "metadata_explanation",
+        CURRENT_METADATA_EXPLANATION if detail.changes else "",
+    )
+
+
+def _result_groups(detail: SupplyChangesDetailViewModel) -> tuple[SupplyResultGroup, ...]:
+    if detail.state in {
+        SupplyChangesDetailState.ERROR,
+        SupplyChangesDetailState.INSUFFICIENT_HISTORY,
+    }:
+        return ()
+    specifications = (
+        (SupplyResultGroupIdentifier.INCREASED, "Increased", SupplyChangeKind.INCREASED),
+        (SupplyResultGroupIdentifier.DECREASED, "Decreased", SupplyChangeKind.DECREASED),
+        (SupplyResultGroupIdentifier.UNCHANGED, "Unchanged", None),
+        (SupplyResultGroupIdentifier.BECAME_AVAILABLE, "Became available for sale", SupplyChangeKind.NEWLY_AVAILABLE),
+        (SupplyResultGroupIdentifier.NO_COPIES_OBSERVED, "No copies observed for sale", SupplyChangeKind.NO_LONGER_AVAILABLE),
+        (SupplyResultGroupIdentifier.INCOMPARABLE, "Incomparable", SupplyChangeKind.INCOMPARABLE),
+    )
+    groups = []
+    for identifier, heading, kind in specifications:
+        rows = () if kind is None else tuple(
+            value for value in detail.changes if value.change_kind is kind
+        )
+        count = detail.unchanged_count if kind is None else len(rows)
+        if count:
+            groups.append(SupplyResultGroup(identifier, heading, count, rows))
+    return tuple(groups)
 
 
 def _text(value: object, name: str) -> None:

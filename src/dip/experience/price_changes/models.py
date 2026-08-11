@@ -9,11 +9,15 @@ from typing import Any
 
 from dip.experience.results_presentation import (
     ComparisonContextViewModel,
+    CURRENT_METADATA_EXPLANATION,
+    EvidenceLimitationState,
     PresentationStateCopy,
     PresentationStateKind,
     SummaryCount,
     SummaryCountIdentifier,
+    SAFE_ERROR_SUMMARY,
     presentation_state_copy,
+    safe_evidence_limitations,
 )
 from dip.marketplace_intelligence import (
     ListingPriceChangeKind,
@@ -41,6 +45,17 @@ class PriceChangesDetailState(str, Enum):
     ERROR = "error"
     INSUFFICIENT_HISTORY = "insufficient_history"
     INSUFFICIENT_DATA = "insufficient_data"
+
+
+class PriceResultGroupIdentifier(str, Enum):
+    """Closed factual groups for authoritative release-level Price results."""
+
+    INCREASED = "increased"
+    DECREASED = "decreased"
+    UNCHANGED = "unchanged"
+    OBSERVATION_AVAILABLE = "observation_available"
+    OBSERVATION_UNAVAILABLE = "observation_unavailable"
+    INCOMPARABLE = "incomparable"
 
 
 @dataclass(frozen=True)
@@ -168,6 +183,47 @@ class ReleasePriceChangeViewModel:
 
 
 @dataclass(frozen=True)
+class PriceResultGroup:
+    """One immutable group projected from authoritative typed classifications."""
+
+    identifier: PriceResultGroupIdentifier
+    heading: str
+    count: int
+    rows: tuple[ReleasePriceChangeViewModel, ...] = ()
+
+    def __post_init__(self) -> None:
+        if type(self.identifier) is not PriceResultGroupIdentifier:
+            raise TypeError("identifier must be a PriceResultGroupIdentifier.")
+        _text(self.heading, "heading")
+        if type(self.count) is not int:
+            raise TypeError("count must be a non-boolean integer.")
+        if self.count < 0:
+            raise ValueError("count must be non-negative.")
+        rows = _release_change_tuple(self.rows)
+        expected_kind = {
+            PriceResultGroupIdentifier.INCREASED: ReleasePriceChangeKind.INCREASED,
+            PriceResultGroupIdentifier.DECREASED: ReleasePriceChangeKind.DECREASED,
+            PriceResultGroupIdentifier.OBSERVATION_AVAILABLE: ReleasePriceChangeKind.NEWLY_AVAILABLE,
+            PriceResultGroupIdentifier.OBSERVATION_UNAVAILABLE: ReleasePriceChangeKind.NO_LONGER_AVAILABLE,
+            PriceResultGroupIdentifier.INCOMPARABLE: ReleasePriceChangeKind.INCOMPARABLE,
+        }.get(self.identifier)
+        if expected_kind is None:
+            if rows:
+                raise PriceChangesDetailConsistencyError(
+                    "Unchanged Price groups cannot fabricate detail rows."
+                )
+        elif any(row.change_kind is not expected_kind for row in rows):
+            raise PriceChangesDetailConsistencyError(
+                "Price group rows must match the typed classification."
+            )
+        if self.count != len(rows) and self.identifier is not PriceResultGroupIdentifier.UNCHANGED:
+            raise PriceChangesDetailConsistencyError(
+                "Price group count must match its authoritative detail rows."
+            )
+        object.__setattr__(self, "rows", rows)
+
+
+@dataclass(frozen=True)
 class PriceChangesDetailViewModel:
     """Complete read-only detail state for the Price Changes destination."""
 
@@ -191,10 +247,14 @@ class PriceChangesDetailViewModel:
         default=None,
     )
     summary_counts: tuple[SummaryCount, ...] = field(init=False, default=())
+    result_groups: tuple[PriceResultGroup, ...] = field(init=False, default=())
+    metadata_explanation: str = field(init=False, default="")
 
     def __post_init__(self) -> None:
         if type(self.state) is not PriceChangesDetailState:
             raise TypeError("state must be a PriceChangesDetailState.")
+        if self.state is PriceChangesDetailState.ERROR:
+            object.__setattr__(self, "summary", SAFE_ERROR_SUMMARY)
         _text(self.summary, "summary")
         if self.comparison_state is not None and type(
             self.comparison_state
@@ -226,7 +286,7 @@ class PriceChangesDetailViewModel:
         )
         listing_changes = _listing_change_tuple(self.listing_changes)
         release_changes = _release_change_tuple(self.release_changes)
-        diagnostics = _string_tuple(self.diagnostics, "diagnostics")
+        raw_diagnostics = _string_tuple(self.diagnostics, "diagnostics")
 
         if self.state in {
             PriceChangesDetailState.LOADING,
@@ -286,6 +346,16 @@ class PriceChangesDetailViewModel:
                 )
             _validate_result_state(self)
 
+        diagnostics = safe_evidence_limitations(
+            raw_diagnostics,
+            state={
+                PriceChangesDetailState.ERROR: EvidenceLimitationState.ERROR,
+                PriceChangesDetailState.INSUFFICIENT_HISTORY: EvidenceLimitationState.INSUFFICIENT_HISTORY,
+                PriceChangesDetailState.PARTIAL: EvidenceLimitationState.PARTIAL,
+                PriceChangesDetailState.INSUFFICIENT_DATA: EvidenceLimitationState.INSUFFICIENT_DATA,
+            }.get(self.state, EvidenceLimitationState.SUCCESSFUL),
+        )
+
         object.__setattr__(self, "listing_change_count", listing_count)
         object.__setattr__(self, "release_change_count", release_count)
         object.__setattr__(self, "unchanged_count", unchanged_count)
@@ -301,6 +371,12 @@ class PriceChangesDetailViewModel:
         )
         object.__setattr__(self, "comparison_context", _comparison_context(self))
         object.__setattr__(self, "summary_counts", _summary_counts(self))
+        object.__setattr__(self, "result_groups", _result_groups(self))
+        object.__setattr__(
+            self,
+            "metadata_explanation",
+            CURRENT_METADATA_EXPLANATION if self.release_changes else "",
+        )
 
     @property
     def message(self) -> str:
@@ -407,28 +483,25 @@ def _summary_counts(
                 detail.incomparable_count,
             ),
         )
-    values = (
-        (
-            SummaryCountIdentifier.LISTING_CHANGES,
-            "Listing changes",
-            detail.listing_change_count,
-        ),
-        (
-            SummaryCountIdentifier.RELEASE_CHANGES,
-            "Release-level changes",
-            detail.release_change_count,
-        ),
-        (
-            SummaryCountIdentifier.UNCHANGED,
-            "Unchanged supplied values",
-            detail.unchanged_count,
-        ),
-        (
-            SummaryCountIdentifier.INCOMPARABLE,
-            "Incomparable changes",
-            detail.incomparable_count,
-        ),
-    )
+    if detail.listing_change_count:
+        values = (
+            (SummaryCountIdentifier.LISTING_CHANGES, "Listing changes", detail.listing_change_count),
+            (SummaryCountIdentifier.RELEASE_CHANGES, "Release-level changes", detail.release_change_count),
+            (SummaryCountIdentifier.UNCHANGED, "Unchanged supplied values", detail.unchanged_count),
+            (SummaryCountIdentifier.INCOMPARABLE, "Incomparable changes", detail.incomparable_count),
+        )
+    else:
+        counts = {kind: 0 for kind in ReleasePriceChangeKind}
+        for change in detail.release_changes:
+            counts[change.change_kind] += 1
+        values = (
+            (SummaryCountIdentifier.INCREASED, "Increased", counts[ReleasePriceChangeKind.INCREASED]),
+            (SummaryCountIdentifier.DECREASED, "Decreased", counts[ReleasePriceChangeKind.DECREASED]),
+            (SummaryCountIdentifier.UNCHANGED, "Unchanged", detail.unchanged_count),
+            (SummaryCountIdentifier.PRICE_OBSERVATION_AVAILABLE, "Price observation became available", counts[ReleasePriceChangeKind.NEWLY_AVAILABLE]),
+            (SummaryCountIdentifier.PRICE_OBSERVATION_UNAVAILABLE, "Price observation no longer available", counts[ReleasePriceChangeKind.NO_LONGER_AVAILABLE]),
+            (SummaryCountIdentifier.INCOMPARABLE, "Incomparable", counts[ReleasePriceChangeKind.INCOMPARABLE]),
+        )
     if any(value is None for _, _, value in values):
         return ()
     return tuple(
@@ -436,6 +509,31 @@ def _summary_counts(
         for identifier, label, value in values
         if value is not None
     )
+
+
+def _result_groups(detail: PriceChangesDetailViewModel) -> tuple[PriceResultGroup, ...]:
+    if detail.listing_change_count or detail.state in {
+        PriceChangesDetailState.ERROR,
+        PriceChangesDetailState.INSUFFICIENT_HISTORY,
+    }:
+        return ()
+    specifications = (
+        (PriceResultGroupIdentifier.INCREASED, "Increased", ReleasePriceChangeKind.INCREASED),
+        (PriceResultGroupIdentifier.DECREASED, "Decreased", ReleasePriceChangeKind.DECREASED),
+        (PriceResultGroupIdentifier.UNCHANGED, "Unchanged", None),
+        (PriceResultGroupIdentifier.OBSERVATION_AVAILABLE, "Price observation became available", ReleasePriceChangeKind.NEWLY_AVAILABLE),
+        (PriceResultGroupIdentifier.OBSERVATION_UNAVAILABLE, "Price observation no longer available", ReleasePriceChangeKind.NO_LONGER_AVAILABLE),
+        (PriceResultGroupIdentifier.INCOMPARABLE, "Incomparable", ReleasePriceChangeKind.INCOMPARABLE),
+    )
+    groups = []
+    for identifier, heading, kind in specifications:
+        rows = () if kind is None else tuple(
+            value for value in detail.release_changes if value.change_kind is kind
+        )
+        count = detail.unchanged_count if kind is None else len(rows)
+        if count:
+            groups.append(PriceResultGroup(identifier, heading, count, rows))
+    return tuple(groups)
 
 
 def _validate_result_state(detail: PriceChangesDetailViewModel) -> None:
@@ -547,6 +645,14 @@ def _validate_result_state(detail: PriceChangesDetailViewModel) -> None:
                 "Comparison source must match both supplied snapshot contexts."
             )
     if detail.state is PriceChangesDetailState.ERROR:
+        if (
+            detail.previous_snapshot is not None
+            or detail.latest_snapshot is not None
+            or detail.source is not None
+        ):
+            raise PriceChangesDetailConsistencyError(
+                "An error result cannot retain comparison provenance."
+            )
         if detail.listing_changes or detail.release_changes or any((detail.listing_change_count, detail.release_change_count, detail.unchanged_count, detail.incomparable_count)):
             raise PriceChangesDetailConsistencyError("An error result cannot contain successful price evidence.")
 

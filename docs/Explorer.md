@@ -210,13 +210,28 @@ unavailable copy is reserved for a destination with no production data path;
 both therefore retain their existing explicit destination copy rather than
 being mapped falsely.
 
-The same presentation boundary now exposes immutable existing summary counts
+The same presentation boundary now exposes immutable factual summary counts
 and one detached Price/Supply comparison context containing only the exact
 snapshot identifiers, original aware capture times, source, and equal source
 version. It performs no comparison or pair selection. The current text layout,
-detail ordering, metadata labels, warnings, provenance, and refresh/cache
-lifecycle are otherwise unchanged. Summary-first count bands and compact result
-rows remain a later slice.
+refresh/cache lifecycle, and evidence semantics remain unchanged.
+
+The second Results Presentation slice projects Price and Supply into a shared
+summary-first desktop hierarchy: canonical state copy, human-readable capture
+period and source, factual count band, evidence limitations, typed result groups,
+one section-level current-catalogue explanation, and subordinate detailed
+provenance. Price groups are Increased, Decreased, Unchanged, and Incomparable;
+the presentation also has closed factual observation-availability headings if
+an authoritative typed result supplies them. Production Price Changes 2.0
+continues to treat missing release evidence as incomparable. Supply uses the
+same directional groups and reserves **Became available for sale** and **No
+copies observed for sale** for explicit zero-to-positive and positive-to-zero
+facts. Rows preserve exact values, currencies, signed deltas, release IDs,
+metadata fallback, and canonical order without sorting or recomparison.
+
+The tab-label and toolbar-label clipping observed during macOS smoke remains a
+Slice 3 responsive-navigation acceptance requirement; this slice does not
+alter notebook navigation or toolbar layout.
 
 ## Desktop navigation
 

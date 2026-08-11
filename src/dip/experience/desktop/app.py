@@ -2068,10 +2068,14 @@ class App(tk.Tk):
                 command=text.yview,
             )
             text.configure(yscrollcommand=scrollbar.set)
-            text.insert(
-                "1.0",
-                "Not available in this release" if unavailable else section.body,
-            )
+            body = "Not available in this release" if unavailable else section.body
+            if section.destination in {
+                CollectionExplorerDestination.PRICE_CHANGES,
+                CollectionExplorerDestination.SUPPLY_CHANGES,
+            } and not unavailable:
+                self._insert_marketplace_summary_first(text, body)
+            else:
+                text.insert("1.0", body)
             text.configure(state="disabled")
             text.pack(side="left", fill="both", expand=True)
             scrollbar.pack(side="right", fill="y")
@@ -2107,6 +2111,60 @@ class App(tk.Tk):
         if register:
             self._register_marketplace_explorer_window(window)
         return window
+
+    @staticmethod
+    def _insert_marketplace_summary_first(text, body):
+        """Apply a small shared visual hierarchy to an already-rendered model."""
+
+        section_headings = {
+            "Comparison period",
+            "Summary",
+            "Evidence limitations",
+            "Current catalogue metadata",
+            "Detailed provenance",
+        }
+        group_prefixes = (
+            "Increased (",
+            "Decreased (",
+            "Unchanged (",
+            "Incomparable (",
+            "Price observation became available (",
+            "Price observation no longer available (",
+            "Became available for sale (",
+            "No copies observed for sale (",
+        )
+        lines = body.splitlines()
+        in_provenance = False
+        for index, line in enumerate(lines):
+            suffix = "\n" if index < len(lines) - 1 else ""
+            tag = None
+            if index == 0:
+                tag = "state_heading"
+            elif line == "Detailed provenance":
+                tag = "provenance_heading"
+                in_provenance = True
+            elif in_provenance:
+                tag = "provenance_body"
+            elif line in section_headings:
+                tag = "section_heading"
+            elif line.startswith(group_prefixes):
+                tag = "group_heading"
+            text.insert("end", line + suffix, tag or ())
+        text.tag_configure("state_heading", font=("Helvetica", 16, "bold"), spacing3=6)
+        text.tag_configure("section_heading", font=("Helvetica", 12, "bold"), spacing1=12, spacing3=4)
+        text.tag_configure("group_heading", font=("Helvetica", 12, "bold"), spacing1=14, spacing3=4)
+        text.tag_configure(
+            "provenance_heading",
+            font=("Helvetica", 10, "bold"),
+            spacing1=12,
+            spacing3=3,
+        )
+        text.tag_configure(
+            "provenance_body",
+            font=("Helvetica", 10),
+            lmargin1=12,
+            lmargin2=12,
+        )
 
     def _register_marketplace_explorer_window(self, window):
         """Register only a fully populated Explorer replacement."""

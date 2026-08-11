@@ -38,13 +38,18 @@ The current authoritative Price Changes and Supply Changes modules use version
 2.0 semantics. Historical persisted 1.0 results retain their original module
 identity and are not silently reinterpreted.
 
-Unreleased work on the unversioned Results Presentation milestone has begun
-with shared immutable factual-state copy and Price/Supply comparison-context
-and existing-count projection. It changes presentation wording only: the
-released Price/Supply evidence, values, ordering, query/cache lifecycle, and
-desktop layout remain unchanged. The broader summary-first Price/Supply,
+Unreleased work on the unversioned Results Presentation milestone now includes
+shared immutable factual-state copy and comparison context plus a summary-first
+Price/Supply layout. The new projection groups authoritative typed changes,
+keeps exact values and current-metadata boundaries visible, and places technical
+provenance below primary factual results. The released Price/Supply evidence,
+classification, ordering, and query/cache lifecycle remain unchanged.
 Dashboard, Collection Review, navigation, keyboard, filtering, and sorting
 refinements remain future slices and are not part of the v0.5.1 release.
+
+The severely truncated Collection Explorer tab labels and clipped main-toolbar
+**Marketplace** label remain recorded for the future Slice 3 responsive-layout
+work; they are not changed by the summary-first slice.
 
 ## Available after sufficient history
 

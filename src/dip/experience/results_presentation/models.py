@@ -31,6 +31,102 @@ class SummaryCountIdentifier(str, Enum):
     RELEASE_CHANGES = "release_changes"
     UNCHANGED = "unchanged"
     INCOMPARABLE = "incomparable"
+    INCREASED = "increased"
+    DECREASED = "decreased"
+    PRICE_OBSERVATION_AVAILABLE = "price_observation_available"
+    PRICE_OBSERVATION_UNAVAILABLE = "price_observation_unavailable"
+    SUPPLY_AVAILABLE = "supply_available"
+    SUPPLY_UNAVAILABLE = "supply_unavailable"
+
+
+CURRENT_METADATA_EXPLANATION = (
+    "Artist and title are current collection labels and were not captured with "
+    "either Marketplace snapshot. Release ID is the stable identity."
+)
+
+SAFE_ERROR_SUMMARY = "Results could not be displayed."
+
+INCOMPLETE_EVIDENCE_LIMITATION = (
+    "Some releases could not be compared because Marketplace evidence was incomplete."
+)
+
+_SAFE_EVIDENCE_LIMITATIONS = (
+    "Newer historical snapshots were skipped because they were not compatible with "
+    "the current snapshot’s source contract.",
+    "No earlier compatible Marketplace snapshot is available for comparison.",
+    "Current collection metadata could not be loaded. Marketplace changes remain "
+    "available and are identified by release ID.",
+    "Failed or unavailable Marketplace snapshots were skipped.",
+    "Equal-time Marketplace snapshots were skipped because they cannot establish direction.",
+    "Marketplace snapshots from a different source were skipped.",
+    "Marketplace snapshots with a different source version were skipped.",
+)
+
+_LEGACY_METADATA_DIAGNOSTIC = (
+    "Artist and title are current collection metadata provided for identification. "
+    "They were not captured with the Marketplace snapshots."
+)
+
+_NO_COMPATIBLE_BASELINE_LIMITATION = _SAFE_EVIDENCE_LIMITATIONS[1]
+_METADATA_UNAVAILABLE_LIMITATION = _SAFE_EVIDENCE_LIMITATIONS[2]
+
+
+class EvidenceLimitationState(str, Enum):
+    """Closed state policy for projecting safe evidence limitations."""
+
+    ERROR = "error"
+    INSUFFICIENT_HISTORY = "insufficient_history"
+    PARTIAL = "partial"
+    INSUFFICIENT_DATA = "insufficient_data"
+    SUCCESSFUL = "successful"
+
+
+def safe_evidence_limitations(
+    diagnostics: tuple[str, ...],
+    *,
+    state: EvidenceLimitationState,
+) -> tuple[str, ...]:
+    """Project only closed, value-neutral limitation copy from raw diagnostics."""
+
+    if type(diagnostics) is not tuple:
+        raise TypeError("diagnostics must be a tuple.")
+    if any(
+        not isinstance(value, str) or not value or value.strip() != value
+        for value in diagnostics
+    ):
+        raise ValueError("diagnostics must contain non-empty trimmed strings.")
+    if type(state) is not EvidenceLimitationState:
+        raise TypeError("state must be an EvidenceLimitationState.")
+    if state is EvidenceLimitationState.ERROR:
+        return ()
+    if state is EvidenceLimitationState.INSUFFICIENT_HISTORY:
+        compatible_limitations = tuple(
+            value
+            for value in _SAFE_EVIDENCE_LIMITATIONS
+            if value != _METADATA_UNAVAILABLE_LIMITATION
+        )
+    else:
+        compatible_limitations = tuple(
+            value
+            for value in _SAFE_EVIDENCE_LIMITATIONS
+            if value != _NO_COMPATIBLE_BASELINE_LIMITATION
+        )
+    limitations = tuple(
+        fixed
+        for fixed in compatible_limitations
+        if fixed in diagnostics
+    )
+    has_unmapped_diagnostic = any(
+        value not in _SAFE_EVIDENCE_LIMITATIONS
+        and value != _LEGACY_METADATA_DIAGNOSTIC
+        for value in diagnostics
+    )
+    if has_unmapped_diagnostic and state in {
+        EvidenceLimitationState.PARTIAL,
+        EvidenceLimitationState.INSUFFICIENT_DATA,
+    }:
+        limitations = (INCOMPLETE_EVIDENCE_LIMITATION, *limitations)
+    return limitations
 
 
 @dataclass(frozen=True)
@@ -144,8 +240,13 @@ def _aware(value: object, name: str) -> None:
 
 __all__ = [
     "ComparisonContextViewModel",
+    "CURRENT_METADATA_EXPLANATION",
+    "EvidenceLimitationState",
+    "INCOMPLETE_EVIDENCE_LIMITATION",
     "PresentationStateCopy",
     "PresentationStateKind",
+    "SAFE_ERROR_SUMMARY",
     "SummaryCount",
     "SummaryCountIdentifier",
+    "safe_evidence_limitations",
 ]

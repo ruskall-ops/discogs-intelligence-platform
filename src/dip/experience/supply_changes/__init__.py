@@ -5,7 +5,9 @@ from .models import (
     SupplyChangesDetailState,
     SupplyChangesDetailViewModel,
     SupplyChangesSnapshotViewModel,
+    SupplyResultGroup,
+    SupplyResultGroupIdentifier,
     supply_presentation_state_kind,
 )
 
-__all__ = ["ReleaseSupplyChangeViewModel", "SupplyChangesDetailConsistencyError", "SupplyChangesDetailState", "SupplyChangesDetailViewModel", "SupplyChangesDetailViewModelBuilder", "SupplyChangesSnapshotViewModel", "supply_presentation_state_kind"]
+__all__ = ["ReleaseSupplyChangeViewModel", "SupplyChangesDetailConsistencyError", "SupplyChangesDetailState", "SupplyChangesDetailViewModel", "SupplyChangesDetailViewModelBuilder", "SupplyChangesSnapshotViewModel", "SupplyResultGroup", "SupplyResultGroupIdentifier", "supply_presentation_state_kind"]

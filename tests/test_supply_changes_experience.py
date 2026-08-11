@@ -6,7 +6,7 @@ from dip.experience.desktop.supply_changes_renderer import DesktopSupplyChangesR
 from dip.experience.supply_changes import SupplyChangesDetailState, SupplyChangesDetailViewModelBuilder
 from dip.intelligence import IntelligenceContext
 from dataclasses import replace
-from dip.marketplace_intelligence import MarketplaceDataStatus, MarketplaceReleaseObservation, MarketplaceSnapshot, MarketplaceSnapshotComparisonInput, SupplyChangesModule
+from dip.marketplace_intelligence import MarketplaceDataStatus, MarketplaceDiagnostic, MarketplaceReleaseObservation, MarketplaceSnapshot, MarketplaceSnapshotComparisonInput, SupplyChangesModule
 
 
 class SupplyChangesExperienceTestCase(unittest.TestCase):
@@ -21,7 +21,8 @@ class SupplyChangesExperienceTestCase(unittest.TestCase):
         self.assertEqual(detail.changes[0].delta, 3)
         rendered = DesktopSupplyChangesRenderer().render(detail)
         self.assertIn("Delta: +3", rendered.changes[0].body)
-        self.assertIn("Comparison source: discogs", rendered.context)
+        self.assertIn("Source: discogs", rendered.context)
+        self.assertIn("Previous snapshot ID: old", rendered.provenance)
 
     def test_missing_result_is_unavailable(self):
         detail = SupplyChangesDetailViewModelBuilder().build(None)
@@ -37,7 +38,12 @@ class SupplyChangesExperienceTestCase(unittest.TestCase):
     def test_current_builder_accepts_only_exact_identity_and_version(self):
         builder = SupplyChangesDetailViewModelBuilder()
         current = SupplyChangesModule().analyse(IntelligenceContext())
-        self.assertIs(builder.build(current).state, SupplyChangesDetailState.INSUFFICIENT_HISTORY)
+        insufficient = builder.build(current)
+        self.assertIs(insufficient.state, SupplyChangesDetailState.INSUFFICIENT_HISTORY)
+        self.assertEqual(insufficient.diagnostics, ())
+        self.assertEqual(insufficient.summary_counts, ())
+        self.assertEqual(insufficient.result_groups, ())
+        self.assertIsNone(insufficient.comparison_context)
         for module_id, module_version in (
             ("supply_changes", "1.0"),
             ("supply_changes", "99.0"),
@@ -49,6 +55,26 @@ class SupplyChangesExperienceTestCase(unittest.TestCase):
                     builder.build(replace(current, module_id=module_id, module_version=module_version))
                 self.assertNotIn(module_id, str(raised.exception))
                 self.assertNotIn(module_version, str(raised.exception))
+
+    def test_failed_builder_normalizes_summary_and_removes_provenance(self):
+        old_time = datetime(2026, 7, 21, tzinfo=timezone.utc)
+        new_time = datetime(2026, 7, 22, tzinfo=timezone.utc)
+        old = MarketplaceSnapshot("old", old_time, "discogs", MarketplaceDataStatus.EMPTY)
+        failed = MarketplaceSnapshot(
+            "new", new_time, "discogs", MarketplaceDataStatus.FAILED,
+            diagnostics=(MarketplaceDiagnostic("failed", "Hostile detail."),),
+        )
+        result = SupplyChangesModule().analyse(
+            IntelligenceContext(marketplace_comparison=MarketplaceSnapshotComparisonInput(old, failed))
+        )
+        hostile = "TOKEN provider SQL /private/live.sqlite PERSONAL-NOTE"
+        detail = SupplyChangesDetailViewModelBuilder().build(replace(result, summary=hostile))
+        self.assertEqual(detail.summary, "Results could not be displayed.")
+        self.assertNotIn(hostile, repr(detail))
+        self.assertIsNone(detail.previous_snapshot)
+        self.assertIsNone(detail.latest_snapshot)
+        self.assertIsNone(detail.source)
+        self.assertIsNone(detail.comparison_context)
 
 
 if __name__ == "__main__":
