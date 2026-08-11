@@ -351,12 +351,11 @@ class MarketplaceStateAdapterTest(unittest.TestCase):
         )
         self.assertEqual(price.comparison_context, supply.comparison_context)
         self.assertEqual(
-            tuple((value.identifier, value.value) for value in price.summary_counts),
+            tuple(value.identifier for value in price.summary_counts[:3]),
             (
-                (SummaryCountIdentifier.LISTING_CHANGES, 0),
-                (SummaryCountIdentifier.RELEASE_CHANGES, 0),
-                (SummaryCountIdentifier.UNCHANGED, 0),
-                (SummaryCountIdentifier.INCOMPARABLE, 0),
+                SummaryCountIdentifier.INCREASED,
+                SummaryCountIdentifier.DECREASED,
+                SummaryCountIdentifier.UNCHANGED,
             ),
         )
 
@@ -456,7 +455,7 @@ class MarketplaceStateAdapterTest(unittest.TestCase):
             unchanged=2,
         )
         self.assertEqual(price_no_changes.summary_counts[2].value, 2)
-        self.assertEqual(supply_no_changes.summary_counts[1].value, 2)
+        self.assertEqual(supply_no_changes.summary_counts[2].value, 2)
         price_partial = _price(
             PriceChangesDetailState.PARTIAL,
             PriceChangesComparisonState.PARTIAL,
@@ -466,16 +465,8 @@ class MarketplaceStateAdapterTest(unittest.TestCase):
             SupplyChangesComparisonState.PARTIAL,
         )
         self.assertEqual(
-            tuple(value.identifier for value in price_partial.summary_counts),
-            tuple(SummaryCountIdentifier),
-        )
-        self.assertEqual(
-            tuple(value.identifier for value in supply_partial.summary_counts),
-            (
-                SummaryCountIdentifier.RELEASE_CHANGES,
-                SummaryCountIdentifier.UNCHANGED,
-                SummaryCountIdentifier.INCOMPARABLE,
-            ),
+            tuple(value.identifier for value in price_partial.summary_counts[:3]),
+            tuple(value.identifier for value in supply_partial.summary_counts[:3]),
         )
 
     def test_insufficient_data_projects_only_positive_authoritative_incomparable_count(self):
@@ -711,36 +702,30 @@ class MarketplaceStateAdapterTest(unittest.TestCase):
     def test_workspace_without_selected_pair_rejects_retained_error_context(self):
         previous_price, latest_price = _price_snapshots()
         previous_supply, latest_supply = _supply_snapshots()
-        price = PriceChangesDetailViewModel(
-            PriceChangesDetailState.ERROR,
-            "Safe failure.",
-            PriceChangesComparisonState.FAILED,
-            previous_snapshot=previous_price,
-            latest_snapshot=latest_price,
-            source="discogs",
-            listing_change_count=0,
-            release_change_count=0,
-            unchanged_count=0,
-            incomparable_count=0,
-        )
-        supply = SupplyChangesDetailViewModel(
-            SupplyChangesDetailState.ERROR,
-            "Safe failure.",
-            SupplyChangesComparisonState.FAILED,
-            previous_snapshot=previous_supply,
-            latest_snapshot=latest_supply,
-            source="discogs",
-            change_count=0,
-            unchanged_count=0,
-            incomparable_count=0,
-        )
-        with self.assertRaisesRegex(ValueError, "selected pair"):
-            MarketplaceChangeWorkspace(
-                MarketplaceChangeWorkspaceState.ERROR,
-                MarketplaceSnapshotWindow(None, None),
-                price,
-                supply,
-                outcome_reason=MarketplaceChangeOutcomeReason.COMPARISON_FAILED,
+        with self.assertRaisesRegex(ValueError, "provenance"):
+            PriceChangesDetailViewModel(
+                PriceChangesDetailState.ERROR,
+                "Safe failure.",
+                PriceChangesComparisonState.FAILED,
+                previous_snapshot=previous_price,
+                latest_snapshot=latest_price,
+                source="discogs",
+                listing_change_count=0,
+                release_change_count=0,
+                unchanged_count=0,
+                incomparable_count=0,
+            )
+        with self.assertRaisesRegex(ValueError, "provenance"):
+            SupplyChangesDetailViewModel(
+                SupplyChangesDetailState.ERROR,
+                "Safe failure.",
+                SupplyChangesComparisonState.FAILED,
+                previous_snapshot=previous_supply,
+                latest_snapshot=latest_supply,
+                source="discogs",
+                change_count=0,
+                unchanged_count=0,
+                incomparable_count=0,
             )
 
     def test_hostile_values_do_not_enter_canonical_or_renderer_state_copy(self):

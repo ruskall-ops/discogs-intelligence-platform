@@ -300,19 +300,19 @@ class DesktopCollectionExplorerRenderer:
         rendered = self._price_changes.render(explorer.price_changes)
         parts = [_marketplace_outcome_copy(explorer.marketplace_change_outcome) or rendered.headline, rendered.summary]
         if rendered.context:
-            parts.extend(("", "Comparison context", rendered.context))
+            parts.extend(("", "Comparison period", rendered.context))
         if rendered.counts:
-            parts.extend(("", "Comparison counts", rendered.counts))
-        if rendered.listing_changes:
-            parts.extend(("", "Listing changes"))
-            for change in rendered.listing_changes:
+            parts.extend(("", "Summary", rendered.counts))
+        if rendered.limitations:
+            parts.extend(("", "Evidence limitations", rendered.limitations))
+        for group in rendered.groups:
+            parts.extend(("", f"{group.heading} ({group.count})"))
+            for change in group.rows:
                 parts.extend(("", change.heading, change.body))
-        if rendered.release_changes:
-            parts.extend(("", "Release-level changes"))
-            for change in rendered.release_changes:
-                parts.extend(("", change.heading, change.body))
-        if rendered.diagnostics:
-            parts.extend(("", "Diagnostics", rendered.diagnostics))
+        if rendered.metadata_explanation:
+            parts.extend(("", "Current catalogue metadata", rendered.metadata_explanation))
+        if rendered.provenance:
+            parts.extend(("", "Detailed provenance", rendered.provenance))
         return DesktopCollectionExplorerSection(
             destination=CollectionExplorerDestination.PRICE_CHANGES,
             title=rendered.title,
@@ -324,13 +324,19 @@ class DesktopCollectionExplorerRenderer:
         rendered = self._supply_changes.render(explorer.supply_changes)
         parts = [_marketplace_outcome_copy(explorer.marketplace_change_outcome) or rendered.headline, rendered.summary]
         if rendered.context:
-            parts.extend(("", "Comparison context", rendered.context))
+            parts.extend(("", "Comparison period", rendered.context))
         if rendered.counts:
-            parts.extend(("", "Comparison counts", rendered.counts))
-        for change in rendered.changes:
-            parts.extend(("", change.heading, change.body))
-        if rendered.diagnostics:
-            parts.extend(("", "Diagnostics", rendered.diagnostics))
+            parts.extend(("", "Summary", rendered.counts))
+        if rendered.limitations:
+            parts.extend(("", "Evidence limitations", rendered.limitations))
+        for group in rendered.groups:
+            parts.extend(("", f"{group.heading} ({group.count})"))
+            for change in group.rows:
+                parts.extend(("", change.heading, change.body))
+        if rendered.metadata_explanation:
+            parts.extend(("", "Current catalogue metadata", rendered.metadata_explanation))
+        if rendered.provenance:
+            parts.extend(("", "Detailed provenance", rendered.provenance))
         return DesktopCollectionExplorerSection(
             CollectionExplorerDestination.SUPPLY_CHANGES,
             rendered.title,

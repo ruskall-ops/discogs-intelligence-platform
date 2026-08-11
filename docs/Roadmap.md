@@ -248,6 +248,23 @@ filtering, sorting, Dashboard restructuring, navigation changes, or new actions.
 The existing stale-window lifecycle remains unchanged until its dedicated
 navigation slice.
 
+The second implementation slice adds the summary-first Price and Supply
+presentation over those immutable values. Both destinations present canonical
+state heading and body, a human-readable comparison period and source, factual
+summary counts, evidence limitations, classification-specific groups, the
+current-metadata explanation, and subordinate detailed provenance, in that
+order. Exact prices, currencies, signed deltas, supply integers, release
+identity, and canonical release order remain unchanged. Price absence remains
+incomparable under the authoritative 2.0 contract; Supply availability wording
+remains limited to explicit zero-to-positive and positive-to-zero evidence.
+
+Collection Explorer tab-label truncation and the clipped main-toolbar
+**Marketplace** label observed during Slice 1 smoke testing remain explicit
+Slice 3 responsive-navigation acceptance requirements. Notebook overflow,
+stale-banner redesign, shortcut discovery, focus order, replacement semantics,
+and multi-window behaviour are likewise deferred rather than mixed into the
+summary-first slice.
+
 The milestone explicitly excludes new Marketplace evidence, listing acquisition
 or history, Rare Appearances or Marketplace Activity activation, scoring,
 recommendations, demand, liquidity, scarcity, opportunity, or advisory

@@ -3,6 +3,7 @@
 from collections.abc import Mapping
 
 from dip.intelligence import IntelligenceResult, IntelligenceStatus
+from dip.experience.results_presentation import SAFE_ERROR_SUMMARY
 from dip.marketplace_intelligence import SupplyChangesComparisonState, SupplyChangesOutput
 
 from .models import ReleaseSupplyChangeViewModel, SupplyChangesDetailConsistencyError, SupplyChangesDetailState, SupplyChangesDetailViewModel, SupplyChangesSnapshotViewModel
@@ -26,7 +27,9 @@ class SupplyChangesDetailViewModelBuilder:
             raise SupplyChangesDetailConsistencyError("Supply Changes status contradicts its comparison state.")
         state = ({SupplyChangesComparisonState.PARTIAL: SupplyChangesDetailState.PARTIAL, SupplyChangesComparisonState.INSUFFICIENT_HISTORY: SupplyChangesDetailState.INSUFFICIENT_HISTORY, SupplyChangesComparisonState.INSUFFICIENT_DATA: SupplyChangesDetailState.INSUFFICIENT_DATA, SupplyChangesComparisonState.FAILED: SupplyChangesDetailState.ERROR}.get(output.comparison_state) or (SupplyChangesDetailState.AVAILABLE if output.summary.change_count else SupplyChangesDetailState.EMPTY))
         snapshot = lambda value: None if value is None else SupplyChangesSnapshotViewModel(value.snapshot_id, value.captured_at, value.source, value.status, value.source_version)
-        return SupplyChangesDetailViewModel(state, result.summary, output.comparison_state, snapshot(output.previous_snapshot), snapshot(output.latest_snapshot), output.source, output.summary.change_count, output.summary.unchanged_count, output.summary.incomparable_count, tuple(ReleaseSupplyChangeViewModel(c.release_id, c.previous_supply, c.latest_supply, c.delta, c.change_kind, c.previous_snapshot_id, c.latest_snapshot_id, c.evidence) for c in output.changes), tuple(result.diagnostics))
+        expose_provenance = state is not SupplyChangesDetailState.ERROR
+        summary = SAFE_ERROR_SUMMARY if state is SupplyChangesDetailState.ERROR else result.summary
+        return SupplyChangesDetailViewModel(state, summary, output.comparison_state, snapshot(output.previous_snapshot) if expose_provenance else None, snapshot(output.latest_snapshot) if expose_provenance else None, output.source if expose_provenance else None, output.summary.change_count, output.summary.unchanged_count, output.summary.incomparable_count, tuple(ReleaseSupplyChangeViewModel(c.release_id, c.previous_supply, c.latest_supply, c.delta, c.change_kind, c.previous_snapshot_id, c.latest_snapshot_id, c.evidence) for c in output.changes), tuple(result.diagnostics))
 
 
 __all__ = ["SupplyChangesDetailViewModelBuilder"]

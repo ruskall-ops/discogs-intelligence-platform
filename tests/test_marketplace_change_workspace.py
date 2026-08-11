@@ -451,7 +451,7 @@ class WorkspaceTest(unittest.TestCase):
         rendered = repr(result)
         for sentinel in ("token", "/private/db", "personal note", "provider response"):
             self.assertNotIn(sentinel, rendered)
-        self.assertIn("Marketplace evidence was incomplete", rendered)
+        self.assertNotIn("Marketplace evidence was incomplete", rendered)
         self.assertFalse(hasattr(result.window.current, "release_observations"))
         self.assertFalse(hasattr(result.window.baseline, "release_observations"))
 
@@ -498,8 +498,7 @@ class WorkspaceTest(unittest.TestCase):
                 ))
                 for sentinel in (*sentinels, "unknown-hostile-code"):
                     self.assertNotIn(sentinel, public)
-                expected_code = code if code != "unknown-hostile-code" else "marketplace_evidence_incomplete"
-                self.assertIn(expected_code, public)
+                self.assertNotIn("Marketplace evidence was incomplete", public)
 
     def test_every_hostile_sentinel_is_absent_from_actual_presentation_renderer_and_error_outputs(self):
         sentinels = (
@@ -539,7 +538,7 @@ class WorkspaceTest(unittest.TestCase):
                     self.assertTrue(all(value for value in outputs))
                     self.assertTrue(all(sentinel not in value for value in outputs))
                     if code == "unknown_private_identity":
-                        self.assertIn("marketplace_evidence_incomplete",repr(workspace))
+                        self.assertNotIn("Marketplace evidence was incomplete",repr(workspace))
                         self.assertNotIn(code,repr(workspace))
                     self.assertFalse(hasattr(workspace.window.current,"release_observations"))
                     self.assertFalse(hasattr(workspace.window.baseline,"release_observations"))

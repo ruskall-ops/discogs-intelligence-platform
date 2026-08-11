@@ -113,8 +113,10 @@ class PriceChangesPresentationModelTestCase(unittest.TestCase):
         self.assertIsNotNone(insufficient_data.previous_snapshot)
         self.assertIsNotNone(insufficient_data.latest_snapshot)
         self.assertEqual(insufficient_data.source, "discogs")
-        self.assertIsNotNone(error.previous_snapshot)
-        self.assertIsNotNone(error.latest_snapshot)
+        self.assertIsNone(error.previous_snapshot)
+        self.assertIsNone(error.latest_snapshot)
+        self.assertIsNone(error.source)
+        self.assertIsNone(error.comparison_context)
 
     def test_one_snapshot_retains_latest_context_as_insufficient_history(self) -> None:
         latest = market_snapshot("latest", LATEST_TIME, listing_price="12.00")
@@ -128,6 +130,20 @@ class PriceChangesPresentationModelTestCase(unittest.TestCase):
         self.assertIsNone(detail.previous_snapshot)
         self.assertEqual(detail.latest_snapshot.snapshot_id, "latest")
         self.assertEqual(detail.latest_snapshot.source, "discogs")
+        self.assertEqual(detail.diagnostics, ())
+        self.assertEqual(detail.summary_counts, ())
+        self.assertEqual(detail.result_groups, ())
+        self.assertIsNone(detail.comparison_context)
+
+    def test_failed_builder_normalizes_summary_and_removes_provenance(self) -> None:
+        hostile = "TOKEN provider SQL /private/live.sqlite PERSONAL-NOTE"
+        detail = self.builder.build(replace(failed_result(), summary=hostile))
+        self.assertEqual(detail.summary, "Results could not be displayed.")
+        self.assertNotIn(hostile, repr(detail))
+        self.assertIsNone(detail.previous_snapshot)
+        self.assertIsNone(detail.latest_snapshot)
+        self.assertIsNone(detail.source)
+        self.assertIsNone(detail.comparison_context)
 
     def test_builder_rejects_wrong_module_missing_output_and_status_mismatch(self) -> None:
         result = changed_result()
@@ -197,10 +213,11 @@ class PriceChangesRendererTestCase(unittest.TestCase):
     def test_renderer_preserves_snapshot_money_delta_release_and_evidence(self) -> None:
         rendered = self.renderer.render(self.builder.build(changed_result()))
 
-        self.assertIn("Previous snapshot: previous", rendered.context)
+        self.assertIn("Previous snapshot capture time:", rendered.context)
         self.assertIn("2026-07-18T12:00+00:00", rendered.context)
-        self.assertIn("Latest snapshot: latest", rendered.context)
-        self.assertIn("Comparison source: discogs", rendered.context)
+        self.assertIn("Latest snapshot capture time:", rendered.context)
+        self.assertIn("Source: discogs", rendered.context)
+        self.assertIn("Previous snapshot ID: previous", rendered.provenance)
         self.assertIn("Previous price: GBP 10.00", rendered.listing_changes[0].body)
         self.assertIn("Latest price: GBP 12.00", rendered.listing_changes[0].body)
         self.assertIn("Delta: GBP +2.00", rendered.listing_changes[0].body)
@@ -280,7 +297,7 @@ class PriceChangesExplorerIntegrationTestCase(unittest.TestCase):
             CollectionExplorerDestination.OVERVIEW,
         )
         self.assertNotIn("Listing listing-1", rendered.sections[5].body)
-        self.assertIn("Release-level changes", rendered.sections[5].body)
+        self.assertIn("Increased (1)", rendered.sections[5].body)
 
     def test_result_is_consumed_once_and_repeated_destination_access_does_no_work(self) -> None:
         result = authoritative_changed_result()

@@ -131,12 +131,22 @@ provider, or create domain conclusions.
 
 Shared factual result presentation lives under
 `dip.experience.results_presentation`. It contains only frozen validated state
-copy, established summary-count values, and detached Marketplace comparison
-context. Destination adapters map existing typed states explicitly; unknown raw
+copy, summary-count identifiers, a shared current-metadata explanation, and
+detached Marketplace comparison context. Destination Price and Supply packages
+own their closed immutable group projections. Destination adapters map existing typed states explicitly; unknown raw
 strings fail closed. The shared package performs no I/O and does not replace
 domain, application, workspace, or desktop state machines. Desktop renderers
 format these supplied values and do not infer state by parsing text or
 recomparing evidence.
+
+The summary-first desktop renderer uses those projections to place canonical
+state and comparison-period facts before counts, evidence limitations, typed
+groups, and current-metadata explanation, with snapshot identifiers/statuses
+subordinate at the end. It retains
+exact typed money, currency, Supply values, signed deltas, current metadata,
+fallback identity, and canonical order. Tk applies only shared heading styles
+and scrolling; it owns no classification, count, comparison, warning, or
+provenance logic.
 
 ### Application Services
 

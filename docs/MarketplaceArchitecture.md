@@ -148,11 +148,21 @@ release-ID order.
 Persisted free-form diagnostic messages, detail values, release observations,
 listing observations, and raw snapshots never cross the public workspace or
 Explorer boundary. The workspace exposes detached allowlisted provenance only.
-Known structured codes map to fixed application-owned categories and explanations;
-every unknown code uses the single `marketplace_evidence_incomplete` category
-and neutral incomplete-evidence copy. Supply presents explicit
-zero-to-positive as **Became available for sale** and positive-to-zero as **No
-copies observed for sale**.
+Internal categorization maps known structured codes to fixed application-owned
+categories and maps an unknown code to the internal
+`marketplace_evidence_incomplete` category. This categorization is distinct from
+final state-aware public presentation: raw diagnostic identity, message, and
+details never enter public presentation. The legacy current-metadata diagnostic
+is omitted from limitations. ERROR suppresses diagnostics and limitations.
+INSUFFICIENT_HISTORY suppresses unknown diagnostics and relies on canonical state
+copy, while independently truthful fixed exclusions may remain. PARTIAL and
+INSUFFICIENT_DATA map unknown diagnostics once to fixed
+`marketplace_evidence_incomplete` copy. AVAILABLE, NO_CHANGES, and completed EMPTY
+suppress unknown diagnostics. Allowlisted fixed warnings appear only in states
+where they remain semantically compatible. Duplicate warnings collapse
+deterministically. Factual row evidence remains separate and unchanged. Supply
+presents explicit zero-to-positive as **Became available for sale** and
+positive-to-zero as **No copies observed for sale**.
 
 Snapshot-specific exclusions use detached typed reasons. Separate typed workspace
 outcomes distinguish no eligible current snapshot, no compatible baseline,
@@ -183,6 +193,24 @@ counts are immutable projections; domain modules remain authoritative for
 comparison, classification, delta, incomparability, evidence, and ordering.
 The shared vocabulary does not activate a destination, wire an action, or alter
 the established stale-window, query, cache, or refresh lifecycle.
+
+The second Results Presentation refinement adds destination-specific immutable
+group projections over the existing typed release changes. Group membership is
+selected only from `ReleasePriceChangeKind` or `SupplyChangeKind`; renderers do
+not compare raw values, parse copy, calculate deltas, sort records, or query
+history. Existing canonical release order is retained inside each group.
+Unchanged is a truthful count without fabricated detail rows.
+
+Desktop presentation is summary-first: fixed state copy, original capture
+times and source, factual counts, evidence limitations where present, grouped
+rows, the section-level current-metadata boundary, and detailed snapshot IDs
+and statuses as subordinate provenance. Money remains exact Decimal plus
+currency and Supply remains an exact integer with its supplied signed delta.
+No percentage, currency conversion, item-plus-shipping total, ranking, score,
+or recommendation is introduced. Price observation availability labels never
+claim Marketplace entry or exit; production 2.0 missing evidence remains
+incomparable. Supply availability labels remain restricted to explicit
+zero/positive transitions.
 
 The workspace and the older Price/Supply execution services all query canonical
 History through `all_snapshots()` and use the same deterministic selector. They
