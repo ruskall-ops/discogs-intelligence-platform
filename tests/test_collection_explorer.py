@@ -449,7 +449,7 @@ class CollectionExplorerRenderingAndNavigationTestCase(unittest.TestCase):
 
 
 class CollectionExplorerDesktopShellTestCase(unittest.TestCase):
-    def test_dashboard_action_uses_current_homepage_and_scrollable_notebook(self) -> None:
+    def test_dashboard_action_uses_responsive_selector_and_scrollable_content(self) -> None:
         root = Path(__file__).resolve().parents[1]
         source = (root / "src/dip/experience/desktop/app.py").read_text(
             encoding="utf-8"
@@ -458,8 +458,9 @@ class CollectionExplorerDesktopShellTestCase(unittest.TestCase):
         self.assertIn('text="Open Collection Explorer"', source)
         self.assertIn("self.collection_explorer_controller.open", source)
         self.assertIn("self.current_dashboard_homepage", source)
-        self.assertIn("ttk.Notebook", source)
-        self.assertIn("notebook.select(selected_index)", source)
+        self.assertIn("ttk.Combobox", source)
+        self.assertIn('state="readonly"', source)
+        self.assertIn('text="Unavailable in this release"', source)
         self.assertIn("yscrollcommand=scrollbar.set", source)
         self.assertIn('text="Close"', source)
 

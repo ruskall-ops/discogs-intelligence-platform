@@ -58,6 +58,24 @@ class CollectionExplorerDestination(str, Enum):
     MARKETPLACE_OPPORTUNITY = "marketplace_opportunity"
 
 
+ENABLED_EXPLORER_DESTINATIONS = (
+    CollectionExplorerDestination.OVERVIEW,
+    CollectionExplorerDestination.COLLECTION_HEALTH,
+    CollectionExplorerDestination.HIDDEN_GEMS,
+    CollectionExplorerDestination.COLLECTION_TRENDS,
+    CollectionExplorerDestination.PRICE_CHANGES,
+    CollectionExplorerDestination.SUPPLY_CHANGES,
+)
+UNAVAILABLE_EXPLORER_DESTINATIONS = tuple(
+    destination
+    for destination in CollectionExplorerDestination
+    if destination not in ENABLED_EXPLORER_DESTINATIONS
+)
+UNAVAILABLE_EXPLORER_EXPLANATION = (
+    "This destination has no production data path in this release."
+)
+
+
 class CollectionExplorerState(str, Enum):
     """Explicit aggregate and destination availability states."""
 
@@ -271,6 +289,10 @@ class CollectionExplorerViewModel:
         ):
             raise CollectionExplorerConsistencyError(
                 "The selected destination must be present in the Explorer."
+            )
+        if self.selected_destination not in ENABLED_EXPLORER_DESTINATIONS:
+            raise CollectionExplorerConsistencyError(
+                "The selected Explorer destination must be production-enabled."
             )
         expected_state = _aggregate_state(expected_states)
         if self.state is not expected_state:

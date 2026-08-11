@@ -258,12 +258,14 @@ identity, and canonical release order remain unchanged. Price absence remains
 incomparable under the authoritative 2.0 contract; Supply availability wording
 remains limited to explicit zero-to-positive and positive-to-zero evidence.
 
-Collection Explorer tab-label truncation and the clipped main-toolbar
-**Marketplace** label observed during Slice 1 smoke testing remain explicit
-Slice 3 responsive-navigation acceptance requirements. Notebook overflow,
-stale-banner redesign, shortcut discovery, focus order, replacement semantics,
-and multi-window behaviour are likewise deferred rather than mixed into the
-summary-first slice.
+The third implementation slice adds responsive Collection Explorer navigation.
+One authoritative immutable registry limits the selector to the six
+production-enabled destinations while keeping all unavailable destinations and
+their explanation visible separately. It fixes the complete main-toolbar
+**Marketplace** label, establishes canonical stale and active-run copy, exposes
+the guarded refresh shortcut, and preserves view position only for equivalent
+replacement content. Existing transactional replacement, multi-window,
+evidence, cache, provider, and persistence boundaries remain unchanged.
 
 The milestone explicitly excludes new Marketplace evidence, listing acquisition
 or history, Rare Appearances or Marketplace Activity activation, scoring,

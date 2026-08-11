@@ -212,6 +212,16 @@ claim Marketplace entry or exit; production 2.0 missing evidence remains
 incomparable. Supply availability labels remain restricted to explicit
 zero/positive transitions.
 
+The third Results Presentation refinement changes only desktop navigation and
+refresh affordances. An immutable registry identifies the six production-wired
+Explorer destinations; unavailable destinations remain visibly explained but
+are rejected by presentation and dispatch boundaries. Stale and active-run
+messages use fixed allowlisted copy, keyboard and button refresh share the same
+guard, and scroll position survives replacement only when the selected rendered
+section is equivalent. Snapshot selection, queries, comparison, cache
+publication, transactional multi-window replacement, provider isolation, and
+persistence remain unchanged.
+
 The workspace and the older Price/Supply execution services all query canonical
 History through `all_snapshots()` and use the same deterministic selector. They
 then invoke the same pair-explicit domain calculators. No caller-selectable

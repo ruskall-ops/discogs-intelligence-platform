@@ -64,13 +64,13 @@ detail services and builds the Explorer once when the window opens. Trends
 performs one Intelligence History query during that construction. An optional,
 already-produced Weekend Listings result and an optional, already-produced
 Price Changes result are supplied at the same presentation boundary. Marketplace
-Momentum is also supplied only as an already-produced result. Switching tabs
+Momentum is also supplied only as an already-produced result. Switching destinations
 does not query Marketplace or Intelligence History, execute intelligence, fetch
 Marketplace data, calculate a comparison or assessment, sort records, or
 rebuild the workspace. On first Explorer open, a separate read-only Marketplace
 Change service queries canonical Marketplace History once, selects one
 exact-source/version snapshot pair, and batch-loads current artist/title labels
-at most once. Its immutable workspace is cached across reopening and tab
+at most once. Its immutable workspace is cached across reopening and destination
 switches. Only **Refresh Marketplace Changes** rebuilds it. Refresh preserves
 the currently selected enabled destination. While Collector Run is active,
 open and refresh perform no Marketplace History or metadata query and the
@@ -229,26 +229,43 @@ copies observed for sale** for explicit zero-to-positive and positive-to-zero
 facts. Rows preserve exact values, currencies, signed deltas, release IDs,
 metadata fallback, and canonical order without sorting or recomparison.
 
-The tab-label and toolbar-label clipping observed during macOS smoke remains a
-Slice 3 responsive-navigation acceptance requirement; this slice does not
-alter notebook navigation or toolbar layout.
+The third Results Presentation slice replaces the overflowing fourteen-tab row
+with one read-only selector containing only the six production-enabled
+destinations. Their full labels remain visible, and the authoritative immutable
+availability registry is shared by the view model, renderer, controller, and
+desktop dispatch boundary. The other eight destinations remain visible in a
+separate **Unavailable in this release** region with the fixed explanation
+**This destination has no production data path in this release.** They cannot
+be selected or opened programmatically. The main toolbar uses two responsive
+rows and shows the complete **Marketplace** label without changing its action.
+With the selector focused, Left and Up select the previous enabled destination,
+while Right and Down select the next; movement stops at the first and last
+destination rather than wrapping. Return and Space activate the focused
+destination. These bindings are local to the live selector and switch only
+among its already-rendered sections.
 
 ## Desktop navigation
 
 The Dashboard's **Open Collection Explorer** action opens Overview in a
-fourteen-tab, scrollable window. The window retains the homepage model that was
-current when it opened. The action is disabled while that model is loading or
-stale.
+scrollable window. Its selector contains Overview, Collection Health, Hidden
+Gems, Collection Trends, Price Changes, and Supply Changes in canonical order.
+The window retains the homepage model that was current when it opened. The
+action is disabled while that model is loading or stale. Selector changes use
+the already-rendered immutable sections and perform no module execution,
+Marketplace fetch, history query, repository access, persistence write,
+comparison, sorting, filtering, or refresh.
 
-Weekend Listings is the fifth tab, Price Changes is the sixth, Supply Changes
-is the seventh, Rare Appearances is the eighth, Marketplace Activity is the
-ninth, Listing Lifecycle is the tenth, and Marketplace Momentum is the
-eleventh, Marketplace Stability is the twelfth, and Marketplace Scarcity is
-the thirteenth, and Marketplace Opportunity is the fourteenth. Opening or
-selecting them performs no module execution, Marketplace
-fetch, history
-query, repository access, persistence write, comparison, sorting, filtering or
-refresh; each only renders the result captured when the Explorer was built.
+Collector Run completion gives every surviving Explorer the exact stale banner
+**Newer history is available** and **These cached results predate the latest
+completed Collector Run.** It keeps the selected destination and exposes the
+existing **Refresh Marketplace Changes** action. Command-R on macOS and
+Control-R elsewhere are displayed and invoke the same guarded callback as the
+button. While Collector Run is active, every entry path is disabled or rejected
+with **Marketplace refresh is unavailable while Collector Run is active.** The
+nearby explanation states that refresh recalculates Price and Supply from saved
+Marketplace history and makes no Discogs request. A transactional replacement
+preserves the scroll position only when the selected section is equivalent;
+changed content starts at the top. Other open Explorer windows are unaffected.
 
 Portfolio Intelligence is intentionally outside Collection Explorer. The
 separate top-level Portfolio workspace contains Overview, Distribution,

@@ -16,7 +16,9 @@ from dip.experience.explorer import (
     CollectionExplorerDestination,
     CollectionExplorerState,
     CollectionExplorerViewModel,
+    ENABLED_EXPLORER_DESTINATIONS,
     MarketplaceChangePresentationOutcome,
+    UNAVAILABLE_EXPLORER_EXPLANATION,
 )
 from dip.experience.explorer.state_adapter import marketplace_outcome_state_kind
 from dip.experience.results_presentation import presentation_state_copy
@@ -45,6 +47,22 @@ class DesktopCollectionExplorerNavigationItem:
     label: str
     state: CollectionExplorerState
     selected: bool
+    available: bool
+    unavailable_explanation: str
+
+    def __post_init__(self) -> None:
+        if type(self.destination) is not CollectionExplorerDestination:
+            raise TypeError("destination must be a CollectionExplorerDestination.")
+        if type(self.available) is not bool or type(self.selected) is not bool:
+            raise TypeError("Navigation availability and selection must be boolean.")
+        authoritative = self.destination in ENABLED_EXPLORER_DESTINATIONS
+        if self.available is not authoritative:
+            raise ValueError("Navigation availability contradicts production configuration.")
+        expected = "" if authoritative else UNAVAILABLE_EXPLORER_EXPLANATION
+        if self.unavailable_explanation != expected:
+            raise ValueError("Unavailable explanation must use fixed presentation copy.")
+        if self.selected and not self.available:
+            raise ValueError("An unavailable destination cannot be selected.")
 
 
 @dataclass(frozen=True)
@@ -145,6 +163,12 @@ class DesktopCollectionExplorerRenderer:
                 label=item.label,
                 state=item.state,
                 selected=item.destination is explorer.selected_destination,
+                available=item.destination in ENABLED_EXPLORER_DESTINATIONS,
+                unavailable_explanation=(
+                    ""
+                    if item.destination in ENABLED_EXPLORER_DESTINATIONS
+                    else UNAVAILABLE_EXPLORER_EXPLANATION
+                ),
             )
             for item in explorer.destinations
         )
@@ -618,8 +642,7 @@ class DesktopCollectionExplorerController:
 
         if type(selected_destination) is not CollectionExplorerDestination:
             selected_destination = CollectionExplorerDestination.OVERVIEW
-        disabled = frozenset((CollectionExplorerDestination.WEEKEND_LISTINGS, CollectionExplorerDestination.RARE_APPEARANCES, CollectionExplorerDestination.MARKETPLACE_ACTIVITY, CollectionExplorerDestination.LISTING_LIFECYCLE, CollectionExplorerDestination.MARKETPLACE_MOMENTUM, CollectionExplorerDestination.MARKETPLACE_STABILITY, CollectionExplorerDestination.MARKETPLACE_SCARCITY, CollectionExplorerDestination.MARKETPLACE_OPPORTUNITY))
-        disabled_request = selected_destination in disabled
+        disabled_request = selected_destination not in ENABLED_EXPLORER_DESTINATIONS
         if disabled_request:
             selected_destination = CollectionExplorerDestination.OVERVIEW
         result_arguments = {}

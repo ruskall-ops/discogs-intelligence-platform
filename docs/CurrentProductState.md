@@ -39,17 +39,17 @@ The current authoritative Price Changes and Supply Changes modules use version
 identity and are not silently reinterpreted.
 
 Unreleased work on the unversioned Results Presentation milestone now includes
-shared immutable factual-state copy and comparison context plus a summary-first
-Price/Supply layout. The new projection groups authoritative typed changes,
-keeps exact values and current-metadata boundaries visible, and places technical
-provenance below primary factual results. The released Price/Supply evidence,
-classification, ordering, and query/cache lifecycle remain unchanged.
-Dashboard, Collection Review, navigation, keyboard, filtering, and sorting
-refinements remain future slices and are not part of the v0.5.1 release.
-
-The severely truncated Collection Explorer tab labels and clipped main-toolbar
-**Marketplace** label remain recorded for the future Slice 3 responsive-layout
-work; they are not changed by the summary-first slice.
+shared immutable factual-state copy and comparison context, a summary-first
+Price/Supply layout, and responsive Collection Explorer navigation. The six
+production-enabled destinations use a full-label selector backed by one
+authoritative availability registry; unavailable destinations remain visible
+and explicitly explained outside it. Canonical stale and Collector-Run-blocked
+refresh copy, displayed keyboard shortcuts, equivalent-content scroll
+restoration, and the complete main-toolbar **Marketplace** label are included.
+The released Price/Supply evidence, classification, ordering, transactional
+replacement, query/cache, provider, persistence, and session lifecycles remain
+unchanged. Dashboard, Collection Review, filtering, and sorting refinements
+remain future slices and are not part of the v0.5.1 release.
 
 ## Available after sufficient history
 
