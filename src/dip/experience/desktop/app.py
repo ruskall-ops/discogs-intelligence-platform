@@ -2208,9 +2208,32 @@ class App(tk.Tk):
         close_button.pack(side="left", padx=4)
         close_button.bind("<Return>", lambda _event: close(), add="+")
         close_button.bind("<space>", lambda _event: close(), add="+")
+        focus_cycle = (navigation, text, refresh_button, close_button)
+        for control in focus_cycle:
+            control.configure(takefocus="1")
+
+        def move_focus(index, delta):
+            def move(_event):
+                try:
+                    if (
+                        not window.winfo_exists()
+                        or window not in self._marketplace_explorer_handles
+                    ):
+                        return "break"
+                except Exception:
+                    return "break"
+                focus_cycle[(index + delta) % len(focus_cycle)].focus_set()
+                return "break"
+            return move
+
+        for index, control in enumerate(focus_cycle):
+            control.bind("<Tab>", move_focus(index, 1), add="+")
+            control.bind("<Shift-Tab>", move_focus(index, -1), add="+")
+            control.bind("<ISO_Left_Tab>", move_focus(index, -1), add="+")
         window._dip_marketplace_registration = (stale, refresh_button, close)
         window._dip_explorer_navigation = navigation
         window._dip_explorer_text = text
+        window._dip_explorer_focus_cycle = focus_cycle
         window._dip_active_run_explanation = active_explanation
         window._dip_rendered_explorer = rendered
         self._bind_marketplace_refresh_shortcuts(

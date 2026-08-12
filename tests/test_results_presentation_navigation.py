@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import FrozenInstanceError, replace
 from pathlib import Path
+import subprocess
+import sys
 import tkinter as tk
 from tkinter import ttk
 import unittest
@@ -286,6 +288,24 @@ class ResultsPresentationDesktopBoundaryTest(unittest.TestCase):
 class ResultsPresentationRealTkBoundaryTest(unittest.TestCase):
     def _root(self):
         try:
+            probe = subprocess.run(
+                (
+                    sys.executable,
+                    "-c",
+                    "import tkinter as tk; root = tk.Tk(); root.update_idletasks(); root.destroy()",
+                ),
+                capture_output=True,
+                text=True,
+                timeout=15,
+                check=False,
+            )
+        except subprocess.TimeoutExpired:
+            self.skipTest("Tk process probe timed out.")
+        if probe.returncode != 0:
+            self.skipTest(
+                f"Tk process unavailable (exit {probe.returncode})."
+            )
+        try:
             root = tk.Tk()
         except tk.TclError as error:
             self.skipTest(f"Tk display unavailable: {error}")
@@ -383,14 +403,6 @@ class ResultsPresentationRealTkBoundaryTest(unittest.TestCase):
                     UNAVAILABLE_EXPLORER_EXPLANATION,
                 }:
                     self.assertGreaterEqual(child.winfo_width(), child.winfo_reqwidth())
-        focus_chain = []
-        current = navigation
-        for _ in range(6):
-            current = current.tk_focusNext()
-            focus_chain.append(str(current))
-        self.assertIn(str(window._dip_explorer_text), focus_chain)
-        self.assertIn(str(buttons["Refresh Marketplace Changes"]), focus_chain)
-        self.assertIn(str(buttons["Close"]), focus_chain)
         self.assertEqual(str(navigation.cget("state")), "readonly")
         self.assertEqual(tuple(navigation.cget("values")), tuple(
             item.label for item in rendered.navigation if item.available
@@ -408,6 +420,48 @@ class ResultsPresentationRealTkBoundaryTest(unittest.TestCase):
         app.db = Mock()
         app.collector_run_service = Mock()
         original_sections = rendered.sections
+        content = window._dip_explorer_text
+        refresh = buttons["Refresh Marketplace Changes"]
+        close_button = buttons["Close"]
+        expected_cycle = (navigation, content, refresh, close_button)
+        self.assertEqual(window._dip_explorer_focus_cycle, expected_cycle)
+        self.assertTrue(all(str(control.cget("takefocus")) == "1" for control in expected_cycle))
+
+        def traverse(start, event):
+            start.focus_force()
+            root.update()
+            visited = []
+            for _ in expected_cycle:
+                root.focus_get().event_generate(event)
+                root.update()
+                visited.append(root.focus_get())
+            return tuple(visited)
+
+        self.assertEqual(
+            traverse(navigation, "<KeyPress-Tab>"),
+            (content, refresh, close_button, navigation),
+        )
+        self.assertEqual(
+            traverse(navigation, "<Shift-KeyPress-Tab>"),
+            (close_button, refresh, content, navigation),
+        )
+        self.assertEqual(len(set(expected_cycle)), 4)
+        unavailable_controls = {
+            child
+            for child in descendants
+            if isinstance(child, ttk.Label)
+            and (
+                "Weekend Listings" in child.cget("text")
+                or child.cget("text") == UNAVAILABLE_EXPLORER_EXPLANATION
+            )
+        }
+        self.assertTrue(unavailable_controls)
+        self.assertFalse(unavailable_controls & set(expected_cycle))
+        for operation in operations.values():
+            operation.assert_not_called()
+        self.assertEqual(app.collection_explorer_controller.mock_calls, [])
+        self.assertEqual(app.db.mock_calls, [])
+        self.assertEqual(app.collector_run_service.mock_calls, [])
 
         def press(keysym):
             navigation.focus_force()
@@ -423,7 +477,6 @@ class ResultsPresentationRealTkBoundaryTest(unittest.TestCase):
         press("Up")
         self.assertEqual(navigation.current(), 0)
         self.assertIs(window._dip_selected_destination, CollectionExplorerDestination.OVERVIEW)
-        content = window._dip_explorer_text
         content.configure(state="normal")
         content.insert("end", "\n" + "boundary viewport\n" * 200)
         content.configure(state="disabled")
@@ -477,7 +530,6 @@ class ResultsPresentationRealTkBoundaryTest(unittest.TestCase):
         self.assertEqual(app.collector_run_service.mock_calls, [])
         self.assertTrue(window.bind("<Command-r>"))
         self.assertTrue(window.bind("<Control-r>"))
-        self.assertIs(navigation.tk_focusPrev(), buttons["Close"])
 
         navigation.current(2)
         app._marketplace_explorer_handles.pop(window)
