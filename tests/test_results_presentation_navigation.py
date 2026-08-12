@@ -426,6 +426,12 @@ class ResultsPresentationRealTkBoundaryTest(unittest.TestCase):
         expected_cycle = (navigation, content, refresh, close_button)
         self.assertEqual(window._dip_explorer_focus_cycle, expected_cycle)
         self.assertTrue(all(str(control.cget("takefocus")) == "1" for control in expected_cycle))
+        refresh.focus_set = Mock(
+            side_effect=AssertionError("Aqua default focus transfer refused")
+        )
+        close_button.focus_set = Mock(
+            side_effect=AssertionError("Aqua default focus transfer refused")
+        )
 
         def traverse(start, event):
             start.focus_force()
@@ -446,6 +452,8 @@ class ResultsPresentationRealTkBoundaryTest(unittest.TestCase):
             (close_button, refresh, content, navigation),
         )
         self.assertEqual(len(set(expected_cycle)), 4)
+        refresh.focus_set.assert_not_called()
+        close_button.focus_set.assert_not_called()
         unavailable_controls = {
             child
             for child in descendants

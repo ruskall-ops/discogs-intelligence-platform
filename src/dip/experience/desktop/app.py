@@ -2222,7 +2222,7 @@ class App(tk.Tk):
                         return "break"
                 except Exception:
                     return "break"
-                focus_cycle[(index + delta) % len(focus_cycle)].focus_set()
+                focus_cycle[(index + delta) % len(focus_cycle)].focus_force()
                 return "break"
             return move
 
