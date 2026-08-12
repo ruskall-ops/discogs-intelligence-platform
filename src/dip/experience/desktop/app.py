@@ -2162,7 +2162,7 @@ class App(tk.Tk):
         unavailable_frame = ttk.LabelFrame(
             window, text="Unavailable in this release", padding=(12, 8)
         )
-        unavailable_frame.pack(fill="x", padx=12, pady=(0, 6))
+        unavailable_frame.pack(fill="x", padx=12, pady=(0, 6), before=content)
         ttk.Label(
             unavailable_frame,
             text="\n".join(item.label for item in unavailable),
@@ -2175,7 +2175,7 @@ class App(tk.Tk):
             wraplength=480,
         ).pack(side="left", anchor="nw", fill="x", expand=True)
         controls = ttk.Frame(window)
-        controls.pack(pady=(0, 12))
+        controls.pack(pady=(0, 12), before=content)
         stale = ttk.Label(controls, text="", justify="left")
         stale.pack(side="top", pady=2)
         ttk.Label(

@@ -393,8 +393,8 @@ class ResultsPresentationRealTkBoundaryTest(unittest.TestCase):
             for child in descendants
             if isinstance(child, ttk.Button)
         }
-        for width in (1050, 800):
-            window.geometry(f"{width}x720")
+        for width, height in ((1050, 720), (800, 560)):
+            window.geometry(f"{width}x{height}")
             window.update_idletasks()
             self.assertGreaterEqual(navigation.winfo_width(), navigation.winfo_reqwidth())
             for child in descendants:
@@ -426,6 +426,7 @@ class ResultsPresentationRealTkBoundaryTest(unittest.TestCase):
         expected_cycle = (navigation, content, refresh, close_button)
         self.assertEqual(window._dip_explorer_focus_cycle, expected_cycle)
         self.assertTrue(all(str(control.cget("takefocus")) == "1" for control in expected_cycle))
+        self.assertTrue(all(control.winfo_viewable() for control in expected_cycle))
         def traverse(start, command):
             current = start
             visited = []
