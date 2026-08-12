@@ -2226,14 +2226,21 @@ class App(tk.Tk):
                 return "break"
             return move
 
-        for index, control in enumerate(focus_cycle):
-            control.bind("<Tab>", move_focus(index, 1), add="+")
-            control.bind("<Shift-Tab>", move_focus(index, -1), add="+")
-            control.bind("<ISO_Left_Tab>", move_focus(index, -1), add="+")
+        focus_bindings = tuple(
+            (move_focus(index, 1), move_focus(index, -1))
+            for index in range(len(focus_cycle))
+        )
+        for control, (move_forward, move_backward) in zip(
+            focus_cycle, focus_bindings
+        ):
+            control.bind("<Tab>", move_forward, add="+")
+            control.bind("<Shift-Tab>", move_backward, add="+")
+            control.bind("<ISO_Left_Tab>", move_backward, add="+")
         window._dip_marketplace_registration = (stale, refresh_button, close)
         window._dip_explorer_navigation = navigation
         window._dip_explorer_text = text
         window._dip_explorer_focus_cycle = focus_cycle
+        window._dip_explorer_focus_bindings = focus_bindings
         window._dip_active_run_explanation = active_explanation
         window._dip_rendered_explorer = rendered
         self._bind_marketplace_refresh_shortcuts(

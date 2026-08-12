@@ -426,34 +426,36 @@ class ResultsPresentationRealTkBoundaryTest(unittest.TestCase):
         expected_cycle = (navigation, content, refresh, close_button)
         self.assertEqual(window._dip_explorer_focus_cycle, expected_cycle)
         self.assertTrue(all(str(control.cget("takefocus")) == "1" for control in expected_cycle))
-        refresh.focus_set = Mock(
-            side_effect=AssertionError("Aqua default focus transfer refused")
-        )
-        close_button.focus_set = Mock(
-            side_effect=AssertionError("Aqua default focus transfer refused")
-        )
-
-        def traverse(start, event):
-            start.focus_force()
-            root.update()
+        def traverse(start, command):
+            current = start
             visited = []
             for _ in expected_cycle:
-                root.focus_get().event_generate(event)
-                root.update()
-                visited.append(root.focus_get())
+                current = root.nametowidget(root.tk.call(command, str(current)))
+                visited.append(current)
             return tuple(visited)
 
         self.assertEqual(
-            traverse(navigation, "<KeyPress-Tab>"),
+            traverse(navigation, "tk_focusNext"),
             (content, refresh, close_button, navigation),
         )
         self.assertEqual(
-            traverse(navigation, "<Shift-KeyPress-Tab>"),
+            traverse(navigation, "tk_focusPrev"),
             (close_button, refresh, content, navigation),
         )
         self.assertEqual(len(set(expected_cycle)), 4)
-        refresh.focus_set.assert_not_called()
-        close_button.focus_set.assert_not_called()
+        focus_bindings = window._dip_explorer_focus_bindings
+        self.assertEqual(len(focus_bindings), 4)
+        for index, (move_forward, move_backward) in enumerate(focus_bindings):
+            with patch.object(
+                expected_cycle[(index + 1) % 4], "focus_force"
+            ) as forward_focus:
+                self.assertEqual(move_forward(Mock()), "break")
+                forward_focus.assert_called_once_with()
+            with patch.object(
+                expected_cycle[(index - 1) % 4], "focus_force"
+            ) as backward_focus:
+                self.assertEqual(move_backward(Mock()), "break")
+                backward_focus.assert_called_once_with()
         unavailable_controls = {
             child
             for child in descendants
