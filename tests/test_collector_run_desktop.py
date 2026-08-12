@@ -127,8 +127,8 @@ class _DisplayDatabase:
 
 
 class CollectorRunDesktopTestCase(unittest.TestCase):
-    def test_every_terminal_outcome_invalidates_cache_and_marks_only_live_windows_stale(self):
-        stale_copy = "Marketplace history has changed. Refresh Marketplace Changes to update these results."
+    def test_every_terminal_outcome_retains_cache_and_marks_only_live_windows_stale(self):
+        stale_copy = "Newer history is available\nThese cached results predate the latest completed Collector Run."
         class History:
             def __init__(self, operations): self.operations = operations
             def all_snapshots(self):
@@ -213,7 +213,7 @@ class CollectorRunDesktopTestCase(unittest.TestCase):
                     with patch("dip.experience.desktop.app.messagebox.showinfo"), patch("dip.experience.desktop.app.messagebox.showwarning"), patch("dip.experience.desktop.app.messagebox.showerror"):
                         app.finish_refresh(_result(status))
                     self.assertFalse(app._collector_run_active)
-                    self.assertIsNone(controller.marketplace_cache)
+                    self.assertIs(controller.marketplace_cache, old_cache)
                     app.open_intelligence_explorer.assert_not_called()
                     app._create_marketplace_replacement_toplevel.assert_not_called()
                     self.assertEqual(app.collector_run_service.mock_calls, [])
@@ -233,7 +233,7 @@ class CollectorRunDesktopTestCase(unittest.TestCase):
                         if window.live:
                             self.assertIn(window, app._marketplace_explorer_handles)
                             self.assertEqual(labels[window].text, stale_copy)
-                            self.assertEqual(buttons[window].states, [["!disabled"]])
+                            self.assertEqual(buttons[window].states[-1], ["!disabled"])
                         else:
                             self.assertNotIn(window, app._marketplace_explorer_handles)
                     app.refresh_discogs_button.configure.assert_called_with(state="normal")

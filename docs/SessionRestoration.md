@@ -72,6 +72,9 @@ Project-scoped.
 
 Only the last valid normal geometry is captured. Minimized, maximized, zoomed,
 full-screen, and secondary-window state are neither saved nor restored.
+Collection Explorer destination selection, scroll position, stale banners, and
+refresh state are secondary-window presentation state and remain outside the
+desktop-session record.
 
 Restoration uses Tk's virtual-root bounds. Negative coordinates remain valid
 for multi-monitor desktops. Size is bounded by the current virtual desktop

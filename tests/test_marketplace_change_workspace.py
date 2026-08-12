@@ -719,7 +719,7 @@ class ControllerCacheTest(unittest.TestCase):
 
 class DesktopMarketplaceLifecycleTest(unittest.TestCase):
     def test_every_real_entry_path_becomes_available_only_through_terminal_cleanup(self):
-        stale_copy="Marketplace history has changed. Refresh Marketplace Changes to update these results."
+        stale_copy="Newer history is available\nThese cached results predate the latest completed Collector Run."
         paths=(
             "button","keyboard","direct_refresh","programmatic_refresh",
             "alternate_open","alternate_rebuild","price_dispatch","supply_dispatch",
@@ -776,8 +776,10 @@ class DesktopMarketplaceLifecycleTest(unittest.TestCase):
                     elif path == "alternate_rebuild": controller.open(object(),refresh_marketplace=True)
                     elif path == "price_dispatch": controller.open(object(),selected_destination=CollectionExplorerDestination.PRICE_CHANGES)
                     else: controller.open(object(),selected_destination=CollectionExplorerDestination.SUPPLY_CHANGES)
-                    self.assertEqual(operations["workspace"],1); self.assertEqual(operations["history"],1)
-                    self.assertLessEqual(operations["metadata"],1); self.assertEqual(operations["provider"],0); self.assertEqual(operations["persistence"],0)
+                    refresh_paths = {"button", "keyboard", "direct_refresh", "programmatic_refresh", "alternate_rebuild"}
+                    expected_queries = 1 if path in refresh_paths else 0
+                    self.assertEqual(operations["workspace"], expected_queries); self.assertEqual(operations["history"], expected_queries)
+                    self.assertLessEqual(operations["metadata"], expected_queries); self.assertEqual(operations["provider"],0); self.assertEqual(operations["persistence"],0)
                     if path in {"button","keyboard"}:
                         self.assertEqual(operations["replacement"],1); self.assertFalse(old.live); self.assertTrue(replacement.live)
                         self.assertEqual(replacement._dip_marketplace_registration[0].text,"")
@@ -799,7 +801,7 @@ class DesktopMarketplaceLifecycleTest(unittest.TestCase):
         )
         fixed_failure="Marketplace changes could not be refreshed. The previous results remain stale; retry is available."
         class Label:
-            def __init__(self,fail=None): self.text="Marketplace history has changed. Refresh Marketplace Changes to update these results."; self.fail=fail
+            def __init__(self,fail=None): self.text="Newer history is available\nThese cached results predate the latest completed Collector Run."; self.fail=fail
             def configure(self,*,text):
                 if self.fail: raise RuntimeError(self.fail)
                 self.text=text
@@ -851,13 +853,13 @@ class DesktopMarketplaceLifecycleTest(unittest.TestCase):
                     if stage == "stale_clear":
                         self.assertIs(controller.marketplace_cache,candidate)
                         self.assertEqual(tuple(app._marketplace_explorer_handles),(replacement,))
-                        self.assertEqual(replacement._dip_marketplace_registration[0].text,"Marketplace history has changed. Refresh Marketplace Changes to update these results.")
+                        self.assertEqual(replacement._dip_marketplace_registration[0].text,"Newer history is available\nThese cached results predate the latest completed Collector Run.")
                     else:
                         self.assertIs(controller.marketplace_cache,old)
                         self.assertEqual(tuple(app._marketplace_explorer_handles),(old_window,))
 
     def test_actual_controller_and_app_prepublication_seams_are_independent_and_rollback(self):
-        stale_copy = "Marketplace history has changed. Refresh Marketplace Changes to update these results."
+        stale_copy = "Newer history is available\nThese cached results predate the latest completed Collector Run."
         class Label:
             def __init__(self): self.text = stale_copy
             def configure(self, *, text): self.text = text
@@ -947,7 +949,7 @@ class DesktopMarketplaceLifecycleTest(unittest.TestCase):
                     app._refresh_marketplace_explorer(old_window,notebook,rendered)
                 self.assertIs(controller.marketplace_cache,old)
                 self.assertEqual(tuple(app._marketplace_explorer_handles),(old_window,))
-                self.assertTrue(old_window.live); self.assertEqual(old_label.text, "Marketplace changes could not be refreshed. The previous results remain stale; retry is available.")
+                self.assertTrue(old_window.live); self.assertEqual(old_label.text, "Newer history is available\nThese cached results predate the latest completed Collector Run.")
                 self.assertNotIn("PRIVATE",repr(dialog.call_args))
                 self.assertFalse(replacement.registered)
                 if stage in {"population","install","registration"}: self.assertFalse(replacement.live)
@@ -979,7 +981,7 @@ class DesktopMarketplaceLifecycleTest(unittest.TestCase):
                 self.assertIs(presentation.last["selected_destination"],CollectionExplorerDestination.PRICE_CHANGES)
 
     def test_each_active_run_entry_path_uses_its_real_boundary_without_operations(self):
-        stale_copy = "Marketplace history has changed. Refresh Marketplace Changes to update these results."
+        stale_copy = "Newer history is available\nThese cached results predate the latest completed Collector Run."
         operations = {name: 0 for name in (
             "history", "metadata", "workspace", "provider", "persistence", "replacement"
         )}
@@ -1319,7 +1321,7 @@ class DesktopMarketplaceLifecycleTest(unittest.TestCase):
         app._marketplace_explorer_handles[dead] = (Label(), Button())
         app._mark_marketplace_explorers_stale()
         for _, label, button in live:
-            self.assertEqual(label.text, "Marketplace history has changed. Refresh Marketplace Changes to update these results.")
+            self.assertEqual(label.text, "Newer history is available\nThese cached results predate the latest completed Collector Run.")
             self.assertEqual(button.states, [["!disabled"]])
         self.assertNotIn(dead, app._marketplace_explorer_handles)
 

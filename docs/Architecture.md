@@ -372,8 +372,14 @@ window because no production supplier currently provides the required state.
 ### Collection and Historical experiences
 
 Collection Explorer keeps Collection Health, Hidden Gems, and Collection
-Trends enabled, including truthful empty and insufficient-history states.
-Marketplace and Decision Intelligence destinations remain visible but disabled.
+Trends enabled alongside Price Changes and Supply Changes, including truthful
+empty and insufficient-history states. One immutable availability registry
+drives view-model validation, rendering, controller dispatch, and the responsive
+full-label selector. Marketplace and Decision Intelligence destinations without
+a production path remain visible in a separate explained region but cannot be
+selected. Explorer refresh keeps its guarded, cached, transactional boundary;
+canonical stale and active-run copy is presentation-only, and view position is
+restored only for equivalent replacement content.
 Historical Intelligence presentation foundations exist, but their production
 desktop entry point is disabled.
 

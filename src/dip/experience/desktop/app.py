@@ -36,7 +36,12 @@ from dip.experience.dashboard import (
     DashboardNavigationTarget,
 )
 from dip.experience.portfolio_workspace import PortfolioWorkspaceDestination
-from dip.experience.explorer import CollectionExplorerDestination
+from dip.experience.explorer import (
+    CollectionExplorerDestination,
+    ENABLED_EXPLORER_DESTINATIONS,
+    UNAVAILABLE_EXPLORER_DESTINATIONS,
+    UNAVAILABLE_EXPLORER_EXPLANATION,
+)
 from dip.experience.project_workspace import ProjectWorkspaceNavigationTarget
 from dip.experience.desktop.homepage_renderer import (
     DesktopDashboardHomepageRenderer,
@@ -83,17 +88,17 @@ _DECISION_FILTER_LABELS = {
     DecisionStateFilter.MAYBE: "Maybe",
     DecisionStateFilter.IGNORE: "Ignore",
 }
-_UNAVAILABLE_EXPLORER_DESTINATIONS = frozenset(
-    (
-        CollectionExplorerDestination.WEEKEND_LISTINGS,
-        CollectionExplorerDestination.RARE_APPEARANCES,
-        CollectionExplorerDestination.MARKETPLACE_ACTIVITY,
-        CollectionExplorerDestination.LISTING_LIFECYCLE,
-        CollectionExplorerDestination.MARKETPLACE_MOMENTUM,
-        CollectionExplorerDestination.MARKETPLACE_STABILITY,
-        CollectionExplorerDestination.MARKETPLACE_SCARCITY,
-        CollectionExplorerDestination.MARKETPLACE_OPPORTUNITY,
-    )
+_UNAVAILABLE_EXPLORER_DESTINATIONS = frozenset(UNAVAILABLE_EXPLORER_DESTINATIONS)
+_STALE_MARKETPLACE_COPY = (
+    "Newer history is available\n"
+    "These cached results predate the latest completed Collector Run."
+)
+_MARKETPLACE_REFRESH_EXPLANATION = (
+    "Recalculate Price and Supply Changes from saved Marketplace history. "
+    "No Discogs request is made."
+)
+_MARKETPLACE_REFRESH_BLOCKED = (
+    "Marketplace refresh is unavailable while Collector Run is active."
 )
 
 
@@ -228,59 +233,70 @@ class App(tk.Tk):
         self.bind("<Configure>", self._record_normal_geometry)
         self._restore_session_and_load()
 
-    def build_ui(self):
+    def _build_main_toolbar(self):
         toolbar = ttk.Frame(self, padding=8)
         toolbar.pack(fill="x")
 
+        primary_toolbar = ttk.Frame(toolbar)
+        primary_toolbar.pack(fill="x")
+
         self.import_csv_button = ttk.Button(
-            toolbar,
+            primary_toolbar,
             text="Import Collection CSV",
             command=self.import_csv,
         )
         self.import_csv_button.pack(side="left", padx=3)
         self.refresh_discogs_button = ttk.Button(
-            toolbar,
+            primary_toolbar,
             text="Refresh Discogs Data",
             command=self.start_refresh,
         )
         self.refresh_discogs_button.pack(side="left", padx=3)
         self.database_backup_button = ttk.Button(
-            toolbar,
+            primary_toolbar,
             text="Back Up Database…",
             command=self.back_up_database,
         )
         self.database_backup_button.pack(side="left", padx=3)
-        ttk.Button(toolbar, text="Export Excel", command=self.export_report).pack(side="left", padx=3)
-        ttk.Button(toolbar, text="Export Intelligence Report", command=self.export_intelligence_report).pack(side="left", padx=3)
-        ttk.Button(toolbar, text="Refresh View", command=self.load_table).pack(side="left", padx=3)
+        ttk.Button(primary_toolbar, text="Export Excel", command=self.export_report).pack(side="left", padx=3)
+        ttk.Button(primary_toolbar, text="Export Intelligence Report", command=self.export_intelligence_report).pack(side="left", padx=3)
+        ttk.Button(primary_toolbar, text="Refresh View", command=self.load_table).pack(side="left", padx=3)
+
+        secondary_toolbar = ttk.Frame(toolbar)
+        secondary_toolbar.pack(fill="x", pady=(6, 0))
         self.portfolio_button = ttk.Button(
-            toolbar, text="Portfolio", command=self.open_portfolio_overview
+            secondary_toolbar, text="Portfolio", command=self.open_portfolio_overview
         )
         self.portfolio_button.state(["disabled"])
         self.portfolio_button.pack(side="left", padx=3)
         self.historical_intelligence_button = ttk.Button(
-            toolbar,
+            secondary_toolbar,
             text="Historical Intelligence",
             command=self.open_intelligence_change_analysis,
         )
         self.historical_intelligence_button.state(["disabled"])
         self.historical_intelligence_button.pack(side="left", padx=3)
         self.marketplace_workspace_button = ttk.Button(
-            toolbar,
-            text="Marketplace Workspace",
+            secondary_toolbar,
+            text="Marketplace",
             command=self.open_marketplace_workspace,
         )
         self.marketplace_workspace_button.state(["disabled"])
         self.marketplace_workspace_button.pack(side="left", padx=3)
         ttk.Label(
-            toolbar,
+            secondary_toolbar,
             text="Portfolio, Historical Intelligence, and Marketplace Workspace: "
             "Not available in this release",
         ).pack(side="left", padx=8)
 
-        self.progress = ttk.Progressbar(toolbar, length=260, mode="determinate")
+        self.progress = ttk.Progressbar(secondary_toolbar, length=220, mode="determinate")
         self.progress.pack(side="right", padx=5)
-        ttk.Label(toolbar, textvariable=self.status_var).pack(side="right", padx=8)
+        ttk.Label(secondary_toolbar, textvariable=self.status_var).pack(side="right", padx=8)
+
+        return toolbar
+
+    def build_ui(self):
+        self._build_main_toolbar()
 
         self.tabs = ttk.Notebook(self)
         self.tabs.pack(fill="both", expand=True)
@@ -1662,6 +1678,7 @@ class App(tk.Tk):
         if not token:
             return
         self._collector_run_active = True
+        self._update_marketplace_refresh_availability()
         self.refresh_discogs_button.configure(state="disabled")
         self.import_csv_button.configure(state="disabled")
         backup_button = self.__dict__.get("database_backup_button")
@@ -1724,9 +1741,6 @@ class App(tk.Tk):
         succeeded = result.successful_releases
         failed = result.failed_releases
         self._restore_refresh_controls()
-        explorer_controller = self.__dict__.get("collection_explorer_controller")
-        if explorer_controller is not None:
-            explorer_controller.invalidate_marketplace_changes()
         self._mark_marketplace_explorers_stale()
         if result.status is CollectorRunStatus.FAILED:
             self.status_var.set(
@@ -1776,6 +1790,7 @@ class App(tk.Tk):
 
     def _restore_refresh_controls(self):
         self._collector_run_active = False
+        self._update_marketplace_refresh_availability()
         self.refresh_discogs_button.configure(state="normal")
         self.import_csv_button.configure(state="normal")
         if not self.__dict__.get("_database_backup_active", False):
@@ -2049,64 +2064,200 @@ class App(tk.Tk):
         window.minsize(800, 560)
         window.transient(self)
 
-        notebook = ttk.Notebook(window)
-        notebook.pack(fill="both", expand=True, padx=12, pady=12)
+        navigation_frame = ttk.Frame(window, padding=(12, 12, 12, 4))
+        navigation_frame.pack(fill="x")
+        ttk.Label(navigation_frame, text="Destination").pack(side="left", padx=(0, 8))
+        enabled = tuple(item for item in rendered.navigation if item.available)
+        enabled_labels = tuple(item.label for item in enabled)
+        selected_index = next(
+            index for index, item in enumerate(enabled)
+            if item.destination is rendered.selected_destination
+        )
+        navigation = ttk.Combobox(
+            navigation_frame,
+            values=enabled_labels,
+            state="readonly",
+            width=max(len(value) for value in enabled_labels),
+            takefocus=True,
+        )
+        navigation.current(selected_index)
+        navigation.pack(side="left", fill="x", expand=True)
 
-        selected_index = 0
-        for index, section in enumerate(rendered.sections):
-            frame = ttk.Frame(notebook, padding=12)
-            notebook.add(frame, text=section.title)
-            unavailable = section.destination in _UNAVAILABLE_EXPLORER_DESTINATIONS
-            if unavailable:
-                notebook.tab(frame, state="disabled")
-            if section.destination is rendered.selected_destination:
-                selected_index = index
-            text = tk.Text(frame, wrap="word", padx=10, pady=10)
-            scrollbar = ttk.Scrollbar(
-                frame,
-                orient="vertical",
-                command=text.yview,
-            )
-            text.configure(yscrollcommand=scrollbar.set)
-            body = "Not available in this release" if unavailable else section.body
-            if section.destination in {
+        content = ttk.Frame(window, padding=(12, 4, 12, 6))
+        content.pack(fill="both", expand=True)
+        text = tk.Text(content, wrap="word", padx=10, pady=10, takefocus=True)
+        scrollbar = ttk.Scrollbar(content, orient="vertical", command=text.yview)
+        text.configure(yscrollcommand=scrollbar.set)
+        text.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        sections = {section.destination: section for section in rendered.sections}
+
+        def show_selected(_event=None):
+            if _event is not None:
+                try:
+                    if (
+                        not window.winfo_exists()
+                        or window not in self._marketplace_explorer_handles
+                    ):
+                        return "break"
+                except Exception:
+                    return "break"
+            index = navigation.current()
+            if index < 0 or index >= len(enabled):
+                return "break"
+            destination = enabled[index].destination
+            section = sections[destination]
+            window._dip_selected_destination = destination
+            text.configure(state="normal")
+            text.delete("1.0", "end")
+            if destination in {
                 CollectionExplorerDestination.PRICE_CHANGES,
                 CollectionExplorerDestination.SUPPLY_CHANGES,
-            } and not unavailable:
-                self._insert_marketplace_summary_first(text, body)
+            }:
+                self._insert_marketplace_summary_first(text, section.body)
             else:
-                text.insert("1.0", body)
+                text.insert("1.0", section.body)
             text.configure(state="disabled")
-            text.pack(side="left", fill="both", expand=True)
-            scrollbar.pack(side="right", fill="y")
-        notebook.select(selected_index)
+            text.yview_moveto(0.0)
+            return "break" if _event is not None else None
+
+        navigation.bind("<<ComboboxSelected>>", show_selected, add="+")
+
+        def handle_selector_key(event):
+            try:
+                if (
+                    not window.winfo_exists()
+                    or window not in self._marketplace_explorer_handles
+                ):
+                    return "break"
+            except Exception:
+                return "break"
+            if event.keysym in {"Left", "Up", "Right", "Down"}:
+                delta = -1 if event.keysym in {"Left", "Up"} else 1
+                current = navigation.current()
+                if current < 0:
+                    return "break"
+                target = min(max(current + delta, 0), len(enabled) - 1)
+                if target != current:
+                    navigation.current(target)
+                    show_selected()
+                return "break"
+            if event.keysym in {"Return", "KP_Enter", "space"}:
+                show_selected()
+                return "break"
+            return None
+
+        def focus_selector(_event):
+            try:
+                if window.winfo_exists() and window in self._marketplace_explorer_handles:
+                    navigation.focus_set()
+            except Exception:
+                pass
+
+        navigation.bind("<KeyPress>", handle_selector_key, add="+")
+        navigation.bind("<ButtonPress-1>", focus_selector, add="+")
+        show_selected()
+
+        unavailable = tuple(item for item in rendered.navigation if not item.available)
+        unavailable_frame = ttk.LabelFrame(
+            window, text="Unavailable in this release", padding=(12, 8)
+        )
+        unavailable_frame.pack(fill="x", padx=12, pady=(0, 6), before=content)
+        ttk.Label(
+            unavailable_frame,
+            text="\n".join(item.label for item in unavailable),
+            justify="left",
+        ).pack(side="left", anchor="nw", padx=(0, 18))
+        ttk.Label(
+            unavailable_frame,
+            text=UNAVAILABLE_EXPLORER_EXPLANATION,
+            justify="left",
+            wraplength=480,
+        ).pack(side="left", anchor="nw", fill="x", expand=True)
         controls = ttk.Frame(window)
-        controls.pack(pady=(0, 12))
-        stale = ttk.Label(controls, text=(
-            "Marketplace changes can be refreshed after the Collector Run finishes."
-            if self._collector_run_active else ""
-        ))
+        controls.pack(pady=(0, 12), before=content)
+        stale = ttk.Label(controls, text="", justify="left")
         stale.pack(side="top", pady=2)
+        ttk.Label(
+            controls,
+            text=_MARKETPLACE_REFRESH_EXPLANATION,
+            justify="left",
+        ).pack(side="top", pady=2)
+        shortcut = "Command-R" if self.tk.call("tk", "windowingsystem") == "aqua" else "Control-R"
+        ttk.Label(controls, text=f"Shortcut: {shortcut} (Control-R also supported)").pack(side="top", pady=2)
+        active_explanation = ttk.Label(
+            controls,
+            text=_MARKETPLACE_REFRESH_BLOCKED if self._collector_run_active else "",
+        )
+        active_explanation.pack(side="top", pady=2)
         refresh_button = ttk.Button(
             controls,
             text="Refresh Marketplace Changes",
+            takefocus=True,
             command=lambda: self._marketplace_refresh_callback(
-                window, notebook, rendered
+                window, navigation, rendered
             ),
         )
         refresh_button.pack(side="left", padx=4)
         if self._collector_run_active:
             refresh_button.state(["disabled"])
         close = lambda: (self._marketplace_explorer_handles.pop(window, None), window.destroy())
-        ttk.Button(controls, text="Close", command=close).pack(
-            side="left", padx=4
+        close_button = ttk.Button(
+            controls, text="Close", takefocus=True, command=close
         )
+        close_button.pack(side="left", padx=4)
+        close_button.bind("<Return>", lambda _event: close(), add="+")
+        close_button.bind("<space>", lambda _event: close(), add="+")
+        focus_cycle = (navigation, text, refresh_button, close_button)
+        for control in focus_cycle:
+            control.configure(takefocus="1")
+
+        def move_focus(index, delta):
+            def move(_event):
+                try:
+                    if (
+                        not window.winfo_exists()
+                        or window not in self._marketplace_explorer_handles
+                    ):
+                        return "break"
+                except Exception:
+                    return "break"
+                focus_cycle[(index + delta) % len(focus_cycle)].focus_force()
+                return "break"
+            return move
+
+        focus_bindings = tuple(
+            (move_focus(index, 1), move_focus(index, -1))
+            for index in range(len(focus_cycle))
+        )
+        for control, (move_forward, move_backward) in zip(
+            focus_cycle, focus_bindings
+        ):
+            control.bind("<Tab>", move_forward, add="+")
+            control.bind("<Shift-Tab>", move_backward, add="+")
+            control.bind("<ISO_Left_Tab>", move_backward, add="+")
         window._dip_marketplace_registration = (stale, refresh_button, close)
+        window._dip_explorer_navigation = navigation
+        window._dip_explorer_text = text
+        window._dip_explorer_focus_cycle = focus_cycle
+        window._dip_explorer_focus_bindings = focus_bindings
+        window._dip_active_run_explanation = active_explanation
+        window._dip_rendered_explorer = rendered
         self._bind_marketplace_refresh_shortcuts(
             window,
             lambda event: self._marketplace_refresh_callback(
-                window, notebook, rendered, event
+                window, navigation, rendered, event
             ),
+        )
+        refresh_button.bind(
+            "<Return>",
+            lambda event: self._marketplace_refresh_callback(window, navigation, rendered, event),
+            add="+",
+        )
+        refresh_button.bind(
+            "<space>",
+            lambda event: self._marketplace_refresh_callback(window, navigation, rendered, event),
+            add="+",
         )
         if register:
             self._register_marketplace_explorer_window(window)
@@ -2214,6 +2365,13 @@ class App(tk.Tk):
     ):
         """Shared button and keyboard boundary for explicit Marketplace refresh."""
 
+        try:
+            if not window.winfo_exists():
+                return "break" if event is not None else None
+        except Exception:
+            return "break" if event is not None else None
+        if window not in self._marketplace_explorer_handles:
+            return "break" if event is not None else None
         self._refresh_marketplace_explorer(window, notebook, rendered)
         return "break" if event is not None else None
 
@@ -2232,13 +2390,14 @@ class App(tk.Tk):
         replacement = None
         installed_previous = None
         cache_installed = False
-        try:
-            index = notebook.index(notebook.select())
-            destination = rendered.sections[index].destination
-        except Exception:
-            destination = CollectionExplorerDestination.OVERVIEW
+        destination = self._selected_explorer_destination(window, notebook, rendered)
         if destination in _UNAVAILABLE_EXPLORER_DESTINATIONS:
             destination = CollectionExplorerDestination.OVERVIEW
+        old_position = self._marketplace_view_position(window)
+        old_section = next(
+            (section for section in rendered.sections if section.destination is destination),
+            None,
+        )
         try:
             candidate = self.collection_explorer_controller.refresh_marketplace_changes()
             if candidate is None:
@@ -2276,7 +2435,6 @@ class App(tk.Tk):
                 self._destroy_marketplace_window(replacement)
             handle = self._marketplace_explorer_handles.get(window)
             if handle is not None:
-                handle[0].configure(text="Marketplace changes could not be refreshed. The previous results remain stale; retry is available.")
                 handle[1].state(["!disabled"])
             messagebox.showerror("Marketplace Changes", "Marketplace changes could not be refreshed. The previous results remain available and stale.")
             return
@@ -2288,7 +2446,59 @@ class App(tk.Tk):
         except Exception:
             self._marketplace_explorer_handles.pop(window, None)
         self._destroy_marketplace_window(window)
+        new_section = next(
+            (
+                section
+                for section in getattr(candidate_rendered, "sections", ())
+                if section.destination is destination
+            ),
+            None,
+        )
+        if old_section is not None and new_section == old_section:
+            self._restore_marketplace_view_position(replacement, old_position)
         self._clear_marketplace_window_stale(replacement)
+
+    @staticmethod
+    def _selected_explorer_destination(window, navigation, rendered):
+        selected = getattr(window, "_dip_selected_destination", None)
+        if selected in ENABLED_EXPLORER_DESTINATIONS:
+            return selected
+        try:
+            current = navigation.current()
+            enabled = tuple(item for item in rendered.navigation if item.available)
+            if 0 <= current < len(enabled):
+                return enabled[current].destination
+        except Exception:
+            pass
+        try:
+            index = navigation.index(navigation.select())
+            return rendered.sections[index].destination
+        except Exception:
+            return CollectionExplorerDestination.OVERVIEW
+
+    @staticmethod
+    def _marketplace_view_position(window):
+        text = getattr(window, "_dip_explorer_text", None)
+        if text is None:
+            return 0.0
+        try:
+            value = float(text.yview()[0])
+        except Exception:
+            return 0.0
+        return min(1.0, max(0.0, value))
+
+    @staticmethod
+    def _restore_marketplace_view_position(window, position):
+        text = getattr(window, "_dip_explorer_text", None)
+        if text is None:
+            return
+        try:
+            text.update_idletasks()
+            text.yview_moveto(min(1.0, max(0.0, float(position))))
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception:
+            pass
 
     def _clear_marketplace_window_stale(self, window):
         """Leave a published replacement visibly current after safe cleanup."""
@@ -2307,15 +2517,45 @@ class App(tk.Tk):
     def _mark_marketplace_explorers_stale(self):
         """Mark every live Explorer stale on the Tk callback thread."""
 
-        copy = "Marketplace history has changed. Refresh Marketplace Changes to update these results."
         handles = self.__dict__.setdefault("_marketplace_explorer_handles", {})
         for window, (label, button) in tuple(handles.items()):
             try:
                 if not window.winfo_exists():
                     handles.pop(window, None)
                     continue
-                label.configure(text=copy)
+                label.configure(text=_STALE_MARKETPLACE_COPY)
                 button.state(["!disabled"])
+                active = getattr(window, "_dip_active_run_explanation", None)
+                if active is not None:
+                    active.configure(text="")
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except Exception:
+                handles.pop(window, None)
+
+    def _update_marketplace_refresh_availability(self):
+        """Keep every live Explorer's refresh affordance truthful."""
+
+        handles = self.__dict__.setdefault("_marketplace_explorer_handles", {})
+        for window, (_stale, button) in tuple(handles.items()):
+            try:
+                if not window.winfo_exists():
+                    handles.pop(window, None)
+                    continue
+                button.state(
+                    ["disabled"] if self._collector_run_active else ["!disabled"]
+                )
+                explanation = getattr(
+                    window, "_dip_active_run_explanation", None
+                )
+                if explanation is not None:
+                    explanation.configure(
+                        text=(
+                            _MARKETPLACE_REFRESH_BLOCKED
+                            if self._collector_run_active
+                            else ""
+                        )
+                    )
             except (KeyboardInterrupt, SystemExit):
                 raise
             except Exception:
