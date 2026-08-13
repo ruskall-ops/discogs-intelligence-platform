@@ -158,6 +158,7 @@ class DesktopDashboardHomepageRenderer:
         status = "Successful" if section.successful else "Unavailable"
         return "\n".join(
             (
+                f"Execution ID: {section.run_id}",
                 f"Executed: {_date(section.executed_at)}",
                 f"Modules: {section.module_count}",
                 f"Engine version: {section.engine_version or 'Unavailable'}",

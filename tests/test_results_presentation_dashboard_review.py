@@ -33,12 +33,13 @@ from dip.experience.collector_review_presentation import (
 from tests.test_collector_review_desktop import _workspace
 from dip.experience.desktop.app import App
 from dip.experience.dashboard import DashboardHomepageViewModelBuilder
+from dip.experience.desktop.hidden_gems_renderer import DesktopHiddenGemsController
 from dip.collector_review import (
     ObservationWarning, WeekendObservationSource, WeekendReviewQueueItem,
     WeekendReviewStatus,
 )
 from dip.persistence.sqlite import Database
-from tests.test_dashboard_homepage import execution, health_record
+from tests.test_dashboard_homepage import candidate, execution, health_record, hidden_record
 
 
 class CollectionReviewPresentationTestCase(unittest.TestCase):
@@ -292,10 +293,11 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             dashboard_homepage=Mock(),
             collection_health_controller=Mock(),
             collection_explorer_controller=Mock(),
-            hidden_gems_controller=Mock(),
+            hidden_gems_controller=DesktopHiddenGemsController(Mock()),
             portfolio_overview_controller=Mock(),
             portfolio_controller=Mock(),
         )
+        self.dependencies = dependencies
         self.import_callback = patch.object(App, "import_csv", autospec=True)
         self.refresh_callback = patch.object(App, "start_refresh", autospec=True)
         self.import_mock = self.import_callback.start()
@@ -306,6 +308,14 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         ), patch.object(App, "_restore_session_and_load"):
             self.root = App()
         self.root.geometry("800x560")
+        for dependency in (
+            dependencies.dashboard_homepage,
+            dependencies.collection_health_controller,
+            dependencies.collection_explorer_controller,
+            dependencies.portfolio_overview_controller,
+            dependencies.portfolio_controller,
+        ):
+            dependency.reset_mock()
 
     def tearDown(self) -> None:
         self.root.destroy()
@@ -315,17 +325,35 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         self.directory.cleanup()
 
     def test_real_tree_alignment_horizontal_overflow_and_mapping(self) -> None:
-        self.database.conn.execute(
-            "INSERT INTO releases(release_id, artist, title) VALUES (42, ?, ?)",
-            ("Artist" * 80, "Title" * 80),
+        self.database.conn.executemany(
+            "INSERT INTO releases(release_id, artist, title) VALUES (?, ?, ?)",
+            (
+                (41, "Missing", "Evidence"),
+                (42, "Artist" * 80, "Title" * 80),
+                (43, "Nonzero", "Evidence"),
+            ),
         )
-        self.database.conn.execute(
-            "INSERT INTO market_snapshots(release_id, captured_at, wants, haves, copies_for_sale, lowest_price, currency) VALUES (42, '2026-08-12T10:00:00+00:00', 0, 0, NULL, 0, 'GBP')"
+        self.database.conn.executemany(
+            "INSERT INTO market_snapshots(release_id, captured_at, wants, haves, copies_for_sale, lowest_price, currency) VALUES (?, '2026-08-12T10:00:00+00:00', ?, ?, ?, ?, 'GBP')",
+            ((42, 0, 0, 0, 0), (43, 12, 15, 3, 19.5)),
         )
-        self.database.conn.execute(
-            "INSERT INTO scores(release_id, calculated_at, value_score, demand_score, liquidity_score, momentum_score, opportunity_score, sell_window, priority, explanation) VALUES (42, '2026-08-12T10:00:00+00:00', 0, 0, 0, 0, 50.5, 'Stable', 'Worth reviewing', 'Facts')"
+        self.database.conn.executemany(
+            "INSERT INTO scores(release_id, calculated_at, value_score, demand_score, liquidity_score, momentum_score, opportunity_score, sell_window, priority, explanation) VALUES (?, '2026-08-12T10:00:00+00:00', ?, ?, ?, ?, ?, 'Stable', 'Worth reviewing', 'Facts')",
+            ((42, 0, 0, 0, 0, 0), (43, 1.0, 2.25, 3.5, 4.0, 87.125)),
         )
         self.database.conn.commit()
+        rows = {row["release_id"]: row for row in self.database.review_rows()}
+        self.assertEqual(
+            tuple(rows[41][key] for key in (
+                "lowest_price", "wants", "haves", "copies_for_sale",
+                "value_score", "demand_score", "liquidity_score",
+                "momentum_score", "opportunity_score",
+            )),
+            (None,) * 9,
+        )
+        self.assertEqual(decision_row_values(rows[41])[2:6], ("—", "—", "—", "—"))
+        self.assertEqual(decision_row_values(rows[42])[2:6], ("0.00", "0", "0", "0.0"))
+        self.assertEqual(decision_row_values(rows[43])[2:6], ("19.50", "12", "3", "87.1"))
         self.root.tabs.select(self.root.review_tab)
         self.root.collection_review_tabs.select(self.root.decisions_tab)
         tree = self.root.tree
@@ -338,7 +366,9 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         self.assertEqual(tree.column("price", "anchor"), "e")
         self.assertEqual(tree.column("artist", "anchor"), "w")
         self.assertLess(tree.xview()[1], 1.0)
-        self.assertEqual(tree.item("42", "values")[2:6], ("0.00", "0", "—", "50.5"))
+        self.assertEqual(tree.item("41", "values")[2:6], ("—", "—", "—", "—"))
+        self.assertEqual(tree.item("42", "values")[2:6], ("0.00", "0", "0", "0.0"))
+        self.assertEqual(tree.item("43", "values")[2:6], ("19.50", "12", "3", "87.1"))
 
     def test_production_dashboard_sections_and_complete_mapped_focus_cycle(self) -> None:
         self.root.tabs.select(self.root.dashboard_tab)
@@ -372,6 +402,8 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             self.assertTrue(section.winfo_ismapped())
 
     def test_production_focus_cycles_follow_mapping_and_state_changes(self) -> None:
+        traced_sql: list[str] = []
+
         def assert_cycle(declared: tuple[tk.Widget, ...]) -> tuple[tk.Widget, ...]:
             self.root.update()
             eligible = tuple(value for value in declared if self.root._focus_eligible(value))
@@ -384,12 +416,16 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             return eligible
 
         self.root.tabs.select(self.root.dashboard_tab)
-        self.root.hidden_gems_controller.can_open.return_value = False
+        self.root.current_dashboard_homepage = DashboardHomepageViewModelBuilder().build(None)
         self.root._update_hidden_gems_navigation()
         hidden = assert_cycle(self.root._dip_dashboard_focus_order)
         self.assertNotIn(self.root.hidden_gems_button, hidden)
-        self.root.hidden_gems_controller.can_open.return_value = True
+        self.root.current_dashboard_homepage = DashboardHomepageViewModelBuilder().build(
+            execution(52, hidden_record(52, candidates=(candidate(7),)))
+        )
         self.root._update_hidden_gems_navigation()
+        self.database.conn.set_trace_callback(traced_sql.append)
+        changes_before = self.database.conn.total_changes
         shown = assert_cycle(self.root._dip_dashboard_focus_order)
         self.assertIn(self.root.hidden_gems_button, shown)
 
@@ -401,11 +437,29 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         ):
             self.root.collection_review_tabs.select(tab)
             self.assertGreaterEqual(len(assert_cycle(self.root._dip_review_focus_order)), 2)
+        self.database.conn.set_trace_callback(None)
+        self.assertEqual(traced_sql, [])
+        self.assertEqual(self.database.conn.total_changes, changes_before)
+        self.root.dashboard_homepage_service.homepage.assert_not_called()
+        self.import_mock.assert_not_called()
+        self.refresh_mock.assert_not_called()
+        for dependency in (
+            self.dependencies.collection_health_controller,
+            self.dependencies.collection_explorer_controller,
+            self.dependencies.portfolio_overview_controller,
+            self.dependencies.portfolio_controller,
+        ):
+            self.assertEqual(dependency.method_calls, [])
+        self.assertEqual(
+            self.root.hidden_gems_controller._presentation.method_calls,
+            [],
+        )
 
     def test_execution_bound_dashboard_rejects_later_mutable_score_attribution(self) -> None:
         homepage = DashboardHomepageViewModelBuilder().build(
             execution(41, health_record(41, score=47.8, collection_size=1))
         )
+        self.assertEqual(homepage.section_for("latest_execution").run_id, 41)
         self.root.dashboard_homepage_service.homepage.return_value = homepage
         self.database.conn.execute(
             "INSERT INTO releases(release_id, artist, title) VALUES (1, 'Later', 'Mutable')"
@@ -415,6 +469,14 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         )
         self.database.conn.commit()
         self.assertTrue(self.root.refresh_dashboard())
+        self.assertEqual(
+            self.root.current_dashboard_homepage.section_for("latest_execution").run_id,
+            41,
+        )
+        self.assertIn(
+            "Execution ID: 41",
+            self.root.dashboard_homepage_vars["latest_execution"].get(),
+        )
         self.assertEqual(set(self.root.kpis), {"unique_releases", "owned_copies", "protected"})
         latest_text = "\n".join(value.get() for value in self.root.dashboard_homepage_vars.values())
         self.assertIn("47.8", latest_text)
@@ -437,6 +499,7 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         )
         self.root.tabs.select(self.root.review_tab)
         self.root.collection_review_tabs.select(self.root.observations_tab)
+        self.root.update()
         self.root._show_observation_detail(observation)
         rendered = self.root.observation_detail.get("1.0", "end-1c")
         for sentinel in sentinels:
@@ -449,28 +512,65 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         )
 
     def test_production_disabled_reason_state_matrix(self) -> None:
+        def assert_reason(label, variable, expected):
+            self.root.update()
+            self.assertEqual(variable.get(), expected.value)
+            self.assertTrue(label.winfo_ismapped())
+            self.assertGreater(label.winfo_width(), 1)
+            self.assertGreater(label.winfo_height(), 1)
+            self.assertEqual(label.cget("takefocus"), 1)
+            self.assertGreaterEqual(label.winfo_rooty(), self.root.review_tab.winfo_rooty())
+            self.assertLessEqual(
+                label.winfo_rooty() + label.winfo_height(),
+                self.root.review_tab.winfo_rooty() + self.root.review_tab.winfo_height(),
+            )
+
+        def assert_disabled(*buttons):
+            for button in buttons:
+                self.assertIn("disabled", button.state())
+
+        observation_buttons = (
+            self.root.add_observation_button,
+            self.root.reopen_observation_button,
+            self.root.open_queued_observation_button,
+        )
+        queue_buttons = (
+            self.root.queue_save_button,
+            self.root.queue_status_button,
+            self.root.queue_resolve_button,
+            self.root.queue_remove_button,
+            self.root.queue_decision_button,
+        )
         self.root.tabs.select(self.root.review_tab)
         self.root.collection_review_tabs.select(self.root.observations_tab)
+        self.root.update()
         self.root.collector_review_service = Mock()
         self.root._set_observation_action_state(None)
-        self.assertEqual(
-            self.root.observation_action_reason_var.get(),
-            DisabledActionReason.NO_OBSERVATION.value,
+        assert_disabled(*observation_buttons)
+        assert_reason(
+            self.root.observation_action_reason_label,
+            self.root.observation_action_reason_var,
+            DisabledActionReason.NO_OBSERVATION,
         )
-        self.assertTrue(self.root.observation_action_reason_label.winfo_ismapped())
         self.root.collector_review_service = None
         self.root._set_observation_action_state(None)
-        self.assertEqual(
-            self.root.observation_action_reason_var.get(),
-            DisabledActionReason.OBSERVATION_SERVICE_UNAVAILABLE.value,
+        assert_disabled(*observation_buttons)
+        assert_reason(
+            self.root.observation_action_reason_label,
+            self.root.observation_action_reason_var,
+            DisabledActionReason.OBSERVATION_SERVICE_UNAVAILABLE,
         )
 
         self.root.collection_review_tabs.select(self.root.queue_tab)
+        self.root.update()
         self.root.collector_review_service = Mock()
         self.root._load_queue_item(None)
-        self.assertEqual(
-            self.root.queue_action_reason_var.get(),
-            DisabledActionReason.NO_QUEUE_ITEM.value,
+        assert_disabled(*queue_buttons)
+        self.assertEqual(self.root.queue_note.cget("state"), "disabled")
+        assert_reason(
+            self.root.queue_action_reason_label,
+            self.root.queue_action_reason_var,
+            DisabledActionReason.NO_QUEUE_ITEM,
         )
         now = datetime(2026, 8, 12, tzinfo=timezone.utc)
         resolved = WeekendReviewQueueItem(
@@ -479,19 +579,42 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         )
         self.root._load_queue_item(resolved)
         self.assertIn("disabled", self.root.queue_status_button.state())
-        self.assertEqual(
-            self.root.queue_action_reason_var.get(),
-            DisabledActionReason.RESOLVED_START_REVIEW.value,
+        for button in (
+            self.root.queue_save_button, self.root.queue_resolve_button,
+            self.root.queue_remove_button, self.root.queue_decision_button,
+        ):
+            self.assertNotIn("disabled", button.state())
+        assert_reason(
+            self.root.queue_action_reason_label,
+            self.root.queue_action_reason_var,
+            DisabledActionReason.RESOLVED_START_REVIEW,
         )
         self.root._queue_note_loading = False
         self.root.queue_note.configure(state="normal")
         self.root.queue_note.insert("1.0", "changed")
         self.root._on_queue_note_edited()
-        self.assertEqual(
-            self.root.queue_action_reason_var.get(),
-            DisabledActionReason.UNSAVED_NOTE.value,
+        self.assertTrue(self.root._queue_note_dirty)
+        assert_reason(
+            self.root.queue_action_reason_label,
+            self.root.queue_action_reason_var,
+            DisabledActionReason.UNSAVED_NOTE,
         )
-        self.assertTrue(self.root.queue_action_reason_label.winfo_ismapped())
+        for hostile in ("TOKEN", "provider", "SQL", "/private", "PERSONAL NOTE"):
+            self.assertNotIn(hostile, self.root.observation_action_reason_var.get())
+            self.assertNotIn(hostile, self.root.queue_action_reason_var.get())
+        with patch(
+            "dip.experience.desktop.app.messagebox.askyesnocancel",
+            return_value=None,
+        ):
+            self.assertFalse(self.root._confirm_unsaved_queue_note())
+        self.root.collector_review_service = None
+        self.root._load_queue_item(None)
+        assert_disabled(*queue_buttons)
+        assert_reason(
+            self.root.queue_action_reason_label,
+            self.root.queue_action_reason_var,
+            DisabledActionReason.QUEUE_SERVICE_UNAVAILABLE,
+        )
 
     def test_real_button_return_space_and_bidirectional_focus(self) -> None:
         self.root.tabs.select(self.root.dashboard_tab)

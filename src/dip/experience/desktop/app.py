@@ -804,7 +804,6 @@ class App(tk.Tk):
         self.observation_detail.configure(state="disabled")
         self.observation_detail.pack(fill="both", expand=True)
         actions = ttk.Frame(right)
-        actions.pack(fill="x", pady=(8, 0))
         self.add_observation_button = ttk.Button(
             actions,
             text="Add to Weekend Review Queue",
@@ -831,7 +830,10 @@ class App(tk.Tk):
             justify="left",
             takefocus=True,
         )
-        self.observation_action_reason_label.pack(anchor="w", fill="x", pady=(6, 0))
+        self.observation_action_reason_label.pack(
+            side="bottom", anchor="w", fill="x", pady=(6, 0)
+        )
+        actions.pack(side="bottom", fill="x", pady=(8, 0))
         self._set_observation_action_state(None)
 
     def _build_weekend_queue_ui(self):
@@ -913,7 +915,6 @@ class App(tk.Tk):
         self.queue_note.configure(state="disabled")
 
         actions = ttk.Frame(right)
-        actions.pack(fill="x", pady=(8, 0))
         self.queue_save_button = ttk.Button(
             actions,
             text="Save note",
@@ -952,7 +953,10 @@ class App(tk.Tk):
             justify="left",
             takefocus=True,
         )
-        self.queue_action_reason_label.pack(anchor="w", fill="x", pady=(6, 0))
+        self.queue_action_reason_label.pack(
+            side="bottom", anchor="w", fill="x", pady=(6, 0)
+        )
+        actions.pack(side="bottom", fill="x", pady=(8, 0))
         self._set_queue_controls_enabled(False)
 
     def _observation_source(self):
