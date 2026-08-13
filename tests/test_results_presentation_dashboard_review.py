@@ -1,0 +1,515 @@
+from __future__ import annotations
+
+from dataclasses import replace
+from datetime import datetime, timezone
+from decimal import Decimal
+import os
+from pathlib import Path
+from types import MappingProxyType, SimpleNamespace
+import subprocess
+import sys
+import tempfile
+import tkinter as tk
+from tkinter import ttk
+import unittest
+from unittest.mock import Mock, patch
+
+from dip.experience.collector_review_presentation import (
+    COLLECTION_DECISION_COLUMNS,
+    CollectionDecisionColumn,
+    CollectionDecisionColumnId,
+    ColumnAnchor,
+    DisabledActionReason,
+    ReviewDetailSection,
+    ReviewDetailSectionKind,
+    WarningProjectionState,
+    decision_row_values,
+    format_count,
+    format_price,
+    format_score,
+    observation_detail_sections,
+    public_warning_lines,
+)
+from tests.test_collector_review_desktop import _workspace
+from dip.experience.desktop.app import App
+from dip.experience.dashboard import DashboardHomepageViewModelBuilder
+from dip.collector_review import (
+    ObservationWarning, WeekendObservationSource, WeekendReviewQueueItem,
+    WeekendReviewStatus,
+)
+from dip.persistence.sqlite import Database
+from tests.test_dashboard_homepage import execution, health_record
+
+
+class CollectionReviewPresentationTestCase(unittest.TestCase):
+    def test_real_sqlite_missing_zero_nonzero_survives_reopen(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "review.sqlite3"
+            database = Database(path)
+            try:
+                database.conn.executemany(
+                    "INSERT INTO releases(release_id, artist, title) VALUES (?, ?, ?)",
+                    ((1, "Missing", "Facts"), (2, "Zero", "Facts"), (3, "Nonzero", "Facts")),
+                )
+                database.conn.executemany(
+                    "INSERT INTO scores(release_id, calculated_at, value_score, demand_score, liquidity_score, momentum_score, opportunity_score, sell_window, priority, explanation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        (2, "2026-08-12T10:00:00+00:00", 0, 0, 0, 0, 0, "Stable", "Worth reviewing", "Zero facts"),
+                        (3, "2026-08-12T10:00:00+00:00", 1.0, 2.25, -3.5, 4.0, 87.125, "Stable", "Worth reviewing", "Nonzero facts"),
+                    ),
+                )
+                database.conn.executemany(
+                    "INSERT INTO market_snapshots(release_id, captured_at, wants, haves, copies_for_sale, lowest_price, currency) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        (2, "2026-08-12T10:00:00+00:00", 0, 0, 0, 0, "GBP"),
+                        (3, "2026-08-12T10:00:00+00:00", 12, 15, 3, 19.5, "GBP"),
+                    ),
+                )
+                database.conn.commit()
+            finally:
+                database.close()
+            for reopened in (Database(path), Database(path)):
+                try:
+                    rows = {row["release_id"]: row for row in reopened.review_rows()}
+                    numeric_fields = (
+                        "lowest_price", "wants", "haves", "copies_for_sale",
+                        "value_score", "demand_score", "liquidity_score",
+                        "momentum_score", "opportunity_score",
+                    )
+                    self.assertEqual(tuple(rows[1][key] for key in numeric_fields), (None,) * 9)
+                    self.assertEqual(tuple(rows[2][key] for key in numeric_fields), (0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0))
+                    self.assertEqual(
+                        tuple(rows[3][key] for key in numeric_fields),
+                        (19.5, 12, 15, 3, 1.0, 2.25, -3.5, 4.0, 87.125),
+                    )
+                    self.assertEqual(decision_row_values(rows[1])[2:6], ("—", "—", "—", "—"))
+                    self.assertEqual(decision_row_values(rows[2])[2:6], ("0.00", "0", "0", "0.0"))
+                    self.assertEqual(decision_row_values(rows[3])[2:6], ("19.50", "12", "3", "87.1"))
+                    self.assertIsInstance(rows[3]["lowest_price"], float)
+                    for key in ("wants", "haves", "copies_for_sale"):
+                        self.assertIsInstance(rows[3][key], int)
+                    for key in ("value_score", "demand_score", "liquidity_score", "momentum_score", "opportunity_score"):
+                        self.assertIsInstance(rows[3][key], float)
+                finally:
+                    reopened.close()
+
+    def test_column_alignment_and_overflow_contract(self) -> None:
+        anchors = {column.column_id: column.anchor for column in COLLECTION_DECISION_COLUMNS}
+        self.assertEqual(anchors[CollectionDecisionColumnId.ARTIST], ColumnAnchor.LEFT)
+        self.assertEqual(anchors[CollectionDecisionColumnId.TITLE], ColumnAnchor.LEFT)
+        for column in (CollectionDecisionColumnId.PRICE, CollectionDecisionColumnId.WANTS, CollectionDecisionColumnId.SUPPLY, CollectionDecisionColumnId.OPPORTUNITY):
+            self.assertEqual(anchors[column], ColumnAnchor.RIGHT)
+        self.assertGreater(sum(column.width for column in COLLECTION_DECISION_COLUMNS), 800)
+
+    def test_missing_zero_and_exact_decimal_text_remain_distinct(self) -> None:
+        self.assertEqual(format_price(None), "—")
+        self.assertEqual(format_price(0), "0.00")
+        self.assertEqual(format_price(Decimal("12.3400")), "12.34")
+        self.assertEqual(format_score(0.0), "0.0")
+        self.assertEqual(format_score(87.125), "87.1")
+        self.assertEqual(format_score(12.0), "12.0")
+        self.assertEqual(format_score(-3.5), "-3.5")
+        self.assertEqual(format_price(-2.25), "-2.25")
+        self.assertEqual(format_count(0), "0")
+        for formatter in (format_price, format_score, format_count):
+            with self.assertRaises(TypeError):
+                formatter(True)
+
+    def test_decision_projection_preserves_identity_source_and_values(self) -> None:
+        row = MappingProxyType(
+            {
+                "release_id": 42,
+                "artist": "A" * 400,
+                "title": "T" * 600,
+                "lowest_price": Decimal("0.00"),
+                "wants": 0,
+                "copies_for_sale": None,
+                "opportunity_score": Decimal("87.125"),
+                "sell_window": "Current classification",
+                "priority": "Worth reviewing",
+                "decision": "Review",
+            }
+        )
+        before = dict(row)
+        values = decision_row_values(row)
+        self.assertEqual(values[2:6], ("0.00", "0", "—", "87.1"))
+        self.assertEqual(values[0], "A" * 400)
+        self.assertEqual(values[1], "T" * 600)
+        self.assertEqual(dict(row), before)
+
+    def test_typed_observation_detail_has_required_hierarchy(self) -> None:
+        observation = _workspace(1).hot_now[0]
+        sections = observation_detail_sections(observation)
+        self.assertEqual(
+            tuple(section.kind for section in sections),
+            (ReviewDetailSectionKind.CALCULATED, ReviewDetailSectionKind.QUEUE_STATE),
+        )
+        self.assertIn("Current catalogue label:", sections[0].lines[0])
+        self.assertEqual(sections[-1].lines, ("State: Not queued",))
+
+    def test_public_values_are_closed_validated_and_defensively_immutable(self) -> None:
+        with self.assertRaises(TypeError):
+            CollectionDecisionColumn("artist", "Artist", 10, ColumnAnchor.LEFT)  # type: ignore[arg-type]
+        with self.assertRaises(TypeError):
+            CollectionDecisionColumn(CollectionDecisionColumnId.ARTIST, "Artist", True, ColumnAnchor.LEFT)
+        with self.assertRaises(ValueError):
+            ReviewDetailSection(ReviewDetailSectionKind.CALCULATED, ("",))
+        supplied = ["Line"]
+        section = ReviewDetailSection(ReviewDetailSectionKind.CALCULATED, supplied)
+        supplied.append("Changed")
+        self.assertEqual(section.lines, ("Line",))
+
+    def test_hostile_warning_payloads_map_only_to_fixed_copy(self) -> None:
+        sentinels = (
+            "TOKEN-secret", "provider body", "SELECT * FROM private_table",
+            "/private/live.sqlite", "/destination/private", '{"serialized":"row"}',
+            "unknown-code", "£999 supply=88", "PERSONAL NOTE",
+        )
+        warnings = tuple(type("Warning", (), {"code": value, "message": value})() for value in sentinels)
+        public = public_warning_lines(WarningProjectionState.EVIDENCE_LIMITED, warnings)
+        rendered = repr((public, tuple(DisabledActionReason)))
+        for sentinel in sentinels:
+            self.assertNotIn(sentinel, rendered)
+        self.assertEqual(public, ("• Some supplied Marketplace evidence was incomplete.",))
+        self.assertEqual(
+            public_warning_lines(WarningProjectionState.SUPPRESSED, warnings),
+            (),
+        )
+        with self.assertRaises(TypeError):
+            public_warning_lines("evidence_limited", warnings)  # type: ignore[arg-type]
+
+    def test_warning_policy_is_deterministic_deduplicated_and_state_aware(self) -> None:
+        known = type(
+            "Warning", (),
+            {"code": "hot_now_score_stale", "message": "HOSTILE"},
+        )()
+        unknown = type(
+            "Warning", (), {"code": "unknown", "message": "HOSTILE-2"},
+        )()
+        self.assertEqual(
+            public_warning_lines(
+                WarningProjectionState.EVIDENCE_LIMITED,
+                (known, known, unknown, unknown),
+            ),
+            (
+                "• Newer usable Marketplace evidence exists for this release.",
+                "• Some supplied Marketplace evidence was incomplete.",
+            ),
+        )
+        self.assertEqual(
+            public_warning_lines(
+                WarningProjectionState.SUPPRESSED,
+                (known, unknown),
+            ),
+            (),
+        )
+
+    def test_large_volume_projection_is_deterministic_and_non_mutating(self) -> None:
+        rows = tuple(
+            {
+                "release_id": index,
+                "artist": f"Artist {index}" * 8,
+                "title": f"Title {index}" * 12,
+                "lowest_price": None if index % 3 == 0 else Decimal(f"{index}.00"),
+                "wants": index,
+                "copies_for_sale": 0 if index % 2 == 0 else index + 1,
+                "opportunity_score": Decimal("0") if index % 5 == 0 else Decimal("50.5"),
+                "sell_window": "Unavailable" if index % 7 == 0 else "Stable",
+                "priority": "Not scored" if index % 11 == 0 else "Worth reviewing",
+                "decision": "Review",
+            }
+            for index in range(1, 1001)
+        )
+        first = tuple(decision_row_values(row) for row in rows)
+        second = tuple(decision_row_values(row) for row in rows)
+        self.assertEqual(first, second)
+        self.assertEqual(tuple(row["release_id"] for row in rows), tuple(range(1, 1001)))
+
+    def test_table_reload_preserves_visible_identity_and_does_not_substitute(self) -> None:
+        for visible in (True, False):
+            with self.subTest(visible=visible):
+                app = App.__new__(App)
+                app.tree = Mock()
+                app.tree.selection.return_value = ("42",)
+                app.tree.get_children.return_value = ()
+                app.tree.exists.return_value = visible
+                app.db = Mock()
+                app.db.review_rows.return_value = (
+                    {
+                        "release_id": 42 if visible else 7,
+                        "artist": "Artist",
+                        "title": "Title",
+                        "lowest_price": Decimal("12.00"),
+                        "wants": 0,
+                        "copies_for_sale": None,
+                        "opportunity_score": Decimal("50.0"),
+                        "sell_window": "Stable",
+                        "priority": "Worth reviewing",
+                        "decision": "Review",
+                    },
+                )
+                app.search_var = Mock()
+                app.search_var.get.return_value = ""
+                app.priority_var = Mock()
+                app.priority_var.get.return_value = "All"
+                app.decision_filter_var = Mock()
+                app.decision_filter_var.get.return_value = "All"
+                app.status_var = Mock()
+                self.assertTrue(app.load_table())
+                if visible:
+                    app.tree.selection_set.assert_called_once_with("42")
+                    app.tree.see.assert_called_once_with("42")
+                else:
+                    app.tree.selection_set.assert_not_called()
+                    app.tree.selection_remove.assert_called_once()
+
+
+class Slice4ProductionTkTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        probe = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import tkinter as tk; root=tk.Tk(); root.withdraw(); root.destroy()",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if probe.returncode:
+            if os.environ.get("DIP_REQUIRE_TK_TESTS") == "1":
+                raise AssertionError(
+                    "DIP_REQUIRE_TK_TESTS requires an operational Tk display: "
+                    + probe.stderr
+                )
+            raise unittest.SkipTest("A real Tk display is unavailable.")
+
+    def setUp(self) -> None:
+        self.directory = tempfile.TemporaryDirectory()
+        self.database = Database(Path(self.directory.name) / "ui.sqlite3")
+        dependencies = SimpleNamespace(
+            database=self.database,
+            dashboard_homepage=Mock(),
+            collection_health_controller=Mock(),
+            collection_explorer_controller=Mock(),
+            hidden_gems_controller=Mock(),
+            portfolio_overview_controller=Mock(),
+            portfolio_controller=Mock(),
+        )
+        self.import_callback = patch.object(App, "import_csv", autospec=True)
+        self.refresh_callback = patch.object(App, "start_refresh", autospec=True)
+        self.import_mock = self.import_callback.start()
+        self.refresh_mock = self.refresh_callback.start()
+        with patch(
+            "dip.experience.desktop.app.build_desktop_application_dependencies",
+            return_value=dependencies,
+        ), patch.object(App, "_restore_session_and_load"):
+            self.root = App()
+        self.root.geometry("800x560")
+
+    def tearDown(self) -> None:
+        self.root.destroy()
+        self.refresh_callback.stop()
+        self.import_callback.stop()
+        self.database.close()
+        self.directory.cleanup()
+
+    def test_real_tree_alignment_horizontal_overflow_and_mapping(self) -> None:
+        self.database.conn.execute(
+            "INSERT INTO releases(release_id, artist, title) VALUES (42, ?, ?)",
+            ("Artist" * 80, "Title" * 80),
+        )
+        self.database.conn.execute(
+            "INSERT INTO market_snapshots(release_id, captured_at, wants, haves, copies_for_sale, lowest_price, currency) VALUES (42, '2026-08-12T10:00:00+00:00', 0, 0, NULL, 0, 'GBP')"
+        )
+        self.database.conn.execute(
+            "INSERT INTO scores(release_id, calculated_at, value_score, demand_score, liquidity_score, momentum_score, opportunity_score, sell_window, priority, explanation) VALUES (42, '2026-08-12T10:00:00+00:00', 0, 0, 0, 0, 50.5, 'Stable', 'Worth reviewing', 'Facts')"
+        )
+        self.database.conn.commit()
+        self.root.tabs.select(self.root.review_tab)
+        self.root.collection_review_tabs.select(self.root.decisions_tab)
+        tree = self.root.tree
+        horizontal = self.root.decision_horizontal_scrollbar
+        self.assertTrue(self.root.load_table())
+        self.root.update_idletasks()
+        self.assertTrue(tree.winfo_ismapped())
+        self.assertTrue(horizontal.winfo_ismapped())
+        self.assertTrue(self.root.decision_vertical_scrollbar.winfo_ismapped())
+        self.assertEqual(tree.column("price", "anchor"), "e")
+        self.assertEqual(tree.column("artist", "anchor"), "w")
+        self.assertLess(tree.xview()[1], 1.0)
+        self.assertEqual(tree.item("42", "values")[2:6], ("0.00", "0", "—", "50.5"))
+
+    def test_production_dashboard_sections_and_complete_mapped_focus_cycle(self) -> None:
+        self.root.tabs.select(self.root.dashboard_tab)
+        self.root.update()
+        self.assertEqual(
+            tuple(section.cget("text") for section in self.root.dashboard_primary_sections),
+            (
+                "Current collection", "Latest completed intelligence",
+                "Available destinations", "Unavailable destinations",
+            ),
+        )
+        eligible = tuple(
+            value for value in self.root._dip_dashboard_focus_order
+            if self.root._focus_eligible(value)
+        )
+        self.assertEqual(len(eligible), len(set(eligible)))
+        current = eligible[0]
+        current.focus_force()
+        visited = []
+        for _ in eligible:
+            visited.append(current)
+            self.assertEqual(self.root._move_scoped_focus(current, True), "break")
+            current = self.root.focus_get()
+        self.assertIs(current, eligible[0])
+        self.assertEqual(tuple(visited), eligible)
+        for section in self.root.dashboard_primary_sections:
+            self.root.dashboard_canvas.yview_moveto(
+                section.winfo_y() / max(1, self.root.dashboard_content.winfo_reqheight())
+            )
+            self.root.update_idletasks()
+            self.assertTrue(section.winfo_ismapped())
+
+    def test_production_focus_cycles_follow_mapping_and_state_changes(self) -> None:
+        def assert_cycle(declared: tuple[tk.Widget, ...]) -> tuple[tk.Widget, ...]:
+            self.root.update()
+            eligible = tuple(value for value in declared if self.root._focus_eligible(value))
+            self.assertEqual(len(eligible), len(set(eligible)))
+            for index, current in enumerate(eligible):
+                self.root._move_scoped_focus(current, True)
+                self.assertIs(self.root.focus_get(), eligible[(index + 1) % len(eligible)])
+                self.root._move_scoped_focus(current, False)
+                self.assertIs(self.root.focus_get(), eligible[(index - 1) % len(eligible)])
+            return eligible
+
+        self.root.tabs.select(self.root.dashboard_tab)
+        self.root.hidden_gems_controller.can_open.return_value = False
+        self.root._update_hidden_gems_navigation()
+        hidden = assert_cycle(self.root._dip_dashboard_focus_order)
+        self.assertNotIn(self.root.hidden_gems_button, hidden)
+        self.root.hidden_gems_controller.can_open.return_value = True
+        self.root._update_hidden_gems_navigation()
+        shown = assert_cycle(self.root._dip_dashboard_focus_order)
+        self.assertIn(self.root.hidden_gems_button, shown)
+
+        self.root.tabs.select(self.root.review_tab)
+        for tab in (
+            self.root.observations_tab,
+            self.root.queue_tab,
+            self.root.decisions_tab,
+        ):
+            self.root.collection_review_tabs.select(tab)
+            self.assertGreaterEqual(len(assert_cycle(self.root._dip_review_focus_order)), 2)
+
+    def test_execution_bound_dashboard_rejects_later_mutable_score_attribution(self) -> None:
+        homepage = DashboardHomepageViewModelBuilder().build(
+            execution(41, health_record(41, score=47.8, collection_size=1))
+        )
+        self.root.dashboard_homepage_service.homepage.return_value = homepage
+        self.database.conn.execute(
+            "INSERT INTO releases(release_id, artist, title) VALUES (1, 'Later', 'Mutable')"
+        )
+        self.database.conn.execute(
+            "INSERT INTO scores(release_id, calculated_at, value_score, demand_score, liquidity_score, momentum_score, opportunity_score, sell_window, priority, explanation) VALUES (1, '2099-01-01T00:00:00+00:00', 99, 99, 99, 99, 99, 'Hot now', 'High-priority review', 'B-SENTINEL')"
+        )
+        self.database.conn.commit()
+        self.assertTrue(self.root.refresh_dashboard())
+        self.assertEqual(set(self.root.kpis), {"unique_releases", "owned_copies", "protected"})
+        latest_text = "\n".join(value.get() for value in self.root.dashboard_homepage_vars.values())
+        self.assertIn("47.8", latest_text)
+        self.assertNotIn("99", latest_text)
+        self.assertNotIn("B-SENTINEL", latest_text)
+
+    def test_production_detail_sanitizes_warnings_and_styles_provenance(self) -> None:
+        sentinels = (
+            "TOKEN-secret", "provider body", "SELECT private", "/private/db",
+            "/destination/path", '{"serialized":"row"}', "PERSONAL NOTE",
+            "£999 supply=88", "exception text",
+        )
+        observation = replace(
+            _workspace(1).hot_now[0],
+            warnings=tuple(
+                ObservationWarning(f"unknown_{index}", sentinel)
+                for index, sentinel in enumerate(sentinels)
+            ),
+            source_marketplace_snapshot_id="snapshot-safe",
+        )
+        self.root.tabs.select(self.root.review_tab)
+        self.root.collection_review_tabs.select(self.root.observations_tab)
+        self.root._show_observation_detail(observation)
+        rendered = self.root.observation_detail.get("1.0", "end-1c")
+        for sentinel in sentinels:
+            self.assertNotIn(sentinel, rendered)
+        self.assertIn("Some supplied Marketplace evidence was incomplete.", rendered)
+        self.assertIn("Technical provenance", rendered)
+        self.assertEqual(
+            self.root.observation_detail.tag_cget("provenance_heading", "lmargin1"),
+            "14",
+        )
+
+    def test_production_disabled_reason_state_matrix(self) -> None:
+        self.root.tabs.select(self.root.review_tab)
+        self.root.collection_review_tabs.select(self.root.observations_tab)
+        self.root.collector_review_service = Mock()
+        self.root._set_observation_action_state(None)
+        self.assertEqual(
+            self.root.observation_action_reason_var.get(),
+            DisabledActionReason.NO_OBSERVATION.value,
+        )
+        self.assertTrue(self.root.observation_action_reason_label.winfo_ismapped())
+        self.root.collector_review_service = None
+        self.root._set_observation_action_state(None)
+        self.assertEqual(
+            self.root.observation_action_reason_var.get(),
+            DisabledActionReason.OBSERVATION_SERVICE_UNAVAILABLE.value,
+        )
+
+        self.root.collection_review_tabs.select(self.root.queue_tab)
+        self.root.collector_review_service = Mock()
+        self.root._load_queue_item(None)
+        self.assertEqual(
+            self.root.queue_action_reason_var.get(),
+            DisabledActionReason.NO_QUEUE_ITEM.value,
+        )
+        now = datetime(2026, 8, 12, tzinfo=timezone.utc)
+        resolved = WeekendReviewQueueItem(
+            1, 1, now, WeekendReviewStatus.RESOLVED, "", now, now,
+            WeekendObservationSource.HOT_NOW, now, "Stored signal", None, None,
+        )
+        self.root._load_queue_item(resolved)
+        self.assertIn("disabled", self.root.queue_status_button.state())
+        self.assertEqual(
+            self.root.queue_action_reason_var.get(),
+            DisabledActionReason.RESOLVED_START_REVIEW.value,
+        )
+        self.root._queue_note_loading = False
+        self.root.queue_note.configure(state="normal")
+        self.root.queue_note.insert("1.0", "changed")
+        self.root._on_queue_note_edited()
+        self.assertEqual(
+            self.root.queue_action_reason_var.get(),
+            DisabledActionReason.UNSAVED_NOTE.value,
+        )
+        self.assertTrue(self.root.queue_action_reason_label.winfo_ismapped())
+
+    def test_real_button_return_space_and_bidirectional_focus(self) -> None:
+        self.root.tabs.select(self.root.dashboard_tab)
+        first = self.root.import_csv_button
+        second = self.root.refresh_discogs_button
+        self.root.update_idletasks()
+        first.focus_force()
+        first.event_generate("<Return>")
+        second.focus_force()
+        second.event_generate("<space>")
+        self.root.update()
+        self.import_mock.assert_called_once_with(self.root)
+        self.refresh_mock.assert_called_once_with(self.root)
+        self.assertEqual(self.root._move_scoped_focus(first, True), "break")
+        self.assertIs(self.root.focus_get(), second)
+        self.assertEqual(self.root._move_scoped_focus(second, False), "break")
+        self.assertIs(self.root.focus_get(), first)
+
+
+if __name__ == "__main__":
+    unittest.main()

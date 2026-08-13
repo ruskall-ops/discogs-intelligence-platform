@@ -267,6 +267,21 @@ the guarded refresh shortcut, and preserves view position only for equivalent
 replacement content. Existing transactional replacement, multi-window,
 evidence, cache, provider, and persistence boundaries remain unchanged.
 
+The fourth implementation slice reorganizes Dashboard into current collection,
+latest completed intelligence, available destinations, and unavailable
+destinations. It separates imported facts from calculated execution results,
+uses fixed missing and unavailable states, supports local keyboard traversal
+and `800×560` overflow, and does not activate Marketplace Dashboard data.
+Only values reconstructed from the identified immutable History execution are
+shown as latest intelligence; mutable legacy score aggregates remain in their
+existing workflows and are not attributed to that execution.
+Collection Decisions retains all existing fields with factual numeric
+alignment and horizontal overflow; stable selection is preserved only while
+visible. Observation detail is built from typed calculated, Marketplace,
+warning, queue, and subordinate provenance sections, with nearby disabled-
+action explanations. Queue lifecycle, evidence, filters, persistence, provider
+laziness, and Collector Run behavior are unchanged.
+
 The milestone explicitly excludes new Marketplace evidence, listing acquisition
 or history, Rare Appearances or Marketplace Activity activation, scoring,
 recommendations, demand, liquidity, scarcity, opportunity, or advisory

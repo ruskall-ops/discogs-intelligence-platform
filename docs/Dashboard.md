@@ -2,6 +2,41 @@
 
 ## Current desktop availability
 
+The desktop Dashboard is organized in this summary-first order:
+
+1. Current collection;
+2. latest completed intelligence;
+3. available destinations;
+4. unavailable destinations.
+
+Current Collection facts use the truthful single-collection context and remain
+separate from calculated Collector Run values. Completed values explicitly say
+that they come from the latest completed execution. Before import and before a
+first completed run, the canonical `NO_IMPORTED_COLLECTION` and
+`IMPORTED_NOT_ANALYSED` copy is used. Missing facts display an em dash rather
+than numeric zero.
+
+Only immutable homepage values reconstructed from the identified Intelligence
+History execution appear under Latest completed intelligence. The mutable
+legacy High-priority, Worth reviewing, and Hot-now aggregates are deliberately
+not displayed there because they cannot be attributed to that exact execution.
+Collection Decisions and the Hot Now observation destination remain available
+without presenting those current values as historical output.
+
+Available destinations have active controls. Unavailable destinations retain
+their visible names and the fixed **Not available** explanation; disabled
+styling is not their only status. Price Changes and Supply Changes remain
+available only through Collection Explorer, and Marketplace Dashboard data is
+not activated.
+
+The Dashboard supports an `800×560` macOS window through wrapping and vertical
+overflow. Its interactive controls participate in explicit local forward and
+reverse focus traversal; Return and Space activate focused buttons. No
+application-global key binding is added.
+The declared local focus order is authoritative: hidden and disabled controls
+are filtered out, traversal wraps in both directions, and focusing an
+off-screen Dashboard control scrolls it into view.
+
 Collection summaries, What Changed, Collection Health, Hidden Gems, and
 Collection Explorer navigation use real production history and remain enabled,
 including truthful empty and insufficient-history states.

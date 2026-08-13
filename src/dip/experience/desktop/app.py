@@ -31,6 +31,13 @@ from dip.collector_review import (
 from dip.composition import build_desktop_application_dependencies
 from dip.config import SETTINGS
 from dip.experience.reporting import ReportingService, render_markdown
+from dip.experience.collector_review_presentation import (
+    COLLECTION_DECISION_COLUMNS,
+    DisabledActionReason,
+    ReviewDetailSectionKind,
+    decision_row_values,
+    observation_detail_sections,
+)
 from dip.experience.dashboard import (
     DashboardHomepageViewModel,
     DashboardNavigationTarget,
@@ -45,6 +52,10 @@ from dip.experience.explorer import (
 from dip.experience.project_workspace import ProjectWorkspaceNavigationTarget
 from dip.experience.desktop.homepage_renderer import (
     DesktopDashboardHomepageRenderer,
+)
+from dip.experience.results_presentation import (
+    PresentationStateKind,
+    presentation_state_copy,
 )
 from dip.exports import export_excel
 from dip.session import (
@@ -131,7 +142,7 @@ class App(tk.Tk):
     f"{SETTINGS.window_width}x{SETTINGS.window_height}"
 
 )
-        self.minsize(1050, 650)
+        self.minsize(800, 560)
         self.db = dependencies.database
         self.import_service = ImportService(self.db)
         self.dashboard_homepage_service = dependencies.dashboard_homepage
@@ -245,22 +256,27 @@ class App(tk.Tk):
             text="Import Collection CSV",
             command=self.import_csv,
         )
-        self.import_csv_button.pack(side="left", padx=3)
+        self.import_csv_button.grid(row=0, column=0, padx=3, sticky="ew")
         self.refresh_discogs_button = ttk.Button(
             primary_toolbar,
             text="Refresh Discogs Data",
             command=self.start_refresh,
         )
-        self.refresh_discogs_button.pack(side="left", padx=3)
+        self.refresh_discogs_button.grid(row=0, column=1, padx=3, sticky="ew")
         self.database_backup_button = ttk.Button(
             primary_toolbar,
             text="Back Up Database…",
             command=self.back_up_database,
         )
-        self.database_backup_button.pack(side="left", padx=3)
-        ttk.Button(primary_toolbar, text="Export Excel", command=self.export_report).pack(side="left", padx=3)
-        ttk.Button(primary_toolbar, text="Export Intelligence Report", command=self.export_intelligence_report).pack(side="left", padx=3)
-        ttk.Button(primary_toolbar, text="Refresh View", command=self.load_table).pack(side="left", padx=3)
+        self.database_backup_button.grid(row=0, column=2, padx=3, sticky="ew")
+        self.export_excel_button = ttk.Button(primary_toolbar, text="Export Excel", command=self.export_report)
+        self.export_excel_button.grid(row=1, column=0, padx=3, pady=(5, 0), sticky="ew")
+        self.export_intelligence_button = ttk.Button(primary_toolbar, text="Export Intelligence Report", command=self.export_intelligence_report)
+        self.export_intelligence_button.grid(row=1, column=1, padx=3, pady=(5, 0), sticky="ew")
+        self.refresh_view_button = ttk.Button(primary_toolbar, text="Refresh View", command=self.load_table)
+        self.refresh_view_button.grid(row=1, column=2, padx=3, pady=(5, 0), sticky="ew")
+        for column in range(3):
+            primary_toolbar.columnconfigure(column, weight=1)
 
         secondary_toolbar = ttk.Frame(toolbar)
         secondary_toolbar.pack(fill="x", pady=(6, 0))
@@ -268,30 +284,32 @@ class App(tk.Tk):
             secondary_toolbar, text="Portfolio", command=self.open_portfolio_overview
         )
         self.portfolio_button.state(["disabled"])
-        self.portfolio_button.pack(side="left", padx=3)
+        self.portfolio_button.grid(row=0, column=0, padx=3, sticky="ew")
         self.historical_intelligence_button = ttk.Button(
             secondary_toolbar,
             text="Historical Intelligence",
             command=self.open_intelligence_change_analysis,
         )
         self.historical_intelligence_button.state(["disabled"])
-        self.historical_intelligence_button.pack(side="left", padx=3)
+        self.historical_intelligence_button.grid(row=0, column=1, padx=3, sticky="ew")
         self.marketplace_workspace_button = ttk.Button(
             secondary_toolbar,
             text="Marketplace",
             command=self.open_marketplace_workspace,
         )
         self.marketplace_workspace_button.state(["disabled"])
-        self.marketplace_workspace_button.pack(side="left", padx=3)
+        self.marketplace_workspace_button.grid(row=0, column=2, padx=3, sticky="ew")
         ttk.Label(
             secondary_toolbar,
             text="Portfolio, Historical Intelligence, and Marketplace Workspace: "
             "Not available in this release",
-        ).pack(side="left", padx=8)
+        ).grid(row=1, column=0, columnspan=3, padx=3, pady=(4, 0), sticky="w")
 
         self.progress = ttk.Progressbar(secondary_toolbar, length=220, mode="determinate")
-        self.progress.pack(side="right", padx=5)
-        ttk.Label(secondary_toolbar, textvariable=self.status_var).pack(side="right", padx=8)
+        self.progress.grid(row=2, column=0, padx=3, pady=(4, 0), sticky="ew")
+        ttk.Label(secondary_toolbar, textvariable=self.status_var).grid(row=2, column=1, columnspan=2, padx=8, pady=(4, 0), sticky="e")
+        for column in range(3):
+            secondary_toolbar.columnconfigure(column, weight=1)
 
         return toolbar
 
@@ -302,76 +320,132 @@ class App(tk.Tk):
         self.tabs.pack(fill="both", expand=True)
 
         self.project_tab = ttk.Frame(self.tabs, padding=18)
-        self.dashboard_tab = ttk.Frame(self.tabs, padding=18)
+        self.dashboard_tab = ttk.Frame(self.tabs)
         self.review_tab = ttk.Frame(self.tabs, padding=8)
         self.tabs.add(self.project_tab, text="Project")
         self.tabs.add(self.dashboard_tab, text="Dashboard")
         self.tabs.add(self.review_tab, text="Collection Review")
         self._build_project_workspace()
 
+        dashboard_canvas = tk.Canvas(
+            self.dashboard_tab,
+            highlightthickness=0,
+            takefocus=True,
+        )
+        dashboard_scroll = ttk.Scrollbar(
+            self.dashboard_tab,
+            orient="vertical",
+            command=dashboard_canvas.yview,
+        )
+        dashboard_canvas.configure(yscrollcommand=dashboard_scroll.set)
+        dashboard_scroll.pack(side="right", fill="y")
+        dashboard_canvas.pack(side="left", fill="both", expand=True)
+        dashboard_content = ttk.Frame(dashboard_canvas, padding=12)
+        dashboard_window = dashboard_canvas.create_window(
+            (0, 0), window=dashboard_content, anchor="nw"
+        )
+        dashboard_content.bind(
+            "<Configure>",
+            lambda _event: dashboard_canvas.configure(
+                scrollregion=dashboard_canvas.bbox("all")
+            ),
+        )
+        dashboard_canvas.bind(
+            "<Configure>",
+            lambda event: dashboard_canvas.itemconfigure(
+                dashboard_window, width=event.width
+            ),
+        )
+        self.dashboard_canvas = dashboard_canvas
+        self.dashboard_content = dashboard_content
+        for column in range(6):
+            dashboard_content.columnconfigure(column, weight=1)
+
         self.kpis = {}
 
-        labels = [
+        collection_labels = [
             ("unique_releases", "Unique releases"),
             ("owned_copies", "Owned copies"),
-            ("high_priority", "High-priority reviews"),
-            ("worth_reviewing", "Worth reviewing"),
-            ("hot_now", "Hot now"),
             ("protected", "Protected / Keep"),
         ]
+        current_collection = ttk.LabelFrame(
+            dashboard_content,
+            text="Current collection",
+            padding=10,
+        )
+        current_collection.grid(
+            row=0, column=0, columnspan=6, padx=8, pady=8, sticky="ew"
+        )
+        ttk.Label(
+            current_collection,
+            text="Current Collection · single-collection data",
+        ).grid(row=0, column=0, columnspan=3, sticky="w")
+        self.dashboard_collection_state_var = tk.StringVar(value="Loading collection facts…")
+        ttk.Label(
+            current_collection,
+            textvariable=self.dashboard_collection_state_var,
+            wraplength=700,
+            justify="left",
+        ).grid(row=1, column=0, columnspan=3, sticky="w", pady=(2, 6))
 
-        for index, (key, label) in enumerate(labels):
+        for index, (key, label) in enumerate(collection_labels):
             box = ttk.LabelFrame(
-                self.dashboard_tab,
+                current_collection,
                 text=label,
-                padding=15,
+                padding=8,
             )
             box.grid(
-                row=0,
-                column=index,
-                padx=8,
-                pady=8,
+                row=2,
+                column=index % 3,
+                padx=4,
+                pady=4,
                 sticky="nsew",
             )
 
-            if key == "hot_now":
-                value = ttk.Button(
-                    box,
-                    text="0",
-                    command=lambda: self.open_collection_review_observations(
-                        WeekendObservationSource.HOT_NOW
-                    ),
-                )
-                self.hot_now_kpi_button = value
-            else:
-                value = ttk.Label(
-                    box,
-                    text="0",
-                    font=("Helvetica", 24, "bold"),
-                )
+            value = ttk.Label(
+                box,
+                text="0",
+                font=("Helvetica", 24, "bold"),
+            )
             value.pack()
 
             self.kpis[key] = value
-            self.dashboard_tab.columnconfigure(index, weight=1)
-
-        info = ttk.LabelFrame(self.dashboard_tab, text="Platform status", padding=16)
-        info.grid(row=1, column=0, columnspan=6, padx=8, pady=20, sticky="ew")
-        ttk.Label(info, text=(
+            current_collection.columnconfigure(index % 3, weight=1)
+        ttk.Label(current_collection, text=(
             "SQLite is now the source of truth. Collection details, market snapshots, "
             "scores, decisions and notes persist between runs. Excel is generated only "
             "when you want an export."
-        ), wraplength=1100, justify="left").pack(anchor="w")
+        ), wraplength=700, justify="left").grid(
+            row=3, column=0, columnspan=3, sticky="w", pady=(6, 0)
+        )
 
+        latest_intelligence = ttk.LabelFrame(
+            dashboard_content,
+            text="Latest completed intelligence",
+            padding=10,
+        )
+        latest_intelligence.grid(
+            row=1, column=0, columnspan=6, padx=8, pady=8, sticky="ew"
+        )
+        self.dashboard_intelligence_state_var = tk.StringVar(
+            value="Intelligence is loading…"
+        )
+        ttk.Label(
+            latest_intelligence,
+            textvariable=self.dashboard_intelligence_state_var,
+            wraplength=700,
+            justify="left",
+        ).grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 6))
         self.dashboard_homepage_vars = {}
         homepage_sections = (
-            ("collection_overview", "Collection overview", 2, 0, 3),
-            ("collection_health", "Collection Health", 2, 3, 3),
-            ("hidden_gems", "Hidden Gems", 3, 0, 3),
-            ("what_changed", "What Changed", 3, 3, 3),
-            ("latest_execution", "Latest execution", 4, 0, 6),
+            ("collection_overview", "Execution overview", 1, 0, 3),
+            ("latest_execution", "Execution provenance", 1, 3, 3),
+            ("collection_health", "Collection Health", 2, 0, 3),
+            ("hidden_gems", "Hidden Gems", 2, 3, 3),
+            ("what_changed", "What Changed", 3, 0, 6),
         )
         for section_id, title, row, column, columnspan in homepage_sections:
-            card = ttk.LabelFrame(self.dashboard_tab, text=title, padding=14)
+            card = ttk.LabelFrame(latest_intelligence, text=title, padding=14)
             card.grid(
                 row=row,
                 column=column,
@@ -387,50 +461,43 @@ class App(tk.Tk):
                 wraplength=350,
                 justify="left",
             ).pack(anchor="nw", fill="both", expand=True)
-            if section_id == "collection_health":
-                ttk.Button(
-                    card,
-                    text="Open Collection Health",
-                    command=self.open_collection_health,
-                ).pack(anchor="w", pady=(10, 0))
-            elif section_id == "hidden_gems":
-                self.hidden_gems_button = ttk.Button(
-                    card,
-                    text="Open Hidden Gems",
-                    command=self.open_hidden_gems,
-                )
-                self.hidden_gems_observations_button = ttk.Button(
-                    card,
-                    text="Review in Observations",
-                    command=lambda: self.open_collection_review_observations(
-                        WeekendObservationSource.HIDDEN_GEM
-                    ),
-                )
             self.dashboard_homepage_vars[section_id] = body
-        self.dashboard_tab.rowconfigure(2, weight=1)
-        self.dashboard_tab.rowconfigure(3, weight=1)
-        self.collection_explorer_button = ttk.Button(
-            self.dashboard_tab,
-            text="Open Collection Explorer",
-            command=self.open_intelligence_explorer,
+        available = ttk.LabelFrame(dashboard_content, text="Available destinations", padding=10)
+        available.grid(row=2, column=0, columnspan=6, padx=8, pady=8, sticky="ew")
+        self.collection_explorer_button = ttk.Button(available, text="Open Collection Explorer", command=self.open_intelligence_explorer)
+        self.collection_explorer_button.pack(side="left", padx=(0, 6))
+        self.dashboard_health_button = ttk.Button(available, text="Open Collection Health", command=self.open_collection_health)
+        self.dashboard_health_button.pack(side="left", padx=(0, 6))
+        self.hot_now_button = ttk.Button(
+            available,
+            text="Review Hot Now",
+            command=lambda: self.open_collection_review_observations(
+                WeekendObservationSource.HOT_NOW
+            ),
         )
-        self.collection_explorer_button.grid(
-            row=5,
-            column=0,
-            columnspan=6,
-            padx=8,
-            pady=(10, 4),
+        self.hot_now_button.pack(side="left", padx=(0, 6))
+        self.hidden_gems_button = ttk.Button(available, text="Open Hidden Gems", command=self.open_hidden_gems)
+        self.hidden_gems_observations_button = ttk.Button(
+            available,
+            text="Review in Observations",
+            command=lambda: self.open_collection_review_observations(
+                WeekendObservationSource.HIDDEN_GEM
+            ),
         )
+        ttk.Label(available, text="Price Changes and Supply Changes are available through Collection Explorer.", wraplength=420).pack(side="left", padx=8)
         self.dashboard_command_vars = {}
         command_cards = (
-            ("Portfolio Summary", 6, 0), ("Collection Health", 6, 3),
-            ("Opportunity Highlights", 7, 0), ("Collection Changes", 7, 3),
-            ("Historical Changes", 8, 0), ("Marketplace Highlights", 8, 3),
-            ("Research Summary", 9, 0), ("Quick Actions", 9, 3),
+            ("Portfolio Summary", 7, 0),
+            ("Opportunity Highlights", 7, 3),
+            ("Historical Changes", 8, 0),
+            ("Marketplace Highlights", 8, 3),
+            ("Research Summary", 9, 0),
         )
+        unavailable = ttk.LabelFrame(dashboard_content, text="Unavailable destinations", padding=10)
+        unavailable.grid(row=3, column=0, columnspan=6, padx=8, pady=8, sticky="ew")
         for title, row, column in command_cards:
-            card = ttk.LabelFrame(self.dashboard_tab, text=title, padding=14)
-            card.grid(row=row, column=column, columnspan=3, padx=8, pady=8, sticky="nsew")
+            card = ttk.LabelFrame(unavailable, text=title, padding=14)
+            card.grid(row=row - 7, column=column, columnspan=3, padx=8, pady=8, sticky="nsew")
             body = tk.StringVar(value="Workspace summary is loading…")
             ttk.Label(card, textvariable=body, wraplength=350, justify="left").pack(
                 anchor="nw", fill="both", expand=True
@@ -438,6 +505,9 @@ class App(tk.Tk):
             actions = ttk.Frame(card)
             actions.pack(anchor="w", fill="x", pady=(10, 0))
             self.dashboard_command_vars[title] = (body, actions)
+        self.dashboard_primary_sections = (
+            current_collection, latest_intelligence, available, unavailable
+        )
 
         self.collection_review_tabs = ttk.Notebook(self.review_tab)
         self.collection_review_tabs.pack(fill="both", expand=True)
@@ -474,38 +544,189 @@ class App(tk.Tk):
 
         filters = ttk.Frame(self.decisions_tab)
         filters.pack(fill="x", pady=(0,8))
-        ttk.Label(filters, text="Search").pack(side="left")
-        search = ttk.Entry(filters, textvariable=self.search_var, width=30)
-        search.pack(side="left", padx=5)
+        ttk.Label(filters, text="Search").grid(row=0, column=0, sticky="w")
+        search = ttk.Entry(filters, textvariable=self.search_var)
+        search.grid(row=0, column=1, padx=5, sticky="ew")
         search.bind("<Return>", lambda e: self.load_table())
 
-        ttk.Label(filters, text="Priority").pack(side="left", padx=(12,0))
-        ttk.Combobox(filters, textvariable=self.priority_var, state="readonly", width=22,
-                     values=["All","High-priority review","Worth reviewing","Possible candidate","Low priority","Not scored"]).pack(side="left", padx=5)
+        ttk.Label(filters, text="Priority").grid(row=0, column=2, padx=(12,0), sticky="w")
+        priority_filter = ttk.Combobox(filters, textvariable=self.priority_var, state="readonly", width=22,
+                     values=["All","High-priority review","Worth reviewing","Possible candidate","Low priority","Not scored"])
+        priority_filter.grid(row=0, column=3, padx=5, sticky="ew")
 
-        ttk.Label(filters, text="Decision").pack(side="left", padx=(12,0))
-        ttk.Combobox(filters, textvariable=self.decision_filter_var, state="readonly", width=14,
-                     values=["All","Review","Keep","List for sale","Maybe","Ignore"]).pack(side="left", padx=5)
-        ttk.Button(filters, text="Apply", command=self.load_table).pack(side="left", padx=5)
+        ttk.Label(filters, text="Decision").grid(row=1, column=0, sticky="w", pady=(6, 0))
+        decision_filter = ttk.Combobox(filters, textvariable=self.decision_filter_var, state="readonly", width=14,
+                     values=["All","Review","Keep","List for sale","Maybe","Ignore"])
+        decision_filter.grid(row=1, column=1, padx=5, pady=(6, 0), sticky="ew")
+        apply_filter = ttk.Button(filters, text="Apply", command=self.load_table)
+        apply_filter.grid(row=1, column=3, padx=5, pady=(6, 0), sticky="e")
+        filters.columnconfigure(1, weight=1)
+        filters.columnconfigure(3, weight=1)
+        self.decision_filter_controls = (
+            search,
+            priority_filter,
+            decision_filter,
+            apply_filter,
+        )
 
-        cols = ("artist","title","price","wants","sale","opportunity","window","priority","decision")
+        cols = tuple(column.column_id.value for column in COLLECTION_DECISION_COLUMNS)
         self.tree = ttk.Treeview(self.decisions_tab, columns=cols, show="headings", selectmode="browse")
-        headings = {
-            "artist":"Artist","title":"Title","price":"Lowest £","wants":"Wants",
-            "sale":"For Sale","opportunity":"Opportunity","window":"Sell Window",
-            "priority":"Priority","decision":"Decision"
-        }
-        widths = {"artist":210,"title":310,"price":85,"wants":80,"sale":80,
-                  "opportunity":95,"window":150,"priority":185,"decision":110}
-        for c in cols:
-            self.tree.heading(c, text=headings[c])
-            self.tree.column(c, width=widths[c], anchor="w")
-        self.tree.pack(side="left", fill="both", expand=True)
+        for column in COLLECTION_DECISION_COLUMNS:
+            self.tree.heading(column.column_id.value, text=column.label)
+            self.tree.column(column.column_id.value, width=column.width, anchor=column.anchor.value, stretch=False)
+        table = ttk.Frame(self.decisions_tab)
+        table.pack(fill="both", expand=True)
+        self.tree.grid(in_=table, row=0, column=0, sticky="nsew")
         self.tree.bind("<Double-1>", self.edit_selected)
 
-        scroll = ttk.Scrollbar(self.decisions_tab, orient="vertical", command=self.tree.yview)
-        scroll.pack(side="right", fill="y")
-        self.tree.configure(yscrollcommand=scroll.set)
+        self.decision_vertical_scrollbar = ttk.Scrollbar(
+            table, orient="vertical", command=self.tree.yview
+        )
+        self.decision_vertical_scrollbar.grid(row=0, column=1, sticky="ns")
+        self.decision_horizontal_scrollbar = ttk.Scrollbar(table, orient="horizontal", command=self.tree.xview)
+        self.decision_horizontal_scrollbar.grid(row=1, column=0, sticky="ew")
+        table.rowconfigure(0, weight=1)
+        table.columnconfigure(0, weight=1)
+        self.tree.configure(
+            yscrollcommand=self.decision_vertical_scrollbar.set,
+            xscrollcommand=self.decision_horizontal_scrollbar.set,
+        )
+        self._configure_slice_four_keyboard()
+
+    def _configure_slice_four_keyboard(self):
+        """Define local keyboard activation and traversal without global bindings."""
+
+        dashboard_controls = (
+            self.import_csv_button,
+            self.refresh_discogs_button,
+            self.database_backup_button,
+            self.export_excel_button,
+            self.export_intelligence_button,
+            self.refresh_view_button,
+            self.dashboard_canvas,
+            self.hot_now_button,
+            self.collection_explorer_button,
+            self.dashboard_health_button,
+            self.hidden_gems_button,
+            self.hidden_gems_observations_button,
+        )
+        review_controls = (
+            self.observation_tree,
+            self.add_observation_button,
+            self.reopen_observation_button,
+            self.open_queued_observation_button,
+            self.observation_action_reason_label,
+            self.queue_tree,
+            self.queue_note,
+            self.queue_save_button,
+            self.queue_status_button,
+            self.queue_resolve_button,
+            self.queue_remove_button,
+            self.queue_decision_button,
+            self.queue_action_reason_label,
+            self.tree,
+            *self.decision_filter_controls,
+        )
+        for control in (*dashboard_controls, *review_controls):
+            control.configure(takefocus="1")
+            control.bind(
+                "<Tab>",
+                lambda _event, widget=control: self._move_scoped_focus(widget, True),
+                add="+",
+            )
+            control.bind(
+                "<Shift-Tab>",
+                lambda _event, widget=control: self._move_scoped_focus(widget, False),
+                add="+",
+            )
+            control.bind(
+                "<ISO_Left_Tab>",
+                lambda _event, widget=control: self._move_scoped_focus(widget, False),
+                add="+",
+            )
+        for button in (
+            self.import_csv_button,
+            self.refresh_discogs_button,
+            self.database_backup_button,
+            self.export_excel_button,
+            self.export_intelligence_button,
+            self.refresh_view_button,
+            self.hot_now_button,
+            self.collection_explorer_button,
+            self.dashboard_health_button,
+            self.hidden_gems_button,
+            self.hidden_gems_observations_button,
+            self.add_observation_button,
+            self.reopen_observation_button,
+            self.open_queued_observation_button,
+            self.queue_save_button,
+            self.queue_status_button,
+            self.queue_resolve_button,
+            self.queue_remove_button,
+            self.queue_decision_button,
+            self.decision_filter_controls[-1],
+        ):
+            button.bind(
+                "<Return>",
+                lambda _event, value=button: self._invoke_button(value),
+                add="+",
+            )
+            button.bind(
+                "<space>",
+                lambda _event, value=button: self._invoke_button(value),
+                add="+",
+            )
+        self._dip_dashboard_focus_order = dashboard_controls
+        self._dip_review_focus_order = review_controls
+
+    def _move_scoped_focus(self, widget, forward):
+        declared = (
+            self._dip_dashboard_focus_order
+            if widget in self._dip_dashboard_focus_order
+            else self._dip_review_focus_order
+        )
+        cycle = tuple(value for value in declared if self._focus_eligible(value))
+        if not cycle:
+            return "break"
+        try:
+            index = cycle.index(widget)
+        except ValueError:
+            index = -1 if forward else 0
+        target = cycle[(index + (1 if forward else -1)) % len(cycle)]
+        target.focus_set()
+        if target in self._dip_dashboard_focus_order:
+            self._reveal_dashboard_control(target)
+        return "break"
+
+    @staticmethod
+    def _focus_eligible(widget):
+        try:
+            if not widget.winfo_exists() or not widget.winfo_viewable():
+                return False
+            state = getattr(widget, "state", None)
+            return state is None or "disabled" not in state()
+        except tk.TclError:
+            return False
+
+    def _reveal_dashboard_control(self, widget):
+        try:
+            canvas = self.dashboard_canvas
+            canvas.update_idletasks()
+            top = widget.winfo_rooty() - self.dashboard_content.winfo_rooty()
+            bottom = top + widget.winfo_height()
+            total = max(1, self.dashboard_content.winfo_reqheight())
+            view_top, view_bottom = (value * total for value in canvas.yview())
+            if top < view_top:
+                canvas.yview_moveto(max(0.0, top / total))
+            elif bottom > view_bottom:
+                canvas.yview_moveto(min(1.0, max(0.0, (bottom - canvas.winfo_height()) / total)))
+        except tk.TclError:
+            return
+
+    @staticmethod
+    def _invoke_button(button):
+        button.invoke()
+        return "break"
 
     def _build_observations_ui(self):
         controls = ttk.Frame(self.observations_tab)
@@ -602,6 +823,15 @@ class App(tk.Tk):
             command=self._open_selected_observation_queue_item,
         )
         self.open_queued_observation_button.pack(side="left")
+        self.observation_action_reason_var = tk.StringVar()
+        self.observation_action_reason_label = ttk.Label(
+            right,
+            textvariable=self.observation_action_reason_var,
+            wraplength=520,
+            justify="left",
+            takefocus=True,
+        )
+        self.observation_action_reason_label.pack(anchor="w", fill="x", pady=(6, 0))
         self._set_observation_action_state(None)
 
     def _build_weekend_queue_ui(self):
@@ -714,6 +944,15 @@ class App(tk.Tk):
             command=self._open_queue_collection_decision,
         )
         self.queue_decision_button.pack(side="left")
+        self.queue_action_reason_var = tk.StringVar()
+        self.queue_action_reason_label = ttk.Label(
+            right,
+            textvariable=self.queue_action_reason_var,
+            wraplength=520,
+            justify="left",
+            takefocus=True,
+        )
+        self.queue_action_reason_label.pack(anchor="w", fill="x", pady=(6, 0))
         self._set_queue_controls_enabled(False)
 
     def _observation_source(self):
@@ -819,57 +1058,29 @@ class App(tk.Tk):
                 "Select a calculated observation to inspect its evidence.",
             )
         else:
-            lines = [
-                f"{observation.artist} — {observation.title}",
-                f"Release ID: {observation.release_id}",
-            ]
-            if type(observation) is HotNowObservation:
-                lines.extend(
-                    (
-                        f"Classification: {observation.sell_window}",
-                        f"Opportunity: {observation.opportunity_score:.1f}",
-                        f"Momentum: {observation.momentum_score:.1f}",
-                        f"Demand: {observation.demand_score:.1f}",
-                        f"Liquidity: {observation.liquidity_score:.1f}",
-                        f"Value: {observation.value_score:.1f}",
-                        f"Explanation: {observation.explanation or 'No explanation supplied.'}",
-                    )
+            for section in observation_detail_sections(observation):
+                heading_tag = (
+                    "provenance_heading"
+                    if section.kind is ReviewDetailSectionKind.TECHNICAL_PROVENANCE
+                    else "detail_heading"
                 )
-            else:
-                lines.extend(
-                    (
-                        f"Rank: {observation.rank}",
-                        f"Hidden Gem score: {observation.hidden_gem_score:.1f}",
-                        *observation.evidence,
-                    )
+                body_tag = (
+                    "provenance_body"
+                    if section.kind is ReviewDetailSectionKind.TECHNICAL_PROVENANCE
+                    else "detail_body"
                 )
-            evidence = (
-                observation.evidence
-                if type(observation) is HotNowObservation
-                else observation.marketplace_evidence
+                self.observation_detail.insert("end", f"{section.title}\n", heading_tag)
+                self.observation_detail.insert("end", "\n".join(section.lines), body_tag)
+                self.observation_detail.insert("end", "\n\n")
+            self.observation_detail.tag_configure(
+                "detail_heading", font=("Helvetica", 12, "bold")
             )
-            if evidence is not None:
-                lines.extend(
-                    (
-                        "",
-                        f"Evidence observed: {evidence.observed_at.isoformat()}",
-                        f"Wants: {self._optional_value(evidence.wants)}",
-                        f"Copies for sale: {self._optional_value(evidence.copies_for_sale)}",
-                        f"Lowest price: {self._money_value(evidence)}",
-                    )
-                )
-            if observation.warnings:
-                lines.extend(
-                    (
-                        "",
-                        "Evidence warnings",
-                        *(
-                            f"• {warning.message}"
-                            for warning in observation.warnings
-                        ),
-                    )
-                )
-            self.observation_detail.insert("1.0", "\n".join(lines))
+            self.observation_detail.tag_configure(
+                "provenance_heading", font=("Helvetica", 10, "bold"), lmargin1=14, lmargin2=14
+            )
+            self.observation_detail.tag_configure(
+                "provenance_body", font=("Helvetica", 10), lmargin1=14, lmargin2=14
+            )
         self.observation_detail.configure(state="disabled")
         self._set_observation_action_state(observation)
 
@@ -891,16 +1102,24 @@ class App(tk.Tk):
             self.open_queued_observation_button,
         ):
             button.state(["disabled"])
+        reason = DisabledActionReason.NO_OBSERVATION.value
         if observation is None or self.collector_review_service is None:
+            if self.collector_review_service is None:
+                reason = DisabledActionReason.OBSERVATION_SERVICE_UNAVAILABLE.value
+            self.observation_action_reason_var.set(reason)
             return
         membership = observation.queue_membership
         if not membership.is_queued:
             self.add_observation_button.state(["!disabled"])
+            reason = DisabledActionReason.NOT_QUEUED.value
         elif membership.status is WeekendReviewStatus.RESOLVED:
             self.reopen_observation_button.state(["!disabled"])
             self.open_queued_observation_button.state(["!disabled"])
+            reason = DisabledActionReason.RESOLVED_OBSERVATION.value
         else:
             self.open_queued_observation_button.state(["!disabled"])
+            reason = DisabledActionReason.ALREADY_QUEUED.value
+        self.observation_action_reason_var.set(reason)
 
     def refresh_collector_review_observations(self):
         if self.collector_review_observations is None:
@@ -1139,6 +1358,11 @@ class App(tk.Tk):
                 if item.status is WeekendReviewStatus.RESOLVED
                 else ["!disabled"]
             )
+            self.queue_action_reason_var.set(
+                DisabledActionReason.RESOLVED_START_REVIEW.value
+                if item.status is WeekendReviewStatus.RESOLVED
+                else DisabledActionReason.QUEUE_ACTIONS_AVAILABLE.value
+            )
             self.queue_resolve_button.configure(
                 text=(
                     "Reopen"
@@ -1160,6 +1384,15 @@ class App(tk.Tk):
             self.queue_decision_button,
         ):
             button.state(state)
+        self.queue_action_reason_var.set(
+            DisabledActionReason.QUEUE_ACTIONS_AVAILABLE.value
+            if enabled
+            else (
+                DisabledActionReason.QUEUE_SERVICE_UNAVAILABLE.value
+                if self.collector_review_service is None
+                else DisabledActionReason.NO_QUEUE_ITEM.value
+            )
+        )
 
     def _on_queue_note_edited(self, _event=None):
         if not self._queue_note_loading and self.current_queue_item is not None:
@@ -1167,6 +1400,14 @@ class App(tk.Tk):
                 self.queue_note.get("1.0", "end-1c")
                 != self.current_queue_item.review_note
             )
+            if self._queue_note_dirty:
+                self.queue_action_reason_var.set(
+                    DisabledActionReason.UNSAVED_NOTE.value
+                )
+            else:
+                self.queue_action_reason_var.set(
+                    DisabledActionReason.QUEUE_ACTIONS_AVAILABLE.value
+                )
 
     def _save_queue_note(self):
         item = self.current_queue_item
@@ -1804,9 +2045,24 @@ class App(tk.Tk):
         except Exception:
             self.status_var.set("Dashboard information could not be loaded.")
             return False
-        for key, widget in self.kpis.items():
-            if key != "hot_now":
-                widget.configure(text=f"{int(row[key] or 0):,}")
+        for key in ("unique_releases", "owned_copies", "protected"):
+            if key in self.kpis:
+                self.kpis[key].configure(text=f"{int(row[key] or 0):,}")
+        self._dashboard_summary_row = row
+        collection_state_var = self.__dict__.get("dashboard_collection_state_var")
+        if collection_state_var is not None:
+            has_collection = int(row["unique_releases"] or 0) > 0
+            state_copy = presentation_state_copy(
+                PresentationStateKind.IMPORTED_NOT_ANALYSED
+                if has_collection
+                else PresentationStateKind.NO_IMPORTED_COLLECTION
+            )
+            collection_state_var.set(
+                f"{state_copy.heading}\n{state_copy.body}"
+            )
+            self.dashboard_intelligence_state_var.set(
+                f"{state_copy.heading}\n{state_copy.body}"
+            )
         if self.collector_review_observations is None:
             self.current_observation_workspace = (
                 WeekendObservationWorkspace.unavailable(
@@ -1831,19 +2087,41 @@ class App(tk.Tk):
 
     def _apply_hot_now_dashboard_state(self):
         section = self.current_observation_workspace.hot_now_section
-        if section.status is ObservationSectionStatus.AVAILABLE:
-            self.kpis["hot_now"].configure(
-                text=f"{len(self.current_observation_workspace.hot_now):,}"
-            )
-            self.hot_now_kpi_button.state(["!disabled"])
+        button = self.__dict__.get("hot_now_button")
+        if button is None:  # Compatibility for non-production focused test presenters.
+            legacy = self.__dict__.get("hot_now_kpi_button")
+            if section.status is ObservationSectionStatus.AVAILABLE:
+                self.kpis["hot_now"].configure(
+                    text=f"{len(self.current_observation_workspace.hot_now):,}"
+                )
+                legacy.state(["!disabled"])
+            else:
+                self.kpis["hot_now"].configure(text="—")
+                legacy.state(["disabled"])
+            return
+        if section.status in {
+            ObservationSectionStatus.AVAILABLE,
+            ObservationSectionStatus.NO_HISTORY,
+        }:
+            button.state(["!disabled"])
         else:
-            self.kpis["hot_now"].configure(text="—")
-            self.hot_now_kpi_button.state(["disabled"])
+            button.state(["disabled"])
 
     def refresh_intelligence_dashboard(self):
         try:
             homepage = self.dashboard_homepage_service.homepage()
             self.current_dashboard_homepage = homepage
+            latest = homepage.section_for("latest_execution")
+            if latest.run_id is not None and self.__dict__.get(
+                "dashboard_collection_state_var"
+            ) is not None:
+                self.dashboard_collection_state_var.set(
+                    "Collection facts are shown separately above. "
+                    "Calculated values use the latest completed Collector Run intelligence."
+                )
+                self.dashboard_intelligence_state_var.set(
+                    "Calculated values use the latest completed Collector Run execution."
+                )
             sections = self.desktop_homepage_renderer.render(homepage)
             rendered = {
                 section.section_id.value: section.body
@@ -1855,6 +2133,8 @@ class App(tk.Tk):
                 section_id: "Dashboard information could not be loaded."
                 for section_id in self.dashboard_homepage_vars
             }
+
+        self._apply_hot_now_dashboard_state()
 
         for section_id, variable in self.dashboard_homepage_vars.items():
             variable.set(rendered.get(section_id, "Dashboard information is unavailable."))
@@ -1884,8 +2164,11 @@ class App(tk.Tk):
                 body.set("Dashboard information could not be loaded.")
             return
         for card in rendered.cards:
+            if card.title not in self.dashboard_command_vars:
+                continue
             body, actions = self.dashboard_command_vars[card.title]
-            body.set(card.body)
+            unavailable = presentation_state_copy(PresentationStateKind.UNAVAILABLE)
+            body.set(f"{unavailable.heading}\n{unavailable.body}")
             for child in actions.winfo_children():
                 child.destroy()
             for action in card.actions:
@@ -2739,6 +3022,9 @@ class App(tk.Tk):
         ttk.Button(window, text="Close", command=window.destroy).pack(pady=(0, 12))
 
     def load_table(self, *, report_failure: bool = True) -> bool:
+        selection = getattr(self.tree, "selection", None)
+        previous_selection = selection() if selection is not None else ()
+        previous_id = previous_selection[0] if previous_selection else None
         for item in self.tree.get_children():
             self.tree.delete(item)
         try:
@@ -2757,11 +3043,14 @@ class App(tk.Tk):
                 )
             return False
         for row in rows:
-            self.tree.insert("", "end", iid=str(row["release_id"]), values=(
-                row["artist"], row["title"], f"{row['lowest_price']:.2f}",
-                row["wants"], row["copies_for_sale"], f"{row['opportunity_score']:.1f}",
-                row["sell_window"], row["priority"], row["decision"]
-            ))
+            self.tree.insert(
+                "", "end", iid=str(row["release_id"]), values=decision_row_values(row)
+            )
+        if previous_id is not None and self.tree.exists(previous_id):
+            self.tree.selection_set(previous_id)
+            self.tree.see(previous_id)
+        elif hasattr(self.tree, "selection_remove"):
+            self.tree.selection_remove(self.tree.selection())
         self.status_var.set(f"Showing {len(rows):,} records")
         return True
 

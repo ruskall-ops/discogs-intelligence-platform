@@ -148,6 +148,18 @@ fallback identity, and canonical order. Tk applies only shared heading styles
 and scrolling; it owns no classification, count, comparison, warning, or
 provenance logic.
 
+Destination-specific frozen presentation values may also describe Dashboard
+grouping, Collection Review columns, factual availability, typed detail
+sections, and disabled-action explanations. These values only project supplied
+facts and fixed copy. Tk remains responsible for alignment, wrapping,
+scrollbars, mapping, focus, and widget state; it must not parse rendered text to
+recover evidence or derive conclusions.
+
+The latest-intelligence Dashboard region accepts only values identity-bound to
+its reconstructed Intelligence History execution. Mutable legacy score
+aggregates remain outside that region when no authoritative execution-specific
+association exists.
+
 ### Application Services
 
 Application services coordinate complete use cases. Implemented examples
@@ -340,8 +352,10 @@ Project-scoped data boundaries.
 
 ### Dashboard
 
-The Dashboard command centre composes existing presentation foundations into
-eight deterministic cards:
+The Dashboard preserves the information from its existing presentation
+foundations in a summary-first hierarchy: current collection facts, latest
+completed intelligence, available destinations, and unavailable destinations.
+The command-centre model continues to compose eight deterministic cards:
 Portfolio Summary, Collection Health, Opportunity Highlights, Collection
 Changes, Historical Changes, Marketplace Highlights, Research Summary, and
 Quick Actions. Production-wired Collection actions remain enabled. Portfolio,
@@ -353,6 +367,12 @@ Collection Health and Hidden Gems detail views remain active presentation
 components. Dashboard refresh also obtains one immutable Collector Review
 observation workspace: its Hot-now count and drill-down therefore describe the
 same calculated rows.
+
+The desktop does not render duplicated active command cards where the same fact
+and action are already present in the latest-intelligence or available-
+destination sections. Unavailable destinations retain fixed textual status and
+explanation. This is a presentation choice only; callbacks and controller
+boundaries are unchanged.
 
 ### Portfolio Workspace
 
