@@ -533,7 +533,7 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             self.assertTrue(label.winfo_ismapped())
             self.assertGreater(label.winfo_width(), 1)
             self.assertGreater(label.winfo_height(), 1)
-            self.assertEqual(label.cget("takefocus"), 1)
+            self.assertEqual(str(label.cget("takefocus")), "1")
             self.assertGreaterEqual(label.winfo_rooty(), self.root.review_tab.winfo_rooty())
             self.assertLessEqual(
                 label.winfo_rooty() + label.winfo_height(),
