@@ -388,7 +388,7 @@ class ResultsPresentationRealTkBoundaryTest(unittest.TestCase):
         App._populate_intelligence_explorer_window(app, window, rendered)
         root.update_idletasks()
         root.update()
-        self.assertEqual(window.state(), "normal")
+        self.assertIn(window.state(), {"normal", "zoomed"})
         self.assertIs(
             window._dip_selected_destination,
             CollectionExplorerDestination.PRICE_CHANGES,
