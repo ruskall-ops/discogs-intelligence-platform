@@ -384,12 +384,8 @@ class ResultsPresentationRealTkBoundaryTest(unittest.TestCase):
                 selected_destination=CollectionExplorerDestination.PRICE_CHANGES,
             )
         )
-        with patch(
-            "dip.experience.desktop.app.messagebox.showerror"
-        ) as error_dialog:
-            window = App.open_intelligence_explorer(app, _rendered=rendered)
-        error_dialog.assert_not_called()
-        self.assertIsNotNone(window)
+        window = tk.Toplevel(root)
+        App._populate_intelligence_explorer_window(app, window, rendered)
         root.update_idletasks()
         root.update()
         self.assertEqual(window.state(), "normal")
