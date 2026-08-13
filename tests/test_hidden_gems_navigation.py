@@ -128,7 +128,7 @@ class HiddenGemsNavigationTestCase(unittest.TestCase):
         self.assertIn('text="Open Hidden Gems"', app_source)
         self.assertIn("command=self.open_hidden_gems", app_source)
         self.assertIn("self.hidden_gems_controller.can_open", app_source)
-        self.assertIn("self.hidden_gems_button.pack_forget()", app_source)
+        self.assertIn("self.hidden_gems_button.grid_remove()", app_source)
         self.assertIn("self.hidden_gems_controller.open", app_source)
         self.assertIn("scrollbar.set", app_source)
 

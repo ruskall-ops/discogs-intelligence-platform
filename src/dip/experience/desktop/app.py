@@ -464,27 +464,29 @@ class App(tk.Tk):
             self.dashboard_homepage_vars[section_id] = body
         available = ttk.LabelFrame(dashboard_content, text="Available destinations", padding=10)
         available.grid(row=2, column=0, columnspan=6, padx=8, pady=8, sticky="ew")
-        self.collection_explorer_button = ttk.Button(available, text="Open Collection Explorer", command=self.open_intelligence_explorer)
-        self.collection_explorer_button.pack(side="left", padx=(0, 6))
-        self.dashboard_health_button = ttk.Button(available, text="Open Collection Health", command=self.open_collection_health)
-        self.dashboard_health_button.pack(side="left", padx=(0, 6))
+        available_actions = ttk.Frame(available)
+        available_actions.pack(fill="x")
+        self.collection_explorer_button = ttk.Button(available_actions, text="Open Collection Explorer", command=self.open_intelligence_explorer)
+        self.collection_explorer_button.grid(row=0, column=0, padx=(0, 6), pady=(0, 6), sticky="w")
+        self.dashboard_health_button = ttk.Button(available_actions, text="Open Collection Health", command=self.open_collection_health)
+        self.dashboard_health_button.grid(row=0, column=1, padx=(0, 6), pady=(0, 6), sticky="w")
         self.hot_now_button = ttk.Button(
-            available,
+            available_actions,
             text="Review Hot Now",
             command=lambda: self.open_collection_review_observations(
                 WeekendObservationSource.HOT_NOW
             ),
         )
-        self.hot_now_button.pack(side="left", padx=(0, 6))
-        self.hidden_gems_button = ttk.Button(available, text="Open Hidden Gems", command=self.open_hidden_gems)
+        self.hot_now_button.grid(row=1, column=0, padx=(0, 6), sticky="w")
+        self.hidden_gems_button = ttk.Button(available_actions, text="Open Hidden Gems", command=self.open_hidden_gems)
         self.hidden_gems_observations_button = ttk.Button(
-            available,
+            available_actions,
             text="Review in Observations",
             command=lambda: self.open_collection_review_observations(
                 WeekendObservationSource.HIDDEN_GEM
             ),
         )
-        ttk.Label(available, text="Price Changes and Supply Changes are available through Collection Explorer.", wraplength=420).pack(side="left", padx=8)
+        ttk.Label(available, text="Price Changes and Supply Changes are available through Collection Explorer.", wraplength=700).pack(anchor="w", pady=(8, 0))
         self.dashboard_command_vars = {}
         command_cards = (
             ("Portfolio Summary", 7, 0),
@@ -802,7 +804,6 @@ class App(tk.Tk):
             pady=10,
         )
         self.observation_detail.configure(state="disabled")
-        self.observation_detail.pack(fill="both", expand=True)
         actions = ttk.Frame(right)
         self.add_observation_button = ttk.Button(
             actions,
@@ -834,6 +835,7 @@ class App(tk.Tk):
             side="bottom", anchor="w", fill="x", pady=(6, 0)
         )
         actions.pack(side="bottom", fill="x", pady=(8, 0))
+        self.observation_detail.pack(fill="both", expand=True)
         self._set_observation_action_state(None)
 
     def _build_weekend_queue_ui(self):
@@ -910,7 +912,6 @@ class App(tk.Tk):
             pady=(12, 4),
         )
         self.queue_note = tk.Text(right, height=10, wrap="word")
-        self.queue_note.pack(fill="both", expand=True)
         self.queue_note.bind("<KeyRelease>", self._on_queue_note_edited)
         self.queue_note.configure(state="disabled")
 
@@ -957,6 +958,7 @@ class App(tk.Tk):
             side="bottom", anchor="w", fill="x", pady=(6, 0)
         )
         actions.pack(side="bottom", fill="x", pady=(8, 0))
+        self.queue_note.pack(fill="both", expand=True)
         self._set_queue_controls_enabled(False)
 
     def _observation_source(self):
@@ -2247,20 +2249,19 @@ class App(tk.Tk):
 
     def _update_hidden_gems_navigation(self):
         if self.hidden_gems_controller.can_open(self.current_dashboard_homepage):
-            self.hidden_gems_button.pack(anchor="w", pady=(10, 0))
+            self.hidden_gems_button.grid(row=1, column=1, padx=(0, 6), sticky="w")
         else:
-            self.hidden_gems_button.pack_forget()
+            self.hidden_gems_button.grid_remove()
         hidden_section = self.current_observation_workspace.hidden_gems_section
         if hidden_section.status in {
             ObservationSectionStatus.AVAILABLE,
             ObservationSectionStatus.NO_HISTORY,
         }:
-            self.hidden_gems_observations_button.pack(
-                anchor="w",
-                pady=(6, 0),
+            self.hidden_gems_observations_button.grid(
+                row=2, column=0, columnspan=2, pady=(6, 0), sticky="w"
             )
         else:
-            self.hidden_gems_observations_button.pack_forget()
+            self.hidden_gems_observations_button.grid_remove()
 
     def _update_collection_explorer_navigation(self):
         if self.collection_explorer_controller.can_open(

@@ -331,6 +331,7 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
                 (41, "Missing", "Evidence"),
                 (42, "Artist" * 80, "Title" * 80),
                 (43, "Nonzero", "Evidence"),
+                *((release_id, f"Volume {release_id}", "Overflow") for release_id in range(100, 160)),
             ),
         )
         self.database.conn.executemany(
@@ -363,12 +364,26 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         self.assertTrue(tree.winfo_ismapped())
         self.assertTrue(horizontal.winfo_ismapped())
         self.assertTrue(self.root.decision_vertical_scrollbar.winfo_ismapped())
-        self.assertEqual(tree.column("price", "anchor"), "e")
-        self.assertEqual(tree.column("artist", "anchor"), "w")
+        for column in ("price", "wants", "sale", "opportunity"):
+            self.assertEqual(str(tree.column(column, "anchor")), "e")
+        for column in ("artist", "title", "window", "priority", "decision"):
+            self.assertEqual(str(tree.column(column, "anchor")), "w")
         self.assertLess(tree.xview()[1], 1.0)
+        self.assertLess(tree.yview()[1], 1.0)
+        tree.xview_moveto(1.0)
+        tree.yview_moveto(1.0)
+        self.root.update_idletasks()
+        self.assertEqual(tree.xview()[1], 1.0)
+        self.assertEqual(tree.yview()[1], 1.0)
         self.assertEqual(tree.item("41", "values")[2:6], ("—", "—", "—", "—"))
         self.assertEqual(tree.item("42", "values")[2:6], ("0.00", "0", "0", "0.0"))
         self.assertEqual(tree.item("43", "values")[2:6], ("19.50", "12", "3", "87.1"))
+        tree.selection_set("42")
+        self.assertTrue(self.root.load_table())
+        self.assertEqual(tree.selection(), ("42",))
+        self.root.search_var.set("Nonzero")
+        self.assertTrue(self.root.load_table())
+        self.assertEqual(tree.selection(), ())
 
     def test_production_dashboard_sections_and_complete_mapped_focus_cycle(self) -> None:
         self.root.tabs.select(self.root.dashboard_tab)
