@@ -53,11 +53,14 @@ unchanged. Dashboard now separates collection facts from latest completed
 intelligence and separates active from unavailable destinations. Collection
 Decisions retains all columns with numeric alignment and horizontal overflow;
 selected observations use typed detail sections and actions expose disabled
-reasons. Latest intelligence contains only execution-bound History values;
+reasons. Collection Decision and Priority filters expose canonical choices plus
+exact retained stored values; retained choices are session-local and safely
+persist as **All**, while decision writes remain canonical-only. Latest
+intelligence contains only execution-bound History values;
 mutable legacy score aggregates remain available through their existing
 workflows without being attributed to that execution. Queue, evidence,
-filtering, provider, and persistence semantics remain unchanged. These changes
-are unreleased and are not part of v0.5.1.
+provider, and persistence lifecycles remain unchanged. These changes are
+unreleased and are not part of v0.5.1.
 
 ## Available after sufficient history
 

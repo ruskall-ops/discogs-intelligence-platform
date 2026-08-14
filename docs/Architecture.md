@@ -365,8 +365,9 @@ do not invoke their reusable controllers or open placeholder windows.
 The earlier Collection Intelligence Dashboard homepage and its dedicated
 Collection Health and Hidden Gems detail views remain active presentation
 components. Dashboard refresh also obtains one immutable Collector Review
-observation workspace: its Hot-now count and drill-down therefore describe the
-same calculated rows.
+observation workspace. That workspace determines whether the Hot-now
+destination can be opened; the Dashboard does not render a separate Hot-now
+count.
 
 The desktop does not render duplicated active command cards where the same fact
 and action are already present in the latest-intelligence or available-

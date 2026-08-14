@@ -759,6 +759,25 @@ class SessionMappingAndCaptureTestCase(unittest.TestCase):
             finally:
                 database.close()
 
+    def test_unknown_review_filter_labels_reject_capture_without_disclosure(self):
+        app = self._capture_app()
+        app._priority_filter_choices = review_filter_choices(
+            ReviewFilterField.PRIORITY, ()
+        )
+        app._decision_filter_choices = review_filter_choices(
+            ReviewFilterField.DECISION, ()
+        )
+        for variable, malformed in (
+            (app.priority_var, "Retained: unknown-priority-secret"),
+            (app.decision_filter_var, "unknown-decision-secret"),
+        ):
+            with self.subTest(malformed=malformed):
+                variable.get.return_value = malformed
+                with self.assertRaises(SessionValidationError) as raised:
+                    app._capture_session()
+                self.assertNotIn(malformed, str(raised.exception))
+                variable.get.return_value = "All"
+
     def test_graceful_capture_reads_nondefault_and_every_review_destination(self):
         app = self._capture_app()
         for review_widget, expected in (

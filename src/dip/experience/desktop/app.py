@@ -31,6 +31,7 @@ from dip.collector_review import (
 from dip.collection_decision_vocabulary import (
     CANONICAL_DECISIONS,
     ReviewFilterChoice,
+    ReviewFilterChoiceKind,
     ReviewFilterField,
     review_filter_choices,
 )
@@ -3750,9 +3751,17 @@ class App(tk.Tk):
     ) -> str:
         selected = next(
             (choice for choice in choices if choice.label == label),
-            choices[0],
+            None,
         )
-        return "All" if selected.kind.value == "retained" else selected.label
+        if selected is None:
+            raise SessionValidationError(
+                "Desktop session filter cannot be captured."
+            )
+        return (
+            "All"
+            if selected.kind is ReviewFilterChoiceKind.RETAINED
+            else selected.label
+        )
 
     def _top_level_destination(self):
         selected = _selected_notebook_widget(self.tabs)

@@ -279,8 +279,12 @@ Collection Decisions retains all existing fields with factual numeric
 alignment and horizontal overflow; stable selection is preserved only while
 visible. Observation detail is built from typed calculated, Marketplace,
 warning, queue, and subordinate provenance sections, with nearby disabled-
-action explanations. Queue lifecycle, evidence, filters, persistence, provider
-laziness, and Collector Run behavior are unchanged.
+action explanations. Queue lifecycle, evidence, persistence, provider laziness,
+and Collector Run behavior are unchanged. Collection Decision and Priority
+filters add exact, individually selectable retained stored values alongside the
+canonical vocabulary. Retained selections intentionally restore as **All**
+after restart because session schema v1 represents only canonical filters;
+decision writes remain canonical-only and retained values are not rewritten.
 
 The milestone explicitly excludes new Marketplace evidence, listing acquisition
 or history, Rare Appearances or Marketplace Activity activation, scoring,

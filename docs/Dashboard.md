@@ -268,16 +268,16 @@ separate Historical Intelligence experiences.
 ## Collector Review observations
 
 Each explicit Dashboard refresh requests one immutable
-`WeekendObservationWorkspace`. The visible Hot-now count is exactly the number
-of projected Hot-now observations in that instance, and its action opens
-Collection Review → Observations → Hot now. If observation projection is
-unavailable, the card displays an unavailable value and its action is disabled;
-the legacy aggregate database count is not used as a fallback.
+`WeekendObservationWorkspace`. Its Hot-now observations determine whether the
+**Review Hot now** destination is enabled, and that action opens Collection
+Review → Observations → Hot now. If observation projection is unavailable,
+the destination is disabled. The Dashboard does not render a separate Hot-now
+count and does not use the legacy aggregate database count as a fallback.
 
 The established Hidden Gems detail action remains. **Review in Observations**
 opens the separate persisted Hidden Gems projection. Dashboard refresh performs
 no queue mutation and shares its workspace with the observation renderer for
-that refresh cycle, so card count and drill-down cannot disagree.
+that refresh cycle, so destination availability and drill-down cannot disagree.
 
 ## Dashboard command centre
 
