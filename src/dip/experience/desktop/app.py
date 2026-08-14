@@ -1057,7 +1057,21 @@ class App(tk.Tk):
             button.grid_forget()
         for column in range(5):
             self.queue_actions.columnconfigure(
-                column, weight=1 if mode == "compact" and column < 2 else 0
+                column,
+                weight=1 if mode == "compact" and column < 2 else 0,
+                minsize=(
+                    max(
+                        self.queue_save_button.winfo_reqwidth(),
+                        self.queue_status_button.winfo_reqwidth(),
+                    )
+                    if mode == "compact" and column == 0
+                    else max(
+                        self.queue_resolve_button.winfo_reqwidth(),
+                        self.queue_remove_button.winfo_reqwidth(),
+                    )
+                    if mode == "compact" and column == 1
+                    else 0
+                ),
             )
         if mode == "expanded":
             for column, button in enumerate(buttons):
@@ -1070,12 +1084,14 @@ class App(tk.Tk):
         else:
             for button, row, column in (
                 (self.queue_save_button, 0, 0),
-                (self.queue_status_button, 0, 1),
-                (self.queue_resolve_button, 1, 0),
+                (self.queue_resolve_button, 0, 1),
+                (self.queue_status_button, 1, 0),
                 (self.queue_remove_button, 1, 1),
             ):
                 button.grid(
-                    row=row, column=column, pady=(0, 5),
+                    row=row,
+                    column=column,
+                    pady=(0, 5),
                     sticky="ew",
                 )
             self.queue_decision_button.grid(
