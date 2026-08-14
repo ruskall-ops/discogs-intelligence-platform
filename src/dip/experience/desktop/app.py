@@ -593,7 +593,61 @@ class App(tk.Tk):
             yscrollcommand=self.decision_vertical_scrollbar.set,
             xscrollcommand=self.decision_horizontal_scrollbar.set,
         )
+        self._configure_dashboard_wheel_scrolling()
         self._configure_slice_four_keyboard()
+
+    def _configure_dashboard_wheel_scrolling(self):
+        """Route wheel input from this window's Dashboard widget subtree."""
+
+        self.bind("<MouseWheel>", self._scroll_dashboard_from_wheel, add="+")
+        self.bind("<Button-4>", self._scroll_dashboard_from_wheel, add="+")
+        self.bind("<Button-5>", self._scroll_dashboard_from_wheel, add="+")
+
+    def _scroll_dashboard_from_wheel(self, event):
+        """Scroll only when the wheel originated inside the live Dashboard."""
+
+        if not self._is_live_dashboard_widget(getattr(event, "widget", None)):
+            return None
+        units = self._wheel_scroll_units(event)
+        if units == 0:
+            return None
+        try:
+            self.dashboard_canvas.yview_scroll(units, "units")
+        except tk.TclError:
+            return None
+        return "break"
+
+    def _is_live_dashboard_widget(self, widget):
+        if widget is None:
+            return False
+        try:
+            if not widget.winfo_exists() or not self.dashboard_canvas.winfo_exists():
+                return False
+            current = widget
+            while current is not None:
+                if current in (self.dashboard_canvas, self.dashboard_content):
+                    return True
+                parent_name = current.winfo_parent()
+                if not parent_name:
+                    return False
+                current = current._nametowidget(parent_name)
+        except (KeyError, tk.TclError):
+            return False
+        return False
+
+    @staticmethod
+    def _wheel_scroll_units(event):
+        number = getattr(event, "num", None)
+        if number == 4:
+            return -1
+        if number == 5:
+            return 1
+        delta = getattr(event, "delta", 0)
+        if not isinstance(delta, (int, float)) or delta == 0:
+            return 0
+        if abs(delta) >= 120:
+            return -max(-1, min(1, int(delta / 120)))
+        return -max(-1, min(1, int(delta)))
 
     def _configure_slice_four_keyboard(self):
         """Define local keyboard activation and traversal without global bindings."""

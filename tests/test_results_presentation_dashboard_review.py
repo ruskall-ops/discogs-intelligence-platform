@@ -309,6 +309,7 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         ), patch.object(App, "_restore_session_and_load"):
             self.root = App()
         self.root.geometry("800x560")
+        self.root.update()
         for dependency in (
             dependencies.dashboard_homepage,
             dependencies.collection_health_controller,
@@ -387,6 +388,7 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         self.assertEqual(tree.selection(), ())
 
     def test_production_dashboard_sections_and_complete_mapped_focus_cycle(self) -> None:
+        traced_sql: list[str] = []
         self.root.tabs.select(self.root.dashboard_tab)
         self.root.update()
         self.assertEqual(
@@ -416,6 +418,86 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             )
             self.root.update_idletasks()
             self.assertTrue(section.winfo_ismapped())
+
+        canvas = self.root.dashboard_canvas
+        nested = self.root.dashboard_primary_sections[0].winfo_children()[0]
+        self.database.conn.set_trace_callback(traced_sql.append)
+        changes_before = self.database.conn.total_changes
+        canvas.yview_moveto(0.0)
+        self.root.update_idletasks()
+        start = canvas.yview()
+        nested.event_generate("<MouseWheel>", delta=-120)
+        self.root.update()
+        self.assertGreater(canvas.yview()[0], start[0])
+        for delta in (-1, -120):
+            before = canvas.yview()
+            self.assertEqual(
+                self.root._scroll_dashboard_from_wheel(
+                    SimpleNamespace(widget=nested, delta=delta, num=None)
+                ),
+                "break",
+            )
+            self.assertGreater(canvas.yview()[0], before[0])
+        for number, direction in ((4, -1), (5, 1)):
+            canvas.yview_moveto(0.5)
+            before = canvas.yview()[0]
+            self.assertEqual(
+                self.root._scroll_dashboard_from_wheel(
+                    SimpleNamespace(widget=nested, delta=0, num=number)
+                ),
+                "break",
+            )
+            self.assertEqual(canvas.yview()[0] > before, direction > 0)
+        self.database.conn.set_trace_callback(None)
+        self.assertEqual(traced_sql, [])
+        self.assertEqual(self.database.conn.total_changes, changes_before)
+
+        self.root.tabs.select(self.root.review_tab)
+        self.root.collection_review_tabs.select(self.root.decisions_tab)
+        self.database.conn.executemany(
+            "INSERT INTO releases(release_id, artist, title) VALUES (?, ?, ?)",
+            ((release_id, "Scrollable", f"Release {release_id}") for release_id in range(200, 260)),
+        )
+        self.database.conn.commit()
+        self.assertTrue(self.root.load_table())
+        self.root.update()
+        traced_sql.clear()
+        self.database.conn.set_trace_callback(traced_sql.append)
+        changes_before = self.database.conn.total_changes
+        canvas_before = canvas.yview()
+        tree_before = self.root.tree.yview()
+        self.assertIsNone(
+            self.root._scroll_dashboard_from_wheel(
+                SimpleNamespace(widget=self.root.tree, delta=-120, num=None)
+            )
+        )
+        self.assertEqual(self.root.tree.yview(), tree_before)
+        self.root.tree.yview_scroll(1, "units")
+        self.assertGreater(self.root.tree.yview()[0], tree_before[0])
+        self.assertEqual(canvas.yview(), canvas_before)
+
+        retired = ttk.Label(self.root.dashboard_content, text="Retired")
+        retired.destroy()
+        canvas_before = canvas.yview()
+        self.assertIsNone(
+            self.root._scroll_dashboard_from_wheel(
+                SimpleNamespace(widget=retired, delta=-120, num=None)
+            )
+        )
+        self.assertEqual(canvas.yview(), canvas_before)
+        self.database.conn.set_trace_callback(None)
+        self.assertEqual(traced_sql, [])
+        self.assertEqual(self.database.conn.total_changes, changes_before)
+        self.root.dashboard_homepage_service.homepage.assert_not_called()
+        self.import_mock.assert_not_called()
+        self.refresh_mock.assert_not_called()
+        for dependency in (
+            self.dependencies.collection_health_controller,
+            self.dependencies.collection_explorer_controller,
+            self.dependencies.portfolio_overview_controller,
+            self.dependencies.portfolio_controller,
+        ):
+            self.assertEqual(dependency.method_calls, [])
 
     def test_production_focus_cycles_follow_mapping_and_state_changes(self) -> None:
         traced_sql: list[str] = []
