@@ -172,6 +172,11 @@ and disabled controls have nearby textual explanations. Local Tab, Shift-Tab,
 Return, and Space handling preserves mouse and keyboard use at `800×560`; it
 does not change queue lifecycle, unsaved-note, evidence, provider, or write
 boundaries.
+At the supported compact geometry, Weekend Review Queue actions use a complete
+two-column arrangement with the longer navigation action spanning both columns;
+wide panes return them to one row. Disabled-reason copy wraps to the pane's
+actual allocation, so unavailable and no-selection states remain fully readable
+without changing which controls are focus-eligible.
 
 ## Persistence
 

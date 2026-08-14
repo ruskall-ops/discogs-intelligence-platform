@@ -769,6 +769,30 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             self.root.queue_remove_button,
             self.root.queue_decision_button,
         )
+
+        def assert_queue_layout(expected_mode):
+            self.root.update()
+            self.assertEqual(self.root._queue_action_layout, expected_mode)
+            root_right = self.root.winfo_rootx() + self.root.winfo_width()
+            root_bottom = self.root.winfo_rooty() + self.root.winfo_height()
+            for button in queue_buttons:
+                self.assertTrue(button.winfo_ismapped(), button.cget("text"))
+                self.assertTrue(button.winfo_viewable(), button.cget("text"))
+                self.assertGreaterEqual(
+                    button.winfo_width(), button.winfo_reqwidth(),
+                    button.cget("text"),
+                )
+                self.assertLessEqual(
+                    button.winfo_rootx() + button.winfo_width(), root_right,
+                    button.cget("text"),
+                )
+                self.assertLessEqual(
+                    button.winfo_rooty() + button.winfo_height(), root_bottom,
+                    button.cget("text"),
+                )
+            reason = self.root.queue_action_reason_label
+            self.assertLessEqual(int(reason.cget("wraplength")), reason.winfo_width())
+            self.assertGreaterEqual(reason.winfo_height(), reason.winfo_reqheight())
         self.root.tabs.select(self.root.review_tab)
         self.root.collection_review_tabs.select(self.root.observations_tab)
         self.root.update()
@@ -840,6 +864,7 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         self.root.collector_review_service = Mock()
         self.root._load_queue_item(None)
         assert_disabled(*queue_buttons)
+        assert_queue_layout("compact")
         self.assertEqual(self.root.queue_note.cget("state"), "disabled")
         assert_reason(
             self.root.queue_action_reason_label,
@@ -853,6 +878,17 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         )
         self.root._load_queue_item(active)
         assert_enabled(*queue_buttons)
+        service_calls = tuple(self.root.collector_review_service.method_calls)
+        eligible = tuple(
+            widget for widget in self.root._dip_review_focus_order
+            if self.root._focus_eligible(widget)
+        )
+        for widget in eligible:
+            self.root._move_scoped_focus(widget, True)
+            self.root._move_scoped_focus(widget, False)
+        self.assertEqual(
+            tuple(self.root.collector_review_service.method_calls), service_calls
+        )
         assert_reason(
             self.root.queue_action_reason_label,
             self.root.queue_action_reason_var,
@@ -886,6 +922,8 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         self.assertFalse(self.root._queue_note_dirty)
         resolved = replace(
             active,
+            queue_item_id=2,
+            release_id=2,
             status=WeekendReviewStatus.RESOLVED,
             resolved_at=now,
         )
@@ -902,12 +940,35 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             self.root.queue_action_reason_var,
             DisabledActionReason.RESOLVED_START_REVIEW,
         )
+        self.root.collector_review_service.list_queue.return_value = (
+            active, resolved
+        )
+        self.root.queue_filter_var.set("All")
+        self.root.refresh_weekend_review_queue()
+        self.assertEqual(len(self.root.queue_tree.get_children()), 2)
+        self.assertEqual(
+            {
+                self.root.queue_tree.item(item, "values")[2]
+                for item in self.root.queue_tree.get_children()
+            },
+            {"To Review", "Resolved"},
+        )
+        self.root.geometry("1600x900")
+        assert_queue_layout("expanded")
+        self.root.geometry("800x560")
+        assert_queue_layout("compact")
         for hostile in ("TOKEN", "provider", "SQL", "/private", "PERSONAL NOTE"):
             self.assertNotIn(hostile, self.root.observation_action_reason_var.get())
             self.assertNotIn(hostile, self.root.queue_action_reason_var.get())
         self.root.collector_review_service = None
+        self.root.refresh_weekend_review_queue()
+        self.assertEqual(
+            self.root.queue_summary_var.get(),
+            "Weekend Review Queue is unavailable.",
+        )
         self.root._load_queue_item(None)
         assert_disabled(*queue_buttons)
+        assert_queue_layout("compact")
         assert_reason(
             self.root.queue_action_reason_label,
             self.root.queue_action_reason_var,
@@ -930,6 +991,27 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         self.assertIs(self.root.focus_get(), second)
         self.assertEqual(self.root._move_scoped_focus(second, False), "break")
         self.assertIs(self.root.focus_get(), first)
+
+        self.root.tabs.select(self.root.review_tab)
+        self.root.collection_review_tabs.select(self.root.queue_tab)
+        now = datetime(2026, 8, 12, tzinfo=timezone.utc)
+        active = WeekendReviewQueueItem(
+            1, 1, now, WeekendReviewStatus.TO_REVIEW, "", now, None,
+            WeekendObservationSource.HOT_NOW, now, "Stored signal", None, None,
+        )
+        self.root.collector_review_service = Mock()
+        self.root._load_queue_item(active)
+        activation = Mock()
+        self.root.queue_decision_button.configure(command=activation)
+        self.root.update()
+        self.root.queue_decision_button.focus_force()
+        self.root.queue_decision_button.event_generate("<Return>")
+        self.root.update()
+        activation.assert_called_once_with()
+        activation.reset_mock()
+        self.root.queue_decision_button.event_generate("<space>")
+        self.root.update()
+        activation.assert_called_once_with()
 
 
 if __name__ == "__main__":

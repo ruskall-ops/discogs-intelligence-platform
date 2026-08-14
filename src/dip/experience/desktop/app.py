@@ -989,31 +989,30 @@ class App(tk.Tk):
             text="Save note",
             command=self._save_queue_note,
         )
-        self.queue_save_button.pack(side="left", padx=(0, 5))
         self.queue_status_button = ttk.Button(
             actions,
             text="Start Review",
             command=self._toggle_queue_status,
         )
-        self.queue_status_button.pack(side="left", padx=(0, 5))
         self.queue_resolve_button = ttk.Button(
             actions,
             text="Resolve",
             command=self._resolve_or_reopen_queue_item,
         )
-        self.queue_resolve_button.pack(side="left", padx=(0, 5))
         self.queue_remove_button = ttk.Button(
             actions,
             text="Remove",
             command=self._remove_queue_item,
         )
-        self.queue_remove_button.pack(side="left", padx=(0, 5))
         self.queue_decision_button = ttk.Button(
             actions,
             text="Open Collection Decision",
             command=self._open_queue_collection_decision,
         )
-        self.queue_decision_button.pack(side="left")
+        self.queue_actions = actions
+        self._queue_action_layout = None
+        actions.bind("<Configure>", self._layout_queue_actions)
+        self._layout_queue_actions()
         self.queue_action_reason_var = tk.StringVar()
         self.queue_action_reason_label = ttk.Label(
             right,
@@ -1025,9 +1024,71 @@ class App(tk.Tk):
         self.queue_action_reason_label.pack(
             side="bottom", anchor="w", fill="x", pady=(6, 0)
         )
+        self.queue_action_reason_label.bind(
+            "<Configure>", self._wrap_queue_action_reason
+        )
         actions.pack(side="bottom", fill="x", pady=(8, 0))
         self.queue_note.pack(fill="both", expand=True)
         self._set_queue_controls_enabled(False)
+
+    def _layout_queue_actions(self, event=None):
+        """Keep every queue action visible in narrow and expanded panes."""
+
+        width = (
+            getattr(event, "width", 0)
+            or self.queue_actions.winfo_width()
+            or self.queue_actions.winfo_reqwidth()
+        )
+        buttons = (
+            self.queue_save_button,
+            self.queue_status_button,
+            self.queue_resolve_button,
+            self.queue_remove_button,
+            self.queue_decision_button,
+        )
+        expanded_width = (
+            sum(button.winfo_reqwidth() for button in buttons)
+            + 5 * (len(buttons) - 1)
+        )
+        mode = "expanded" if width >= expanded_width else "compact"
+        if mode == self._queue_action_layout:
+            return
+        for button in buttons:
+            button.grid_forget()
+        for column in range(5):
+            self.queue_actions.columnconfigure(
+                column, weight=1 if mode == "compact" and column < 2 else 0
+            )
+        if mode == "expanded":
+            for column, button in enumerate(buttons):
+                button.grid(
+                    row=0,
+                    column=column,
+                    padx=(0, 5) if column < len(buttons) - 1 else 0,
+                    sticky="w",
+                )
+        else:
+            for button, row, column in (
+                (self.queue_save_button, 0, 0),
+                (self.queue_status_button, 0, 1),
+                (self.queue_resolve_button, 1, 0),
+                (self.queue_remove_button, 1, 1),
+            ):
+                button.grid(
+                    row=row, column=column, pady=(0, 5),
+                    sticky="ew",
+                )
+            self.queue_decision_button.grid(
+                row=2, column=0, columnspan=2, sticky="ew"
+            )
+        self._queue_action_layout = mode
+
+    def _wrap_queue_action_reason(self, event):
+        """Wrap the complete disabled reason to its real pane allocation."""
+
+        width = getattr(event, "width", 0)
+        if width > 1:
+            self.queue_action_reason_label.configure(wraplength=width)
 
     def _observation_source(self):
         return _enum_for_label(
