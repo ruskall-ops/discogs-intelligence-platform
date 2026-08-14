@@ -516,10 +516,152 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
                 "Available destinations", "Unavailable destinations",
             ),
         )
+        self.root.dashboard_homepage_vars["hidden_gems"].set(
+            "Five synthetic Hidden Gems candidates with deliberately extended "
+            "evidence text that must wrap fully inside the production card."
+        )
+        self.root.dashboard_command_vars["Opportunity Highlights"][0].set(
+            "Not available in this version. Opportunity evidence remains visible "
+            "as complete wrapped explanatory copy."
+        )
+        self.root.dashboard_command_vars["Marketplace Highlights"][0].set(
+            "Not available in this version. Marketplace evidence remains visible "
+            "as complete wrapped explanatory copy."
+        )
+        self.root.update()
+        compact_homepage_positions = (
+            (1, 0, 6), (2, 0, 6), (3, 0, 6), (4, 0, 6), (5, 0, 6)
+        )
+        compact_command_positions = (
+            (0, 0, 6), (1, 0, 6), (2, 0, 6), (3, 0, 6), (4, 0, 6)
+        )
+        wide_homepage_positions = (
+            (1, 0, 3), (1, 3, 3), (2, 0, 3), (2, 3, 3), (3, 0, 6)
+        )
+        wide_command_positions = (
+            (0, 0, 3), (0, 3, 3), (1, 0, 3), (1, 3, 3), (2, 0, 3)
+        )
+
+        def positions(cards):
+            return tuple(
+                (
+                    int(card.grid_info()["row"]),
+                    int(card.grid_info()["column"]),
+                    int(card.grid_info()["columnspan"]),
+                )
+                for card, _label in cards
+            )
+
+        def assert_card_containment(cards):
+            canvas = self.root.dashboard_canvas
+            canvas_left = canvas.winfo_rootx()
+            canvas_right = canvas_left + canvas.winfo_width()
+            for card, label in cards:
+                canvas.yview_moveto(
+                    (
+                        card.winfo_rooty()
+                        - self.root.dashboard_content.winfo_rooty()
+                    )
+                    / max(1, self.root.dashboard_content.winfo_reqheight())
+                )
+                self.root.update_idletasks()
+                self.assertTrue(card.winfo_ismapped(), card.cget("text"))
+                self.assertTrue(card.winfo_viewable(), card.cget("text"))
+                self.assertGreaterEqual(card.winfo_rootx(), canvas_left)
+                self.assertLessEqual(
+                    card.winfo_rootx() + card.winfo_width(), canvas_right
+                )
+                self.assertGreaterEqual(label.winfo_rootx(), card.winfo_rootx())
+                self.assertLessEqual(
+                    label.winfo_rootx() + label.winfo_width(),
+                    card.winfo_rootx() + card.winfo_width(),
+                )
+                self.assertLessEqual(
+                    int(label.cget("wraplength")), label.winfo_width()
+                )
+
+        cards = (
+            self.root.dashboard_homepage_cards
+            + self.root.dashboard_command_cards
+        )
+        self.assertEqual(self.root.geometry().split("+")[0], "800x560")
+        self.assertEqual(self.root._dashboard_card_layout, "compact")
+        self.assertEqual(
+            positions(self.root.dashboard_homepage_cards),
+            compact_homepage_positions,
+        )
+        self.assertEqual(
+            positions(self.root.dashboard_command_cards),
+            compact_command_positions,
+        )
+        self.assertEqual(
+            self.root.dashboard_content.winfo_width(),
+            self.root.dashboard_canvas.winfo_width(),
+        )
+        assert_card_containment(cards)
+        long_labels = {
+            card.cget("text"): label
+            for card, label in cards
+            if card.cget("text") in {
+                "Hidden Gems",
+                "Opportunity Highlights",
+                "Marketplace Highlights",
+            }
+        }
+        self.assertEqual(
+            set(long_labels),
+            {"Hidden Gems", "Opportunity Highlights", "Marketplace Highlights"},
+        )
+        for label in long_labels.values():
+            self.assertGreater(label.winfo_reqheight(), 20)
+
+        compact_canvas_width = self.root.dashboard_canvas.winfo_width()
+        self.root.geometry("1024x768")
+        self.root.update()
+        self.assertGreater(
+            self.root.dashboard_canvas.winfo_width(), compact_canvas_width
+        )
+        self.assertEqual(self.root._dashboard_card_layout, "wide")
+        self.assertEqual(
+            positions(self.root.dashboard_homepage_cards),
+            wide_homepage_positions,
+        )
+        self.assertEqual(
+            positions(self.root.dashboard_command_cards),
+            wide_command_positions,
+        )
+        assert_card_containment(cards)
+
+        self.root.geometry("800x560")
+        self.root.update()
+        self.assertEqual(self.root._dashboard_card_layout, "compact")
+        self.assertEqual(
+            positions(self.root.dashboard_homepage_cards),
+            compact_homepage_positions,
+        )
+        self.assertEqual(
+            positions(self.root.dashboard_command_cards),
+            compact_command_positions,
+        )
+        assert_card_containment(cards)
         eligible = tuple(
             value for value in self.root._dip_dashboard_focus_order
             if self.root._focus_eligible(value)
         )
+        canvas_left = self.root.dashboard_canvas.winfo_rootx()
+        canvas_right = canvas_left + self.root.dashboard_canvas.winfo_width()
+        for button in (
+            widget for widget in eligible
+            if isinstance(widget, ttk.Button)
+            and self.root._is_live_dashboard_widget(widget)
+        ):
+            self.root._reveal_dashboard_control(button)
+            self.root.update_idletasks()
+            self.assertTrue(button.winfo_viewable(), button.cget("text"))
+            self.assertGreaterEqual(button.winfo_rootx(), canvas_left)
+            self.assertLessEqual(
+                button.winfo_rootx() + button.winfo_width(), canvas_right
+            )
         self.assertEqual(len(eligible), len(set(eligible)))
         current = eligible[0]
         current.focus_force()

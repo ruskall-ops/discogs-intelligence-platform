@@ -356,6 +356,9 @@ class App(tk.Tk):
         dashboard_window = dashboard_canvas.create_window(
             (0, 0), window=dashboard_content, anchor="nw"
         )
+        self.dashboard_canvas = dashboard_canvas
+        self.dashboard_content = dashboard_content
+        self.dashboard_window = dashboard_window
         dashboard_content.bind(
             "<Configure>",
             lambda _event: dashboard_canvas.configure(
@@ -364,12 +367,8 @@ class App(tk.Tk):
         )
         dashboard_canvas.bind(
             "<Configure>",
-            lambda event: dashboard_canvas.itemconfigure(
-                dashboard_window, width=event.width
-            ),
+            self._layout_dashboard_cards,
         )
-        self.dashboard_canvas = dashboard_canvas
-        self.dashboard_content = dashboard_content
         for column in range(6):
             dashboard_content.columnconfigure(column, weight=1)
 
@@ -456,6 +455,8 @@ class App(tk.Tk):
             ("hidden_gems", "Hidden Gems", 2, 3, 3),
             ("what_changed", "What Changed", 3, 0, 6),
         )
+        self.dashboard_homepage_cards = []
+        self.dashboard_card_preferred_wraplengths = {}
         for section_id, title, row, column, columnspan in homepage_sections:
             card = ttk.LabelFrame(latest_intelligence, text=title, padding=14)
             card.grid(
@@ -467,13 +468,19 @@ class App(tk.Tk):
                 sticky="nsew",
             )
             body = tk.StringVar(value="Intelligence is loading…")
-            ttk.Label(
+            label = ttk.Label(
                 card,
                 textvariable=body,
                 wraplength=350,
                 justify="left",
-            ).pack(anchor="nw", fill="both", expand=True)
+            )
+            label.pack(anchor="nw", fill="both", expand=True)
+            label.bind("<Configure>", self._wrap_dashboard_label)
+            self.dashboard_homepage_cards.append((card, label))
+            self.dashboard_card_preferred_wraplengths[label] = 350
             self.dashboard_homepage_vars[section_id] = body
+        for column in range(6):
+            latest_intelligence.columnconfigure(column, weight=1)
         available = ttk.LabelFrame(dashboard_content, text="Available destinations", padding=10)
         available.grid(row=2, column=0, columnspan=6, padx=8, pady=8, sticky="ew")
         available_actions = ttk.Frame(available)
@@ -509,19 +516,32 @@ class App(tk.Tk):
         )
         unavailable = ttk.LabelFrame(dashboard_content, text="Unavailable destinations", padding=10)
         unavailable.grid(row=3, column=0, columnspan=6, padx=8, pady=8, sticky="ew")
+        self.dashboard_command_cards = []
         for title, row, column in command_cards:
             card = ttk.LabelFrame(unavailable, text=title, padding=14)
             card.grid(row=row - 7, column=column, columnspan=3, padx=8, pady=8, sticky="nsew")
             body = tk.StringVar(value="Workspace summary is loading…")
-            ttk.Label(card, textvariable=body, wraplength=350, justify="left").pack(
-                anchor="nw", fill="both", expand=True
+            label = ttk.Label(
+                card, textvariable=body, wraplength=350, justify="left"
             )
+            label.pack(anchor="nw", fill="both", expand=True)
+            label.bind("<Configure>", self._wrap_dashboard_label)
             actions = ttk.Frame(card)
             actions.pack(anchor="w", fill="x", pady=(10, 0))
+            self.dashboard_command_cards.append((card, label))
+            self.dashboard_card_preferred_wraplengths[label] = 350
             self.dashboard_command_vars[title] = (body, actions)
+        for column in range(6):
+            unavailable.columnconfigure(column, weight=1)
         self.dashboard_primary_sections = (
             current_collection, latest_intelligence, available, unavailable
         )
+        self.dashboard_card_sections = (latest_intelligence, unavailable)
+        self._dashboard_card_layout = None
+        latest_intelligence.bind(
+            "<Configure>", lambda _event: self._layout_dashboard_cards()
+        )
+        self._layout_dashboard_cards()
 
         self.collection_review_tabs = ttk.Notebook(self.review_tab)
         self.collection_review_tabs.pack(fill="both", expand=True)
@@ -609,6 +629,62 @@ class App(tk.Tk):
         )
         self._configure_dashboard_wheel_scrolling()
         self._configure_slice_four_keyboard()
+
+    def _layout_dashboard_cards(self, event=None):
+        """Reflow Dashboard cards from the final canvas viewport allocation."""
+
+        canvas = self.dashboard_canvas
+        width = getattr(event, "width", 0) or canvas.winfo_width()
+        canvas.itemconfigure(self.dashboard_window, width=width)
+        if not hasattr(self, "dashboard_homepage_cards"):
+            return
+
+        def preferred_card_width(card, label):
+            preferred_body = self.dashboard_card_preferred_wraplengths[label]
+            native_chrome = max(0, card.winfo_reqwidth() - label.winfo_reqwidth())
+            return preferred_body + native_chrome + 16
+
+        homepage = self.dashboard_homepage_cards
+        commands = self.dashboard_command_cards
+        two_column_content = max(
+            preferred_card_width(*homepage[0]) + preferred_card_width(*homepage[1]),
+            preferred_card_width(*homepage[2]) + preferred_card_width(*homepage[3]),
+            preferred_card_width(*commands[0]) + preferred_card_width(*commands[1]),
+            preferred_card_width(*commands[2]) + preferred_card_width(*commands[3]),
+        )
+        section = self.dashboard_card_sections[0]
+        outer_chrome = max(0, canvas.winfo_width() - section.winfo_width())
+        mode = "wide" if width >= two_column_content + outer_chrome else "compact"
+        if mode == self._dashboard_card_layout:
+            return
+
+        homepage_positions = (
+            ((1, 0, 3), (1, 3, 3), (2, 0, 3), (2, 3, 3), (3, 0, 6))
+            if mode == "wide"
+            else ((1, 0, 6), (2, 0, 6), (3, 0, 6), (4, 0, 6), (5, 0, 6))
+        )
+        command_positions = (
+            ((0, 0, 3), (0, 3, 3), (1, 0, 3), (1, 3, 3), (2, 0, 3))
+            if mode == "wide"
+            else ((0, 0, 6), (1, 0, 6), (2, 0, 6), (3, 0, 6), (4, 0, 6))
+        )
+        for (card, _label), (row, column, columnspan) in zip(
+            homepage, homepage_positions
+        ):
+            card.grid_configure(row=row, column=column, columnspan=columnspan)
+        for (card, _label), (row, column, columnspan) in zip(
+            commands, command_positions
+        ):
+            card.grid_configure(row=row, column=column, columnspan=columnspan)
+        self._dashboard_card_layout = mode
+
+    @staticmethod
+    def _wrap_dashboard_label(event):
+        """Wrap a Dashboard body to its final allocated label width."""
+
+        width = getattr(event, "width", 0)
+        if width > 1 and int(event.widget.cget("wraplength")) != width:
+            event.widget.configure(wraplength=width)
 
     def _configure_dashboard_wheel_scrolling(self):
         """Route wheel input from this window's Dashboard widget subtree."""

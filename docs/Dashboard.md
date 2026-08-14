@@ -30,8 +30,12 @@ available only through Collection Explorer, and Marketplace Dashboard data is
 not activated.
 
 The Dashboard supports an `800×560` macOS window through wrapping and vertical
-overflow. Its interactive controls participate in explicit local forward and
-reverse focus traversal; Return and Space activate focused buttons. No
+overflow. Homepage and destination cards use one column when their measured
+native two-column requirements do not fit the final canvas viewport; wider
+viewports restore two columns without changing section or keyboard-focus order.
+Card body copy wraps to its actual allocation. Its interactive controls
+participate in explicit local forward and reverse focus traversal; Return and
+Space activate focused buttons. No
 application-global key binding is added.
 The declared local focus order is authoritative: hidden and disabled controls
 are filtered out, traversal wraps in both directions, and focusing an
