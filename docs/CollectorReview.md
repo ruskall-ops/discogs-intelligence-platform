@@ -176,7 +176,9 @@ At the supported compact geometry, Weekend Review Queue actions use a complete
 three-row arrangement; wide panes return them to one row.
 Disabled-reason copy wraps to the pane's
 actual allocation, so unavailable and no-selection states remain fully readable
-without changing which controls are focus-eligible.
+without changing which controls are focus-eligible. The stable queue-detail
+pane allocation drives compact/expanded transitions after each completed resize;
+the action row's layout-dependent requested width does not drive its own mode.
 
 ## Persistence
 

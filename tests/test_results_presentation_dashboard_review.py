@@ -773,6 +773,10 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         def assert_queue_layout(expected_mode):
             self.root.update()
             self.assertEqual(self.root._queue_action_layout, expected_mode)
+            self.assertEqual(
+                self.root.queue_actions.winfo_width(),
+                self.root.queue_detail_panel.winfo_width() - 10,
+            )
             root_right = self.root.winfo_rootx() + self.root.winfo_width()
             root_bottom = self.root.winfo_rooty() + self.root.winfo_height()
             for button in queue_buttons:
@@ -955,8 +959,22 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         )
         self.root.geometry("1600x900")
         assert_queue_layout("expanded")
+        expanded_eligible = tuple(
+            widget for widget in self.root._dip_review_focus_order
+            if self.root._focus_eligible(widget)
+        )
+        self.assertTrue(set(queue_buttons).issubset(expanded_eligible))
         self.root.geometry("800x560")
         assert_queue_layout("compact")
+        compact_eligible = tuple(
+            widget for widget in self.root._dip_review_focus_order
+            if self.root._focus_eligible(widget)
+        )
+        self.assertTrue(set(queue_buttons).issubset(compact_eligible))
+        self.assertEqual(
+            tuple(widget for widget in compact_eligible if widget in queue_buttons),
+            tuple(widget for widget in expanded_eligible if widget in queue_buttons),
+        )
         for hostile in ("TOKEN", "provider", "SQL", "/private", "PERSONAL NOTE"):
             self.assertNotIn(hostile, self.root.observation_action_reason_var.get())
             self.assertNotIn(hostile, self.root.queue_action_reason_var.get())

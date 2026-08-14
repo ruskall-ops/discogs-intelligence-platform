@@ -938,8 +938,8 @@ class App(tk.Tk):
         content.pack(fill="both", expand=True)
         left = ttk.Frame(content)
         right = ttk.Frame(content, padding=(10, 0, 0, 0))
-        content.add(left, weight=2)
-        content.add(right, weight=3)
+        content.add(left, weight=1)
+        content.add(right, weight=2)
 
         self.queue_tree = ttk.Treeview(
             left,
@@ -1010,8 +1010,9 @@ class App(tk.Tk):
             command=self._open_queue_collection_decision,
         )
         self.queue_actions = actions
+        self.queue_detail_panel = right
         self._queue_action_layout = None
-        actions.bind("<Configure>", self._layout_queue_actions)
+        right.bind("<Configure>", self._layout_queue_actions)
         self._layout_queue_actions()
         self.queue_action_reason_var = tk.StringVar()
         self.queue_action_reason_label = ttk.Label(
@@ -1036,9 +1037,9 @@ class App(tk.Tk):
 
         width = (
             getattr(event, "width", 0)
-            or self.queue_actions.winfo_width()
-            or self.queue_actions.winfo_reqwidth()
+            or self.queue_detail_panel.winfo_width()
         )
+        width = max(0, width - 10)
         buttons = (
             self.queue_save_button,
             self.queue_status_button,
@@ -1091,7 +1092,6 @@ class App(tk.Tk):
                 button.grid(
                     row=row,
                     column=column,
-                    pady=(0, 5),
                     sticky="ew",
                 )
             self.queue_decision_button.grid(
