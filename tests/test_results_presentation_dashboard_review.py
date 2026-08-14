@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import datetime, timezone
 from decimal import Decimal
-from math import ceil
 import os
 from pathlib import Path
 from types import MappingProxyType, SimpleNamespace
@@ -771,7 +770,7 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             self.root.queue_decision_button,
         )
 
-        def assert_queue_layout(expected_mode):
+        def assert_queue_layout(expected_mode, expected_positions):
             self.root.update()
             self.assertEqual(self.root._queue_action_layout, expected_mode)
             self.assertEqual(
@@ -795,6 +794,17 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
                     button.winfo_rooty() + button.winfo_height(), root_bottom,
                     button.cget("text"),
                 )
+            self.assertEqual(
+                tuple(
+                    (
+                        int(button.grid_info()["row"]),
+                        int(button.grid_info()["column"]),
+                        int(button.grid_info()["columnspan"]),
+                    )
+                    for button in queue_buttons
+                ),
+                expected_positions,
+            )
             reason = self.root.queue_action_reason_label
             self.assertLessEqual(int(reason.cget("wraplength")), reason.winfo_width())
             self.assertGreaterEqual(reason.winfo_height(), reason.winfo_reqheight())
@@ -869,7 +879,21 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         self.root.collector_review_service = Mock()
         self.root._load_queue_item(None)
         assert_disabled(*queue_buttons)
-        assert_queue_layout("compact")
+        compact_positions = (
+            (0, 0, 1),
+            (0, 1, 1),
+            (1, 0, 1),
+            (1, 1, 1),
+            (2, 0, 2),
+        )
+        expanded_positions = (
+            (0, 0, 1),
+            (0, 1, 1),
+            (0, 2, 1),
+            (1, 0, 1),
+            (1, 1, 1),
+        )
+        assert_queue_layout("compact", compact_positions)
         self.assertEqual(self.root.queue_note.cget("state"), "disabled")
         assert_reason(
             self.root.queue_action_reason_label,
@@ -959,27 +983,37 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             {"To Review", "Resolved"},
         )
         expanded_threshold = self.root._queue_expanded_action_width()
-        compact_action_width = self.root.queue_actions.winfo_width()
-        queue_pane_weight = 2
-        total_queue_pane_weight = 3
-        expanded_root_width = self.root.winfo_width() + ceil(
-            max(0, expanded_threshold - compact_action_width)
-            * total_queue_pane_weight
-            / queue_pane_weight
+        native_widths = tuple(button.winfo_reqwidth() for button in queue_buttons)
+        self.assertEqual(
+            expanded_threshold,
+            max(
+                sum(native_widths[:3]) + 10,
+                sum(native_widths[3:]) + 5,
+            ),
         )
-        self.root.geometry(f"{expanded_root_width}x900")
+        compact_root_width = self.root.winfo_width()
+        compact_queue_width = self.root.queue_tab.winfo_width()
+        compact_action_width = self.root.queue_actions.winfo_width()
+        self.root.geometry("1024x768")
         self.root.update()
+        self.assertEqual(self.root.winfo_width(), 1024)
+        self.assertGreater(self.root.queue_tab.winfo_width(), compact_queue_width)
+        self.assertGreater(
+            self.root.queue_actions.winfo_width(), compact_action_width
+        )
         self.assertGreaterEqual(
             self.root.queue_actions.winfo_width(), expanded_threshold
         )
-        assert_queue_layout("expanded")
+        assert_queue_layout("expanded", expanded_positions)
         expanded_eligible = tuple(
             widget for widget in self.root._dip_review_focus_order
             if self.root._focus_eligible(widget)
         )
         self.assertTrue(set(queue_buttons).issubset(expanded_eligible))
         self.root.geometry("800x560")
-        assert_queue_layout("compact")
+        self.root.update()
+        self.assertEqual(self.root.winfo_width(), compact_root_width)
+        assert_queue_layout("compact", compact_positions)
         compact_eligible = tuple(
             widget for widget in self.root._dip_review_focus_order
             if self.root._focus_eligible(widget)
@@ -1000,7 +1034,7 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         )
         self.root._load_queue_item(None)
         assert_disabled(*queue_buttons)
-        assert_queue_layout("compact")
+        assert_queue_layout("compact", compact_positions)
         assert_reason(
             self.root.queue_action_reason_label,
             self.root.queue_action_reason_var,

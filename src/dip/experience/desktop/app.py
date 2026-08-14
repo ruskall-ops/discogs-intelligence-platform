@@ -1060,11 +1060,11 @@ class App(tk.Tk):
                 minsize=(
                     max(
                         self.queue_save_button.winfo_reqwidth(),
-                        self.queue_status_button.winfo_reqwidth(),
+                        self.queue_resolve_button.winfo_reqwidth(),
                     )
                     if mode == "compact" and column == 0
                     else max(
-                        self.queue_resolve_button.winfo_reqwidth(),
+                        self.queue_status_button.winfo_reqwidth(),
                         self.queue_remove_button.winfo_reqwidth(),
                     )
                     if mode == "compact" and column == 1
@@ -1072,18 +1072,24 @@ class App(tk.Tk):
                 ),
             )
         if mode == "expanded":
-            for column, button in enumerate(buttons):
+            for button, row, column, last_in_row in (
+                (self.queue_save_button, 0, 0, False),
+                (self.queue_status_button, 0, 1, False),
+                (self.queue_resolve_button, 0, 2, True),
+                (self.queue_remove_button, 1, 0, False),
+                (self.queue_decision_button, 1, 1, True),
+            ):
                 button.grid(
-                    row=0,
+                    row=row,
                     column=column,
-                    padx=(0, 5) if column < len(buttons) - 1 else 0,
+                    padx=(0, 5) if not last_in_row else 0,
                     sticky="w",
                 )
         else:
             for button, row, column in (
                 (self.queue_save_button, 0, 0),
-                (self.queue_resolve_button, 0, 1),
-                (self.queue_status_button, 1, 0),
+                (self.queue_status_button, 0, 1),
+                (self.queue_resolve_button, 1, 0),
                 (self.queue_remove_button, 1, 1),
             ):
                 button.grid(
@@ -1106,9 +1112,9 @@ class App(tk.Tk):
             self.queue_remove_button,
             self.queue_decision_button,
         )
-        return (
-            sum(button.winfo_reqwidth() for button in buttons)
-            + 5 * (len(buttons) - 1)
+        return max(
+            sum(button.winfo_reqwidth() for button in buttons[:3]) + 10,
+            sum(button.winfo_reqwidth() for button in buttons[3:]) + 5,
         )
 
     def _wrap_queue_action_reason(self, event):

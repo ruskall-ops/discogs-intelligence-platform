@@ -173,7 +173,8 @@ Return, and Space handling preserves mouse and keyboard use at `800×560`; it
 does not change queue lifecycle, unsaved-note, evidence, provider, or write
 boundaries.
 At the supported compact geometry, Weekend Review Queue actions use a complete
-three-row arrangement; wide panes return them to one row.
+three-row arrangement; expanded panes use two rows while preserving logical
+action and focus order.
 Disabled-reason copy wraps to the pane's
 actual allocation, so unavailable and no-selection states remain fully readable
 without changing which controls are focus-eligible. The stable queue-detail
