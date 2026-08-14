@@ -571,14 +571,14 @@ class App(tk.Tk):
             apply_filter,
         )
 
+        table = ttk.Frame(self.decisions_tab)
+        table.pack(fill="both", expand=True)
         cols = tuple(column.column_id.value for column in COLLECTION_DECISION_COLUMNS)
-        self.tree = ttk.Treeview(self.decisions_tab, columns=cols, show="headings", selectmode="browse")
+        self.tree = ttk.Treeview(table, columns=cols, show="headings", selectmode="browse")
         for column in COLLECTION_DECISION_COLUMNS:
             self.tree.heading(column.column_id.value, text=column.label)
             self.tree.column(column.column_id.value, width=column.width, anchor=column.anchor.value, stretch=False)
-        table = ttk.Frame(self.decisions_tab)
-        table.pack(fill="both", expand=True)
-        self.tree.grid(in_=table, row=0, column=0, sticky="nsew")
+        self.tree.grid(row=0, column=0, sticky="nsew")
         self.tree.bind("<Double-1>", self.edit_selected)
 
         self.decision_vertical_scrollbar = ttk.Scrollbar(

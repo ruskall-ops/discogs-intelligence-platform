@@ -333,6 +333,8 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
                 (41, "Missing", "Evidence"),
                 (42, "Artist" * 80, "Title" * 80),
                 (43, "Nonzero", "Evidence"),
+                (44, "Duplicate-looking", "Separate identity"),
+                (45, "Duplicate-looking", "Separate identity"),
                 *((release_id, f"Volume {release_id}", "Overflow") for release_id in range(100, 160)),
             ),
         )
@@ -364,8 +366,26 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         self.assertTrue(self.root.load_table())
         self.root.update_idletasks()
         self.assertTrue(tree.winfo_ismapped())
+        self.assertTrue(tree.winfo_viewable())
         self.assertTrue(horizontal.winfo_ismapped())
         self.assertTrue(self.root.decision_vertical_scrollbar.winfo_ismapped())
+        decision_trees = tuple(
+            widget for widget in self.root.decisions_tab.winfo_children()
+            for widget in widget.winfo_children()
+            if isinstance(widget, ttk.Treeview)
+            and widget.winfo_ismapped()
+            and widget.winfo_viewable()
+        )
+        self.assertEqual(decision_trees, (tree,))
+        self.assertEqual(tree.winfo_parent(), str(tree.master))
+        self.assertEqual(
+            tuple(tree.heading(column.column_id.value, "text") for column in COLLECTION_DECISION_COLUMNS),
+            tuple(column.label for column in COLLECTION_DECISION_COLUMNS),
+        )
+        self.assertEqual(tuple(str(value) for value in tree.cget("show")), ("headings",))
+        self.assertEqual(
+            tuple(str(value) for value in tree.cget("displaycolumns")), ("#all",)
+        )
         for column in ("price", "wants", "sale", "opportunity"):
             self.assertEqual(str(tree.column(column, "anchor")), "e")
         for column in ("artist", "title", "window", "priority", "decision"):
@@ -380,12 +400,42 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         self.assertEqual(tree.item("41", "values")[2:6], ("—", "—", "—", "—"))
         self.assertEqual(tree.item("42", "values")[2:6], ("0.00", "0", "0", "0.0"))
         self.assertEqual(tree.item("43", "values")[2:6], ("19.50", "12", "3", "87.1"))
+        self.assertEqual(tree.item("44", "values")[:2], tree.item("45", "values")[:2])
+        duplicate_identity = tree.item("44", "values")[:2]
+        self.assertEqual(
+            {
+                iid for iid in tree.get_children()
+                if tree.item(iid, "values")[:2] == duplicate_identity
+            },
+            {"44", "45"},
+        )
+        tree.xview_moveto(0.0)
+        displayed = tree.get_children()
+        for release_id in (displayed[0], displayed[len(displayed) // 2], displayed[-1]):
+            tree.see(release_id)
+            self.root.update_idletasks()
+            bbox = tree.bbox(release_id)
+            self.assertTrue(bbox)
+            x, y, width, height = bbox
+            self.assertGreater(width, 0)
+            self.assertGreater(height, 0)
+            containing = self.root.winfo_containing(
+                tree.winfo_rootx() + x + min(10, max(1, width // 2)),
+                tree.winfo_rooty() + y + max(1, height // 2),
+            )
+            self.assertIs(containing, tree)
         tree.selection_set("42")
         self.assertTrue(self.root.load_table())
         self.assertEqual(tree.selection(), ("42",))
         self.root.search_var.set("Nonzero")
         self.assertTrue(self.root.load_table())
         self.assertEqual(tree.selection(), ())
+        self.root.search_var.set("No synthetic row can match this filter")
+        self.assertTrue(self.root.load_table())
+        self.assertEqual(tree.get_children(), ())
+        self.root.search_var.set("")
+        self.assertTrue(self.root.load_table())
+        self.assertEqual(len(tree.get_children()), 65)
 
     def test_production_dashboard_sections_and_complete_mapped_focus_cycle(self) -> None:
         traced_sql: list[str] = []
