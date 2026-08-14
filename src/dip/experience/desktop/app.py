@@ -1047,10 +1047,7 @@ class App(tk.Tk):
             self.queue_remove_button,
             self.queue_decision_button,
         )
-        expanded_width = (
-            sum(button.winfo_reqwidth() for button in buttons)
-            + 5 * (len(buttons) - 1)
-        )
+        expanded_width = self._queue_expanded_action_width()
         mode = "expanded" if width >= expanded_width else "compact"
         if mode == self._queue_action_layout:
             return
@@ -1098,6 +1095,21 @@ class App(tk.Tk):
                 row=2, column=0, columnspan=2, sticky="ew"
             )
         self._queue_action_layout = mode
+
+    def _queue_expanded_action_width(self):
+        """Return the native width required by the complete expanded action row."""
+
+        buttons = (
+            self.queue_save_button,
+            self.queue_status_button,
+            self.queue_resolve_button,
+            self.queue_remove_button,
+            self.queue_decision_button,
+        )
+        return (
+            sum(button.winfo_reqwidth() for button in buttons)
+            + 5 * (len(buttons) - 1)
+        )
 
     def _wrap_queue_action_reason(self, event):
         """Wrap the complete disabled reason to its real pane allocation."""

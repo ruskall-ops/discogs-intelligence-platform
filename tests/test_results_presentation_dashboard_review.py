@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import datetime, timezone
 from decimal import Decimal
+from math import ceil
 import os
 from pathlib import Path
 from types import MappingProxyType, SimpleNamespace
@@ -957,7 +958,20 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             },
             {"To Review", "Resolved"},
         )
-        self.root.geometry("1600x900")
+        expanded_threshold = self.root._queue_expanded_action_width()
+        compact_action_width = self.root.queue_actions.winfo_width()
+        queue_pane_weight = 2
+        total_queue_pane_weight = 3
+        expanded_root_width = self.root.winfo_width() + ceil(
+            max(0, expanded_threshold - compact_action_width)
+            * total_queue_pane_weight
+            / queue_pane_weight
+        )
+        self.root.geometry(f"{expanded_root_width}x900")
+        self.root.update()
+        self.assertGreaterEqual(
+            self.root.queue_actions.winfo_width(), expanded_threshold
+        )
         assert_queue_layout("expanded")
         expanded_eligible = tuple(
             widget for widget in self.root._dip_review_focus_order
