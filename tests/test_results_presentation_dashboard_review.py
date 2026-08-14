@@ -346,6 +346,22 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             "INSERT INTO scores(release_id, calculated_at, value_score, demand_score, liquidity_score, momentum_score, opportunity_score, sell_window, priority, explanation) VALUES (?, '2026-08-12T10:00:00+00:00', ?, ?, ?, ?, ?, 'Stable', 'Worth reviewing', 'Facts')",
             ((42, 0, 0, 0, 0, 0), (43, 1.0, 2.25, 3.5, 4.0, 87.125)),
         )
+        self.database.conn.executemany(
+            "INSERT INTO scores(release_id, calculated_at, sell_window, priority) VALUES (?, '2026-08-12T10:00:00+00:00', 'Stable', ?)",
+            (
+                (44, "Monitor"), (45, "monitor"),
+                (100, "High-priority review"),
+                (101, "Possible candidate"), (102, "Low priority"),
+            ),
+        )
+        self.database.conn.executemany(
+            "INSERT INTO decisions(release_id, decision) VALUES (?, ?)",
+            (
+                (41, "Research further"), (42, "Keep"),
+                (43, "Consider selling"), (44, "All"), (45, "review"),
+                (100, "List for sale"), (101, "Maybe"), (102, "Ignore"),
+            ),
+        )
         self.database.conn.commit()
         rows = {row["release_id"]: row for row in self.database.review_rows()}
         self.assertEqual(
@@ -436,6 +452,58 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         self.root.search_var.set("")
         self.assertTrue(self.root.load_table())
         self.assertEqual(len(tree.get_children()), 65)
+        decision_labels = tuple(self.root.decision_filter.cget("values"))
+        priority_labels = tuple(self.root.priority_filter.cget("values"))
+        self.assertEqual(
+            decision_labels[:6],
+            ("All", "Review", "Keep", "List for sale", "Maybe", "Ignore"),
+        )
+        self.assertIn("Retained: Research further", decision_labels)
+        self.assertIn("Retained: Consider selling", decision_labels)
+        self.assertIn("Retained: All", decision_labels)
+        self.assertIn("Retained: review", decision_labels)
+        self.assertIn("Retained: Monitor", priority_labels)
+        self.assertIn("Retained: monitor", priority_labels)
+        self.assertEqual(
+            {choice.query_value for choice in self.root._decision_filter_choices},
+            {row["decision"] for row in self.database.review_rows()} | {None},
+        )
+        self.assertEqual(
+            {choice.query_value for choice in self.root._priority_filter_choices},
+            {row["priority"] for row in self.database.review_rows()} | {None},
+        )
+        changes_before_filters = self.database.conn.total_changes
+        with patch.object(
+            self.database, "review_rows", wraps=self.database.review_rows
+        ) as review_rows:
+            self.root.decision_filter_var.set("Retained: All")
+            self.assertTrue(self.root.load_table())
+            self.assertEqual(tree.get_children(), ("44",))
+            self.assertEqual(
+                review_rows.call_args.kwargs["decision"].query_value, "All"
+            )
+            self.root.decision_filter_var.set("All")
+            self.root.priority_var.set("Retained: Monitor")
+            self.assertTrue(self.root.load_table())
+            self.assertEqual(tree.get_children(), ("44",))
+            self.assertEqual(
+                review_rows.call_args.kwargs["priority"].query_value, "Monitor"
+            )
+            self.root.priority_var.set("All")
+            self.assertTrue(self.root.load_table())
+            self.assertEqual(len(tree.get_children()), 65)
+        self.assertEqual(self.database.conn.total_changes, changes_before_filters)
+        self.import_mock.assert_not_called()
+        self.refresh_mock.assert_not_called()
+        for dependency in (
+            self.dependencies.dashboard_homepage,
+            self.dependencies.collection_health_controller,
+            self.dependencies.collection_explorer_controller,
+            self.dependencies.hidden_gems_controller._presentation,
+            self.dependencies.portfolio_overview_controller,
+            self.dependencies.portfolio_controller,
+        ):
+            dependency.assert_not_called()
 
     def test_production_dashboard_sections_and_complete_mapped_focus_cycle(self) -> None:
         traced_sql: list[str] = []

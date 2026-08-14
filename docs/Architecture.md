@@ -410,7 +410,13 @@ Intelligence History, and canonical Marketplace evidence without executing
 intelligence. Only an explicit user Add creates a durable queue item. Frozen
 source evidence does not change when later Collector Runs refresh calculated
 observations, and Collection Decisions continue to use their independent
-editor and persistence. See [Collector Review](CollectorReview.md).
+editor and persistence. Collection Decision and Priority filtering crosses a
+narrow immutable vocabulary boundary: canonical choices remain closed and
+ordered, while exact noncanonical persisted values are projected as
+read-only retained choices. Typed query selections, rather than rendered
+labels, distinguish unfiltered state from retained collisions. Writers accept
+only canonical decisions; readers and exports preserve retained text without a
+migration or semantic remapping. See [Collector Review](CollectorReview.md).
 
 ## Data and history boundaries
 

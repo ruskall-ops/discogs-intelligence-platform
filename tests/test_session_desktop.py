@@ -15,6 +15,10 @@ from dip.collector_review import (
     ObservationSectionStatus,
     WeekendObservationSource,
 )
+from dip.collection_decision_vocabulary import (
+    ReviewFilterField,
+    review_filter_choices,
+)
 from dip.experience.desktop.app import (
     App,
     _DECISION_FILTER_LABELS,
@@ -644,12 +648,116 @@ class SessionMappingAndCaptureTestCase(unittest.TestCase):
         app.queue_tree.selection.return_value = ("8",)
         app.tree.selection.return_value = ("9",)
         captured = app._capture_session()
+        self.assertIs(
+            captured.decision_priority_filter,
+            DecisionPriorityFilter.WORTH_REVIEWING,
+        )
+        self.assertIs(
+            captured.decision_state_filter,
+            DecisionStateFilter.KEEP,
+        )
         self.assertEqual(
             captured.selected_observation,
             ObservationIdentity(WeekendObservationSource.HIDDEN_GEM, 7),
         )
         self.assertEqual(captured.selected_queue_item_id, 8)
         self.assertEqual(captured.selected_decision_release_id, 9)
+
+    def test_retained_filters_persist_all_and_restart_rediscovers_exact_values(self):
+        with tempfile.TemporaryDirectory() as directory:
+            database = Database(Path(directory) / "retained-session.sqlite3")
+            try:
+                database.conn.execute(
+                    "INSERT INTO releases(release_id, artist, title) VALUES (1, 'A', 'T')"
+                )
+                database.conn.execute(
+                    "INSERT INTO scores(release_id, calculated_at, priority) VALUES (1, '2026-08-14T00:00:00+00:00', 'Monitor')"
+                )
+                database.conn.execute(
+                    "INSERT INTO decisions(release_id, decision) VALUES (1, 'Research further')"
+                )
+                database.conn.commit()
+                app = self._capture_app()
+                app._priority_filter_choices = review_filter_choices(
+                    ReviewFilterField.PRIORITY, ("Monitor",)
+                )
+                app._decision_filter_choices = review_filter_choices(
+                    ReviewFilterField.DECISION, ("Research further",)
+                )
+                app.priority_var.get.return_value = "Retained: Monitor"
+                app.decision_filter_var.get.return_value = (
+                    "Retained: Research further"
+                )
+                capture = app._capture_session()
+                self.assertIs(
+                    capture.decision_priority_filter,
+                    DecisionPriorityFilter.ALL,
+                )
+                self.assertIs(
+                    capture.decision_state_filter,
+                    DecisionStateFilter.ALL,
+                )
+                service = SessionRestorationService(
+                    SQLiteSessionRepository(database),
+                    clock=lambda: datetime(
+                        2026, 8, 14, 12, 0, tzinfo=timezone.utc
+                    ),
+                )
+                service.save(capture)
+                restored = service.load()
+                self.assertIs(
+                    restored.decision_priority_filter,
+                    DecisionPriorityFilter.ALL,
+                )
+                self.assertIs(
+                    restored.decision_state_filter,
+                    DecisionStateFilter.ALL,
+                )
+                stored = database.conn.execute(
+                    "SELECT decision_priority_filter, decision_state_filter FROM desktop_session"
+                ).fetchone()
+                self.assertEqual(tuple(stored), ("all", "all"))
+
+                restarted = App.__new__(App)
+                restarted.db = database
+                restarted.priority_var = Mock()
+                restarted.priority_var.get.return_value = "All"
+                restarted.decision_filter_var = Mock()
+                restarted.decision_filter_var.get.return_value = "All"
+                restarted._refresh_review_filter_choices()
+                retained_priority = next(
+                    choice for choice in restarted._priority_filter_choices
+                    if choice.query_value == "Monitor"
+                )
+                retained_decision = next(
+                    choice for choice in restarted._decision_filter_choices
+                    if choice.query_value == "Research further"
+                )
+                self.assertEqual(retained_priority.label, "Retained: Monitor")
+                self.assertEqual(
+                    retained_decision.label, "Retained: Research further"
+                )
+                self.assertEqual(
+                    tuple(row["release_id"] for row in database.review_rows(
+                        priority=retained_priority,
+                        decision=retained_decision,
+                    )),
+                    (1,),
+                )
+                self.assertEqual(
+                    database.conn.execute(
+                        "SELECT priority FROM scores WHERE release_id = 1"
+                    ).fetchone()[0],
+                    "Monitor",
+                )
+                self.assertEqual(
+                    database.conn.execute(
+                        "SELECT decision FROM decisions WHERE release_id = 1"
+                    ).fetchone()[0],
+                    "Research further",
+                )
+            finally:
+                database.close()
 
     def test_graceful_capture_reads_nondefault_and_every_review_destination(self):
         app = self._capture_app()

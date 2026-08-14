@@ -136,6 +136,32 @@ column: missing price evidence appears as an em dash and genuine zero as
 `0.00`. The repository currency field is not separately projected in this table.
 Filtering and reload preserve the exact selected release while it remains
 visible and clear selection without choosing a substitute when it does not.
+Decision and Priority filters use one immutable typed vocabulary. Canonical
+choices keep their established order. Any other exact values retained by an
+older or externally populated database remain displayed and exported unchanged
+and appear afterward as deterministic, read-only `Retained: …` filter choices.
+The rendered label is never parsed as query identity: canonical, retained, and
+the unfiltered **All** choice remain distinct even when retained data is itself
+named `All` or differs only by case. Filtering continues to use exact stored
+equality and performs no normalization, inference, provider request, write, or
+score calculation.
+Each table reload performs one bounded-purpose distinct-value discovery query
+followed by the existing bounded row query. Switching tabs alone does not run
+either query; the established load/reload boundary does.
+
+The Collection Decision editor continues to offer exactly **Review**, **Keep**,
+**List for sale**, **Maybe**, and **Ignore** for new writes. Persistence rejects
+unknown, blank, untrimmed, boolean, and non-string decision inputs before a
+transaction begins. Opening or cancelling an editor for a retained value does
+not rewrite it; saving requires an explicit canonical choice. There is no data
+migration or automatic normalization.
+
+Canonical Decision and Priority filters participate in session restoration.
+Retained compatibility selections are intentionally session-local. When one is
+selected at graceful close, session v1 stores the existing canonical **All**
+token; after restart the table restores **All** and rediscovers every retained
+value as an individually selectable choice. This fallback neither normalizes
+stored rows nor substitutes or infers a canonical meaning.
 
 Selected Observation detail is grouped from typed fields into Calculated
 observation, Marketplace evidence, Evidence limitations / warnings, Weekend

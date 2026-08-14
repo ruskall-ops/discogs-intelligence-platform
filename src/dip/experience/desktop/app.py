@@ -28,6 +28,12 @@ from dip.collector_review import (
     WeekendReviewStatus,
     WeekendReviewTransitionError,
 )
+from dip.collection_decision_vocabulary import (
+    CANONICAL_DECISIONS,
+    ReviewFilterChoice,
+    ReviewFilterField,
+    review_filter_choices,
+)
 from dip.composition import build_desktop_application_dependencies
 from dip.config import SETTINGS
 from dip.experience.reporting import ReportingService, render_markdown
@@ -233,6 +239,12 @@ class App(tk.Tk):
         self.search_var = tk.StringVar()
         self.priority_var = tk.StringVar(value="All")
         self.decision_filter_var = tk.StringVar(value="All")
+        self._priority_filter_choices = review_filter_choices(
+            ReviewFilterField.PRIORITY, ()
+        )
+        self._decision_filter_choices = review_filter_choices(
+            ReviewFilterField.DECISION, ()
+        )
         self._last_normal_geometry = (
             SETTINGS.window_width,
             SETTINGS.window_height,
@@ -553,12 +565,12 @@ class App(tk.Tk):
 
         ttk.Label(filters, text="Priority").grid(row=0, column=2, padx=(12,0), sticky="w")
         priority_filter = ttk.Combobox(filters, textvariable=self.priority_var, state="readonly", width=22,
-                     values=["All","High-priority review","Worth reviewing","Possible candidate","Low priority","Not scored"])
+                     values=tuple(choice.label for choice in self._priority_filter_choices))
         priority_filter.grid(row=0, column=3, padx=5, sticky="ew")
 
         ttk.Label(filters, text="Decision").grid(row=1, column=0, sticky="w", pady=(6, 0))
-        decision_filter = ttk.Combobox(filters, textvariable=self.decision_filter_var, state="readonly", width=14,
-                     values=["All","Review","Keep","List for sale","Maybe","Ignore"])
+        decision_filter = ttk.Combobox(filters, textvariable=self.decision_filter_var, state="readonly", width=20,
+                     values=tuple(choice.label for choice in self._decision_filter_choices))
         decision_filter.grid(row=1, column=1, padx=5, pady=(6, 0), sticky="ew")
         apply_filter = ttk.Button(filters, text="Apply", command=self.load_table)
         apply_filter.grid(row=1, column=3, padx=5, pady=(6, 0), sticky="e")
@@ -570,6 +582,8 @@ class App(tk.Tk):
             decision_filter,
             apply_filter,
         )
+        self.priority_filter = priority_filter
+        self.decision_filter = decision_filter
 
         table = ttk.Frame(self.decisions_tab)
         table.pack(fill="both", expand=True)
@@ -3087,10 +3101,16 @@ class App(tk.Tk):
         for item in self.tree.get_children():
             self.tree.delete(item)
         try:
+            self._refresh_review_filter_choices()
             rows = self.db.review_rows(
                 search=self.search_var.get().strip(),
-                priority=self.priority_var.get(),
-                decision=self.decision_filter_var.get()
+                priority=self._review_filter_query_value(
+                    self.priority_var.get(), self._priority_filter_choices
+                ),
+                decision=self._review_filter_query_value(
+                    self.decision_filter_var.get(),
+                    self._decision_filter_choices,
+                ),
             )
         except Exception:
             self.status_var.set("Collection Decisions could not be loaded.")
@@ -3112,6 +3132,73 @@ class App(tk.Tk):
             self.tree.selection_remove(self.tree.selection())
         self.status_var.set(f"Showing {len(rows):,} records")
         return True
+
+    def _refresh_review_filter_choices(self) -> None:
+        read_values = getattr(self.db, "review_filter_values", None)
+        values = read_values() if callable(read_values) else ((), ())
+        if type(values) is not tuple or len(values) != 2:
+            values = ((), ())
+        priority_values, decision_values = values
+        previous_priorities = self.__dict__.get(
+            "_priority_filter_choices",
+            review_filter_choices(ReviewFilterField.PRIORITY, ()),
+        )
+        previous_decisions = self.__dict__.get(
+            "_decision_filter_choices",
+            review_filter_choices(ReviewFilterField.DECISION, ()),
+        )
+        self._priority_filter_choices = self._replace_review_filter_choices(
+            self.priority_var,
+            self.__dict__.get("priority_filter"),
+            previous_priorities,
+            review_filter_choices(
+                ReviewFilterField.PRIORITY, tuple(priority_values)
+            ),
+        )
+        self._decision_filter_choices = self._replace_review_filter_choices(
+            self.decision_filter_var,
+            self.__dict__.get("decision_filter"),
+            previous_decisions,
+            review_filter_choices(
+                ReviewFilterField.DECISION, tuple(decision_values)
+            ),
+        )
+
+    @staticmethod
+    def _replace_review_filter_choices(
+        variable,
+        combobox,
+        previous: tuple[ReviewFilterChoice, ...],
+        current: tuple[ReviewFilterChoice, ...],
+    ) -> tuple[ReviewFilterChoice, ...]:
+        selected = next(
+            (choice for choice in previous if choice.label == variable.get()),
+            previous[0],
+        )
+        replacement = next(
+            (
+                choice
+                for choice in current
+                if choice.kind is selected.kind
+                and choice.query_value == selected.query_value
+            ),
+            current[0],
+        )
+        if combobox is not None:
+            combobox.configure(values=tuple(choice.label for choice in current))
+        if variable.get() != replacement.label:
+            variable.set(replacement.label)
+        return current
+
+    @staticmethod
+    def _review_filter_query_value(
+        label: str,
+        choices: tuple[ReviewFilterChoice, ...],
+    ) -> ReviewFilterChoice:
+        matches = tuple(choice for choice in choices if choice.label == label)
+        if len(matches) != 1:
+            raise ValueError("Collection Decisions filter selection is invalid.")
+        return matches[0]
 
     def edit_selected(self, event=None):
         selection = self.tree.selection()
@@ -3150,7 +3237,7 @@ class App(tk.Tk):
 
         ttk.Label(form, text="Decision").grid(row=0,column=0,sticky="w",pady=6)
         ttk.Combobox(form, textvariable=decision, state="readonly",
-                     values=["Review","Keep","List for sale","Maybe","Ignore"]).grid(row=0,column=1,sticky="ew",pady=6)
+                     values=CANONICAL_DECISIONS).grid(row=0,column=1,sticky="ew",pady=6)
 
         ttk.Label(form, text="Would I miss it?").grid(row=1,column=0,sticky="w",pady=6)
         ttk.Combobox(form, textvariable=miss, state="readonly",
@@ -3461,17 +3548,40 @@ class App(tk.Tk):
                 _QUEUE_FILTER_LABELS,
             ),
             _enum_for_label(
-                self.priority_var.get(),
+                self._canonical_session_filter_label(
+                    self.priority_var.get(),
+                    self.__dict__.get(
+                        "_priority_filter_choices",
+                        review_filter_choices(ReviewFilterField.PRIORITY, ()),
+                    ),
+                ),
                 _PRIORITY_FILTER_LABELS,
             ),
             _enum_for_label(
-                self.decision_filter_var.get(),
+                self._canonical_session_filter_label(
+                    self.decision_filter_var.get(),
+                    self.__dict__.get(
+                        "_decision_filter_choices",
+                        review_filter_choices(ReviewFilterField.DECISION, ()),
+                    ),
+                ),
                 _DECISION_FILTER_LABELS,
             ),
             self._selected_observation_identity(),
             _selected_positive_tree_id(self.queue_tree),
             _selected_positive_tree_id(self.tree),
         )
+
+    @staticmethod
+    def _canonical_session_filter_label(
+        label: str,
+        choices: tuple[ReviewFilterChoice, ...],
+    ) -> str:
+        selected = next(
+            (choice for choice in choices if choice.label == label),
+            choices[0],
+        )
+        return "All" if selected.kind.value == "retained" else selected.label
 
     def _top_level_destination(self):
         selected = _selected_notebook_widget(self.tabs)
