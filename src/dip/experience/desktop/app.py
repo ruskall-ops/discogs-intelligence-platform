@@ -759,6 +759,7 @@ class App(tk.Tk):
         )
         review_controls = (
             self.observation_tree,
+            self.observation_detail,
             self.add_observation_button,
             self.reopen_observation_button,
             self.open_queued_observation_button,
@@ -900,21 +901,35 @@ class App(tk.Tk):
         self.observation_summary_var = tk.StringVar(
             value="Collector Review observations are loading."
         )
-        ttk.Label(
+        self.observation_summary_label = ttk.Label(
             controls,
             textvariable=self.observation_summary_var,
-        ).pack(side="left", padx=12)
+            justify="left",
+        )
+        self.observation_summary_label.pack(
+            side="left", fill="x", expand=True, padx=12
+        )
+        self.observation_summary_label.bind(
+            "<Configure>", self._wrap_observation_summary
+        )
 
-        content = ttk.Panedwindow(self.observations_tab, orient="horizontal")
-        content.pack(fill="both", expand=True)
-        left = ttk.Frame(content)
-        right = ttk.Frame(content, padding=(10, 0, 0, 0))
-        content.add(left, weight=2)
-        content.add(right, weight=3)
+        self.observation_panes = ttk.Panedwindow(
+            self.observations_tab, orient="horizontal"
+        )
+        self.observation_panes.pack(fill="both", expand=True)
+        self.observation_table_panel = ttk.Frame(self.observation_panes)
+        self.observation_detail_panel = ttk.Frame(
+            self.observation_panes, padding=(10, 0, 0, 0)
+        )
+        self.observation_panes.add(self.observation_table_panel, weight=1)
+        self.observation_panes.add(self.observation_detail_panel, weight=1)
+        self.observation_panes.bind(
+            "<Configure>", self._layout_observation_panes
+        )
 
         columns = ("artist", "title", "signal", "queue")
         self.observation_tree = ttk.Treeview(
-            left,
+            self.observation_table_panel,
             columns=columns,
             show="headings",
             selectmode="browse",
@@ -927,50 +942,81 @@ class App(tk.Tk):
         ):
             self.observation_tree.heading(column, text=label)
             self.observation_tree.column(column, width=width, anchor="w")
-        observation_scroll = ttk.Scrollbar(
-            left,
+        self.observation_vertical_scroll = ttk.Scrollbar(
+            self.observation_table_panel,
             orient="vertical",
             command=self.observation_tree.yview,
         )
-        self.observation_tree.configure(
-            yscrollcommand=observation_scroll.set
+        self.observation_horizontal_scroll = ttk.Scrollbar(
+            self.observation_table_panel,
+            orient="horizontal",
+            command=self.observation_tree.xview,
         )
-        self.observation_tree.pack(side="left", fill="both", expand=True)
-        observation_scroll.pack(side="right", fill="y")
+        self.observation_tree.configure(
+            yscrollcommand=self.observation_vertical_scroll.set,
+            xscrollcommand=self.observation_horizontal_scroll.set,
+        )
+        self.observation_table_panel.rowconfigure(0, weight=1)
+        self.observation_table_panel.columnconfigure(0, weight=1)
+        self.observation_tree.grid(row=0, column=0, sticky="nsew")
+        self.observation_vertical_scroll.grid(row=0, column=1, sticky="ns")
+        self.observation_horizontal_scroll.grid(row=1, column=0, sticky="ew")
         self.observation_tree.bind(
             "<<TreeviewSelect>>",
             self._on_observation_selected,
         )
 
+        self.observation_detail_viewport = ttk.Frame(
+            self.observation_detail_panel
+        )
         self.observation_detail = tk.Text(
-            right,
+            self.observation_detail_viewport,
             wrap="word",
             padx=10,
             pady=10,
+            takefocus=True,
         )
+        self.observation_detail_scroll = ttk.Scrollbar(
+            self.observation_detail_viewport,
+            orient="vertical",
+            command=self.observation_detail.yview,
+        )
+        self.observation_detail.configure(
+            yscrollcommand=self.observation_detail_scroll.set
+        )
+        for sequence in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
+            self.observation_detail.bind(
+                sequence,
+                self._scroll_observation_detail,
+                add="+",
+            )
+        self.observation_detail_viewport.rowconfigure(0, weight=1)
+        self.observation_detail_viewport.columnconfigure(0, weight=1)
+        self.observation_detail.grid(row=0, column=0, sticky="nsew")
+        self.observation_detail_scroll.grid(row=0, column=1, sticky="ns")
         self.observation_detail.configure(state="disabled")
-        actions = ttk.Frame(right)
+        actions = ttk.Frame(self.observation_detail_panel)
         self.add_observation_button = ttk.Button(
             actions,
             text="Add to Weekend Review Queue",
             command=self._add_selected_observation,
         )
-        self.add_observation_button.pack(side="left", padx=(0, 6))
         self.reopen_observation_button = ttk.Button(
             actions,
             text="Reopen",
             command=self._reopen_selected_observation,
         )
-        self.reopen_observation_button.pack(side="left", padx=(0, 6))
         self.open_queued_observation_button = ttk.Button(
             actions,
             text="Open queued item",
             command=self._open_selected_observation_queue_item,
         )
-        self.open_queued_observation_button.pack(side="left")
+        self.add_observation_button.grid(row=0, column=0, columnspan=2, sticky="w")
+        self.reopen_observation_button.grid(row=1, column=0, padx=(0, 6), sticky="w")
+        self.open_queued_observation_button.grid(row=1, column=1, sticky="w")
         self.observation_action_reason_var = tk.StringVar()
         self.observation_action_reason_label = ttk.Label(
-            right,
+            self.observation_detail_panel,
             textvariable=self.observation_action_reason_var,
             wraplength=520,
             justify="left",
@@ -979,9 +1025,51 @@ class App(tk.Tk):
         self.observation_action_reason_label.pack(
             side="bottom", anchor="w", fill="x", pady=(6, 0)
         )
+        self.observation_action_reason_label.bind(
+            "<Configure>", self._wrap_observation_action_reason
+        )
         actions.pack(side="bottom", fill="x", pady=(8, 0))
-        self.observation_detail.pack(fill="both", expand=True)
+        self.observation_detail_viewport.pack(fill="both", expand=True)
         self._set_observation_action_state(None)
+
+    def _layout_observation_panes(self, event=None):
+        """Allocate equal useful widths after the observation pane is final."""
+
+        width = getattr(event, "width", 0) or self.observation_panes.winfo_width()
+        if width <= 1:
+            return
+        sash_width = max(0, width - sum(
+            self.observation_panes.nametowidget(name).winfo_width()
+            for name in self.observation_panes.panes()
+        ))
+        target = max(1, (width - sash_width) // 2)
+        if self.observation_panes.sashpos(0) != target:
+            self.observation_panes.sashpos(0, target)
+
+    def _wrap_observation_summary(self, event):
+        """Wrap observation status copy to its final control allocation."""
+
+        width = getattr(event, "width", 0)
+        if width > 1:
+            self.observation_summary_label.configure(wraplength=width)
+
+    def _wrap_observation_action_reason(self, event):
+        """Wrap the complete observation action reason to its final pane."""
+
+        width = getattr(event, "width", 0)
+        if width > 1:
+            self.observation_action_reason_label.configure(wraplength=width)
+
+    def _scroll_observation_detail(self, event):
+        """Route platform wheel input only to the live observation detail."""
+
+        try:
+            units = self._wheel_scroll_units(event)
+            if units and self.observation_detail.winfo_exists():
+                self.observation_detail.yview_scroll(units, "units")
+        except tk.TclError:
+            return "break"
+        return "break"
 
     def _build_weekend_queue_ui(self):
         controls = ttk.Frame(self.queue_tab)

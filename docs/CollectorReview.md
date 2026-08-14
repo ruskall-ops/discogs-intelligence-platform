@@ -168,10 +168,16 @@ observation, Marketplace evidence, Evidence limitations / warnings, Weekend
 Review Queue state, and subordinate Technical provenance sections when those
 values exist. Current catalogue labels are identified as current and are not
 represented as historical evidence. Workflow actions are visually separate,
-and disabled controls have nearby textual explanations. Local Tab, Shift-Tab,
-Return, and Space handling preserves mouse and keyboard use at `800×560`; it
-does not change queue lifecycle, unsaved-note, evidence, provider, or write
-boundaries.
+and disabled controls have nearby textual explanations. At `800×560`, the
+table and detail panes receive equal usable width after final layout. The table
+has visible horizontal and vertical overflow controls; the selectable,
+word-wrapped detail has a visible vertical scrollbar and scoped cross-platform
+wheel routing. Status and disabled-reason copy wrap to their actual allocation,
+and the complete observation action set uses two rows without changing its
+logical focus order. Wider and subsequent compact layouts recalculate from the
+actual pane width. Local Tab, Shift-Tab, Return, and Space handling preserves
+mouse and keyboard use without changing queue lifecycle, unsaved-note,
+evidence, provider, or write boundaries.
 At the supported compact geometry, Weekend Review Queue actions use a complete
 three-row arrangement; expanded panes use two rows while preserving logical
 action and focus order.

@@ -35,7 +35,8 @@ from dip.experience.desktop.app import App
 from dip.experience.dashboard import DashboardHomepageViewModelBuilder
 from dip.experience.desktop.hidden_gems_renderer import DesktopHiddenGemsController
 from dip.collector_review import (
-    ObservationWarning, QueueMembership, WeekendObservationSource,
+    MarketplaceEvidenceDetail, ObservationWarning, QueueMembership,
+    WeekendObservationSource,
     WeekendReviewQueueItem,
     WeekendReviewStatus,
 )
@@ -849,6 +850,15 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         )
         observation = replace(
             _workspace(1).hot_now[0],
+            evidence=MarketplaceEvidenceDetail(
+                release_id=1,
+                observed_at=datetime(2026, 8, 14, tzinfo=timezone.utc),
+                wants=12,
+                haves=34,
+                copies_for_sale=2,
+                lowest_price=Decimal("19.50"),
+                currency="GBP",
+            ),
             warnings=tuple(
                 ObservationWarning(f"unknown_{index}", sentinel)
                 for index, sentinel in enumerate(sentinels)
@@ -868,6 +878,210 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             self.root.observation_detail.tag_cget("provenance_heading", "lmargin1"),
             "14",
         )
+
+        def assert_inside(widget, container):
+            self.assertTrue(widget.winfo_ismapped(), widget)
+            self.assertTrue(widget.winfo_viewable(), widget)
+            self.assertGreater(widget.winfo_width(), 1, widget)
+            self.assertGreater(widget.winfo_height(), 1, widget)
+            self.assertGreaterEqual(widget.winfo_rootx(), container.winfo_rootx())
+            self.assertGreaterEqual(widget.winfo_rooty(), container.winfo_rooty())
+            self.assertLessEqual(
+                widget.winfo_rootx() + widget.winfo_width(),
+                container.winfo_rootx() + container.winfo_width(),
+                widget,
+            )
+            self.assertLessEqual(
+                widget.winfo_rooty() + widget.winfo_height(),
+                container.winfo_rooty() + container.winfo_height(),
+                widget,
+            )
+
+        self.root.observation_summary_var.set(
+            "12 stored Hot now research signals with complete retained context."
+        )
+        queued_observation = replace(
+            observation,
+            queue_membership=QueueMembership(1, WeekendReviewStatus.TO_REVIEW),
+        )
+        self.root.collector_review_service = Mock()
+        self.root._show_observation_detail(queued_observation)
+        self.root.update()
+        self.assertEqual(self.root.winfo_width(), 800)
+        self.assertEqual(self.root.winfo_height(), 560)
+        sash_width = self.root.observation_panes.winfo_width() - sum(
+            panel.winfo_width()
+            for panel in (
+                self.root.observation_table_panel,
+                self.root.observation_detail_panel,
+            )
+        )
+        self.assertEqual(
+            self.root.observation_panes.sashpos(0),
+            (self.root.observation_panes.winfo_width() - sash_width) // 2,
+        )
+        self.assertEqual(
+            self.root.observation_detail.cget("wrap"), "word"
+        )
+        self.assertEqual(
+            str(self.root.observation_detail.cget("takefocus")), "1"
+        )
+        self.assertTrue(self.root._focus_eligible(self.root.observation_detail))
+        self.assertTrue(self.root.observation_detail.bind("<MouseWheel>"))
+        self.assertTrue(self.root.observation_detail.bind("<Button-4>"))
+        self.assertTrue(self.root.observation_detail.bind("<Button-5>"))
+        self.assertTrue(self.root.observation_detail.cget("yscrollcommand"))
+        assert_inside(
+            self.root.observation_detail_scroll,
+            self.root.observation_detail_viewport,
+        )
+        for scrollbar in (
+            self.root.observation_vertical_scroll,
+            self.root.observation_horizontal_scroll,
+        ):
+            assert_inside(scrollbar, self.root.observation_table_panel)
+        self.assertTrue(self.root.observation_tree.cget("xscrollcommand"))
+        self.assertTrue(self.root.observation_tree.cget("yscrollcommand"))
+        self.assertLess(self.root.observation_tree.xview()[1], 1.0)
+        tree_x_before = self.root.observation_tree.xview()
+        self.root.tk.call(
+            str(self.root.observation_horizontal_scroll.cget("command")),
+            "moveto",
+            1.0,
+        )
+        self.root.update()
+        self.assertGreater(self.root.observation_tree.xview()[0], tree_x_before[0])
+        self.assertEqual(self.root.observation_tree.xview()[1], 1.0)
+
+        rendered = self.root.observation_detail.get("1.0", "end-1c")
+        section_positions = tuple(
+            rendered.index(title)
+            for title in (
+                "Calculated observation",
+                "Marketplace evidence",
+                "Evidence limitations",
+                "Queue state",
+                "Technical provenance",
+            )
+        )
+        self.assertEqual(section_positions, tuple(sorted(section_positions)))
+        initial_yview = self.root.observation_detail.yview()
+        self.assertLess(initial_yview[1], 1.0)
+        for event in (
+            SimpleNamespace(delta=-1, num=None),
+            SimpleNamespace(delta=-120, num=None),
+            SimpleNamespace(delta=0, num=5),
+        ):
+            self.root.observation_detail.yview_moveto(0.0)
+            self.assertEqual(self.root._scroll_observation_detail(event), "break")
+            self.root.update()
+            self.assertGreater(
+                self.root.observation_detail.yview()[0], 0.0, event
+            )
+        self.root.tk.call(
+            str(self.root.observation_detail_scroll.cget("command")),
+            "moveto",
+            1.0,
+        )
+        self.root.update()
+        self.assertGreater(
+            self.root.observation_detail.yview()[0], initial_yview[0]
+        )
+        self.assertIsNotNone(
+            self.root.observation_detail.dlineinfo("end-3c")
+        )
+
+        assert_inside(
+            self.root.observation_summary_label,
+            self.root.observation_summary_label.master,
+        )
+        self.assertLessEqual(
+            int(self.root.observation_summary_label.cget("wraplength")),
+            self.root.observation_summary_label.winfo_width(),
+        )
+        self.assertGreater(
+            self.root.observation_summary_label.winfo_height(), 20
+        )
+        assert_inside(
+            self.root.observation_action_reason_label,
+            self.root.observation_detail_panel,
+        )
+        self.assertEqual(
+            self.root.observation_action_reason_var.get(),
+            DisabledActionReason.ALREADY_QUEUED.value,
+        )
+        self.assertLessEqual(
+            int(self.root.observation_action_reason_label.cget("wraplength")),
+            self.root.observation_action_reason_label.winfo_width(),
+        )
+        self.assertGreater(
+            self.root.observation_action_reason_label.winfo_height(), 20
+        )
+        for button in (
+            self.root.add_observation_button,
+            self.root.reopen_observation_button,
+            self.root.open_queued_observation_button,
+        ):
+            assert_inside(button, self.root.observation_detail_panel)
+            self.assertGreaterEqual(button.winfo_width(), button.winfo_reqwidth())
+
+        narrow_detail_width = self.root.observation_detail_panel.winfo_width()
+        self.root.geometry("1024x768")
+        self.root.update()
+        self.assertEqual(self.root.winfo_width(), 1024)
+        self.assertGreater(
+            self.root.observation_detail_panel.winfo_width(), narrow_detail_width
+        )
+        assert_inside(
+            self.root.observation_detail_scroll,
+            self.root.observation_detail_viewport,
+        )
+        self.root.geometry("800x560")
+        self.root.update()
+        self.assertEqual(self.root.winfo_width(), 800)
+        self.assertEqual(
+            self.root.observation_detail_panel.winfo_width(), narrow_detail_width
+        )
+        assert_inside(
+            self.root.observation_action_reason_label,
+            self.root.observation_detail_panel,
+        )
+        self.assertLessEqual(
+            int(self.root.observation_action_reason_label.cget("wraplength")),
+            self.root.observation_action_reason_label.winfo_width(),
+        )
+
+        self.root._show_observation_detail(observation)
+        self.root.update()
+        calls_before = tuple(self.root.collector_review_service.method_calls)
+        changes_before = self.database.conn.total_changes
+        self.assertEqual(
+            self.root._dip_review_focus_order[:5],
+            (
+                self.root.observation_tree,
+                self.root.observation_detail,
+                self.root.add_observation_button,
+                self.root.reopen_observation_button,
+                self.root.open_queued_observation_button,
+            ),
+        )
+        self.root.observation_tree.focus_force()
+        self.assertEqual(
+            self.root._move_scoped_focus(self.root.observation_tree, True),
+            "break",
+        )
+        self.assertIs(self.root.focus_get(), self.root.observation_detail)
+        self.assertEqual(
+            self.root._move_scoped_focus(self.root.observation_detail, True),
+            "break",
+        )
+        self.assertIs(self.root.focus_get(), self.root.add_observation_button)
+        self.assertEqual(
+            tuple(self.root.collector_review_service.method_calls), calls_before
+        )
+        self.assertEqual(self.database.conn.total_changes, changes_before)
+        for hostile in sentinels:
+            self.assertNotIn(hostile, rendered)
 
     def test_production_disabled_reason_state_matrix(self) -> None:
         previous_reasons = {}
