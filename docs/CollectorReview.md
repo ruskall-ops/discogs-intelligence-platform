@@ -130,8 +130,10 @@ calculated Observations only.
 Collection Decisions retains every existing column and adds horizontal
 overflow. Artist, title, classifications, priority, and decision remain
 left-aligned; price, wants, supply, and score facts are right-aligned. Missing
-facts use an em dash and remain distinct from genuine zero. Supplied numeric and
-currency text is projected without calculation, ranking, or reinterpretation.
+facts use an em dash and remain distinct from genuine zero. The supplied lowest-
+price numeric value is formatted to two decimal places in the fixed `Lowest £`
+column: missing price evidence appears as an em dash and genuine zero as
+`0.00`. The repository currency field is not separately projected in this table.
 Filtering and reload preserve the exact selected release while it remains
 visible and clear selection without choosing a substitute when it does not.
 

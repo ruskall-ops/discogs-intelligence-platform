@@ -35,7 +35,8 @@ from dip.experience.desktop.app import App
 from dip.experience.dashboard import DashboardHomepageViewModelBuilder
 from dip.experience.desktop.hidden_gems_renderer import DesktopHiddenGemsController
 from dip.collector_review import (
-    ObservationWarning, WeekendObservationSource, WeekendReviewQueueItem,
+    ObservationWarning, QueueMembership, WeekendObservationSource,
+    WeekendReviewQueueItem,
     WeekendReviewStatus,
 )
 from dip.persistence.sqlite import Database
@@ -527,13 +528,21 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         )
 
     def test_production_disabled_reason_state_matrix(self) -> None:
+        previous_reasons = {}
+
         def assert_reason(label, variable, expected):
             self.root.update()
             self.assertEqual(variable.get(), expected.value)
             self.assertTrue(label.winfo_ismapped())
+            self.assertTrue(label.winfo_viewable())
             self.assertGreater(label.winfo_width(), 1)
             self.assertGreater(label.winfo_height(), 1)
             self.assertEqual(str(label.cget("takefocus")), "1")
+            self.assertTrue(self.root._focus_eligible(label))
+            previous = previous_reasons.get(label)
+            if previous is not None:
+                self.assertNotEqual(variable.get(), previous)
+            previous_reasons[label] = variable.get()
             self.assertGreaterEqual(label.winfo_rooty(), self.root.review_tab.winfo_rooty())
             self.assertLessEqual(
                 label.winfo_rooty() + label.winfo_height(),
@@ -543,6 +552,10 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         def assert_disabled(*buttons):
             for button in buttons:
                 self.assertIn("disabled", button.state())
+
+        def assert_enabled(*buttons):
+            for button in buttons:
+                self.assertNotIn("disabled", button.state())
 
         observation_buttons = (
             self.root.add_observation_button,
@@ -567,8 +580,54 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             self.root.observation_action_reason_var,
             DisabledActionReason.NO_OBSERVATION,
         )
+
+        observation = _workspace(1).hot_now[0]
+        self.root._set_observation_action_state(observation)
+        assert_enabled(self.root.add_observation_button)
+        assert_disabled(
+            self.root.reopen_observation_button,
+            self.root.open_queued_observation_button,
+        )
+        assert_reason(
+            self.root.observation_action_reason_label,
+            self.root.observation_action_reason_var,
+            DisabledActionReason.NOT_QUEUED,
+        )
+
+        queued_observation = replace(
+            observation,
+            queue_membership=QueueMembership(1, WeekendReviewStatus.TO_REVIEW),
+        )
+        self.root._set_observation_action_state(queued_observation)
+        assert_enabled(self.root.open_queued_observation_button)
+        assert_disabled(
+            self.root.add_observation_button,
+            self.root.reopen_observation_button,
+        )
+        assert_reason(
+            self.root.observation_action_reason_label,
+            self.root.observation_action_reason_var,
+            DisabledActionReason.ALREADY_QUEUED,
+        )
+
+        resolved_observation = replace(
+            observation,
+            queue_membership=QueueMembership(1, WeekendReviewStatus.RESOLVED),
+        )
+        self.root._set_observation_action_state(resolved_observation)
+        assert_enabled(
+            self.root.reopen_observation_button,
+            self.root.open_queued_observation_button,
+        )
+        assert_disabled(self.root.add_observation_button)
+        assert_reason(
+            self.root.observation_action_reason_label,
+            self.root.observation_action_reason_var,
+            DisabledActionReason.RESOLVED_OBSERVATION,
+        )
+
         self.root.collector_review_service = None
-        self.root._set_observation_action_state(None)
+        self.root._set_observation_action_state(resolved_observation)
         assert_disabled(*observation_buttons)
         assert_reason(
             self.root.observation_action_reason_label,
@@ -588,40 +647,64 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             DisabledActionReason.NO_QUEUE_ITEM,
         )
         now = datetime(2026, 8, 12, tzinfo=timezone.utc)
-        resolved = WeekendReviewQueueItem(
-            1, 1, now, WeekendReviewStatus.RESOLVED, "", now, now,
+        active = WeekendReviewQueueItem(
+            1, 1, now, WeekendReviewStatus.TO_REVIEW, "", now, None,
             WeekendObservationSource.HOT_NOW, now, "Stored signal", None, None,
         )
-        self.root._load_queue_item(resolved)
-        self.assertIn("disabled", self.root.queue_status_button.state())
-        for button in (
-            self.root.queue_save_button, self.root.queue_resolve_button,
-            self.root.queue_remove_button, self.root.queue_decision_button,
-        ):
-            self.assertNotIn("disabled", button.state())
+        self.root._load_queue_item(active)
+        assert_enabled(*queue_buttons)
         assert_reason(
             self.root.queue_action_reason_label,
             self.root.queue_action_reason_var,
-            DisabledActionReason.RESOLVED_START_REVIEW,
+            DisabledActionReason.QUEUE_ACTIONS_AVAILABLE,
         )
         self.root._queue_note_loading = False
-        self.root.queue_note.configure(state="normal")
         self.root.queue_note.insert("1.0", "changed")
         self.root._on_queue_note_edited()
         self.assertTrue(self.root._queue_note_dirty)
+        assert_enabled(*queue_buttons)
         assert_reason(
             self.root.queue_action_reason_label,
             self.root.queue_action_reason_var,
             DisabledActionReason.UNSAVED_NOTE,
         )
-        for hostile in ("TOKEN", "provider", "SQL", "/private", "PERSONAL NOTE"):
-            self.assertNotIn(hostile, self.root.observation_action_reason_var.get())
-            self.assertNotIn(hostile, self.root.queue_action_reason_var.get())
         with patch(
             "dip.experience.desktop.app.messagebox.askyesnocancel",
             return_value=None,
         ):
             self.assertFalse(self.root._confirm_unsaved_queue_note())
+        self.assertTrue(self.root._queue_note_dirty)
+        self.assertEqual(
+            self.root.queue_action_reason_var.get(),
+            DisabledActionReason.UNSAVED_NOTE.value,
+        )
+        with patch(
+            "dip.experience.desktop.app.messagebox.askyesnocancel",
+            return_value=False,
+        ):
+            self.assertTrue(self.root._confirm_unsaved_queue_note())
+        self.assertFalse(self.root._queue_note_dirty)
+        resolved = replace(
+            active,
+            status=WeekendReviewStatus.RESOLVED,
+            resolved_at=now,
+        )
+        self.root._load_queue_item(resolved)
+        self.assertIn("disabled", self.root.queue_status_button.state())
+        assert_enabled(
+            self.root.queue_save_button,
+            self.root.queue_resolve_button,
+            self.root.queue_remove_button,
+            self.root.queue_decision_button,
+        )
+        assert_reason(
+            self.root.queue_action_reason_label,
+            self.root.queue_action_reason_var,
+            DisabledActionReason.RESOLVED_START_REVIEW,
+        )
+        for hostile in ("TOKEN", "provider", "SQL", "/private", "PERSONAL NOTE"):
+            self.assertNotIn(hostile, self.root.observation_action_reason_var.get())
+            self.assertNotIn(hostile, self.root.queue_action_reason_var.get())
         self.root.collector_review_service = None
         self.root._load_queue_item(None)
         assert_disabled(*queue_buttons)
