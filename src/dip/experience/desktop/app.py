@@ -388,17 +388,27 @@ class App(tk.Tk):
         current_collection.grid(
             row=0, column=0, columnspan=6, padx=8, pady=8, sticky="ew"
         )
-        ttk.Label(
+        self.dashboard_collection_heading_label = ttk.Label(
             current_collection,
             text="Current Collection · single-collection data",
-        ).grid(row=0, column=0, columnspan=3, sticky="w")
+            justify="left",
+        )
+        self.dashboard_collection_heading_label.grid(
+            row=0, column=0, columnspan=3, sticky="w"
+        )
         self.dashboard_collection_state_var = tk.StringVar(value="Loading collection facts…")
-        ttk.Label(
+        self.dashboard_collection_state_label = ttk.Label(
             current_collection,
             textvariable=self.dashboard_collection_state_var,
             wraplength=700,
             justify="left",
-        ).grid(row=1, column=0, columnspan=3, sticky="w", pady=(2, 6))
+        )
+        self.dashboard_collection_state_label.grid(
+            row=1, column=0, columnspan=3, sticky="w", pady=(2, 6)
+        )
+        self.dashboard_collection_state_label.bind(
+            "<Configure>", self._wrap_dashboard_label
+        )
 
         for index, (key, label) in enumerate(collection_labels):
             box = ttk.LabelFrame(
@@ -423,12 +433,21 @@ class App(tk.Tk):
 
             self.kpis[key] = value
             current_collection.columnconfigure(index % 3, weight=1)
-        ttk.Label(current_collection, text=(
+        self.dashboard_collection_persistence_label = ttk.Label(
+            current_collection,
+            text=(
             "SQLite is now the source of truth. Collection details, market snapshots, "
             "scores, decisions and notes persist between runs. Excel is generated only "
             "when you want an export."
-        ), wraplength=700, justify="left").grid(
+            ),
+            wraplength=700,
+            justify="left",
+        )
+        self.dashboard_collection_persistence_label.grid(
             row=3, column=0, columnspan=3, sticky="w", pady=(6, 0)
+        )
+        self.dashboard_collection_persistence_label.bind(
+            "<Configure>", self._wrap_dashboard_label
         )
 
         latest_intelligence = ttk.LabelFrame(
@@ -442,12 +461,18 @@ class App(tk.Tk):
         self.dashboard_intelligence_state_var = tk.StringVar(
             value="Intelligence is loading…"
         )
-        ttk.Label(
+        self.dashboard_intelligence_state_label = ttk.Label(
             latest_intelligence,
             textvariable=self.dashboard_intelligence_state_var,
             wraplength=700,
             justify="left",
-        ).grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 6))
+        )
+        self.dashboard_intelligence_state_label.grid(
+            row=0, column=0, columnspan=3, sticky="w", pady=(0, 6)
+        )
+        self.dashboard_intelligence_state_label.bind(
+            "<Configure>", self._wrap_dashboard_label
+        )
         self.dashboard_homepage_vars = {}
         homepage_sections = (
             ("collection_overview", "Execution overview", 1, 0, 3),
@@ -506,7 +531,18 @@ class App(tk.Tk):
                 WeekendObservationSource.HIDDEN_GEM
             ),
         )
-        ttk.Label(available, text="Price Changes and Supply Changes are available through Collection Explorer.", wraplength=700).pack(anchor="w", pady=(8, 0))
+        self.dashboard_available_copy_label = ttk.Label(
+            available,
+            text="Price Changes and Supply Changes are available through Collection Explorer.",
+            wraplength=700,
+            justify="left",
+        )
+        self.dashboard_available_copy_label.pack(
+            anchor="w", fill="x", pady=(8, 0)
+        )
+        self.dashboard_available_copy_label.bind(
+            "<Configure>", self._wrap_dashboard_label
+        )
         self.dashboard_command_vars = {}
         command_cards = (
             ("Portfolio Summary", 7, 0),
@@ -688,11 +724,14 @@ class App(tk.Tk):
             event.widget.configure(wraplength=width)
 
     def _configure_dashboard_wheel_scrolling(self):
-        """Route wheel input from this window's Dashboard widget subtree."""
+        """Route wheel input from the live primary scrollable page subtrees."""
 
         self.bind("<MouseWheel>", self._scroll_dashboard_from_wheel, add="+")
         self.bind("<Button-4>", self._scroll_dashboard_from_wheel, add="+")
         self.bind("<Button-5>", self._scroll_dashboard_from_wheel, add="+")
+        self.bind("<MouseWheel>", self._scroll_project_from_wheel, add="+")
+        self.bind("<Button-4>", self._scroll_project_from_wheel, add="+")
+        self.bind("<Button-5>", self._scroll_project_from_wheel, add="+")
 
     def _scroll_dashboard_from_wheel(self, event):
         """Scroll only when the wheel originated inside the live Dashboard."""
@@ -717,6 +756,38 @@ class App(tk.Tk):
             current = widget
             while current is not None:
                 if current in (self.dashboard_canvas, self.dashboard_content):
+                    return True
+                parent_name = current.winfo_parent()
+                if not parent_name:
+                    return False
+                current = current._nametowidget(parent_name)
+        except (KeyError, tk.TclError):
+            return False
+        return False
+
+    def _scroll_project_from_wheel(self, event):
+        """Scroll only when the wheel originated inside the live Project page."""
+
+        if not self._is_live_project_widget(getattr(event, "widget", None)):
+            return None
+        units = self._wheel_scroll_units(event)
+        if units == 0:
+            return None
+        try:
+            self.project_canvas.yview_scroll(units, "units")
+        except tk.TclError:
+            return None
+        return "break"
+
+    def _is_live_project_widget(self, widget):
+        if widget is None:
+            return False
+        try:
+            if not widget.winfo_exists() or not self.project_canvas.winfo_exists():
+                return False
+            current = widget
+            while current is not None:
+                if current in (self.project_canvas, self.project_content):
                     return True
                 parent_name = current.winfo_parent()
                 if not parent_name:
@@ -775,7 +846,11 @@ class App(tk.Tk):
             self.tree,
             *self.decision_filter_controls,
         )
-        for control in (*dashboard_controls, *review_controls):
+        project_controls = (
+            self.project_canvas,
+            *self.project_action_buttons,
+        )
+        for control in (*project_controls, *dashboard_controls, *review_controls):
             control.configure(takefocus="1")
             control.bind(
                 "<Tab>",
@@ -793,6 +868,7 @@ class App(tk.Tk):
                 add="+",
             )
         for button in (
+            *self.project_action_buttons,
             self.import_csv_button,
             self.refresh_discogs_button,
             self.database_backup_button,
@@ -825,12 +901,15 @@ class App(tk.Tk):
                 add="+",
             )
         self._dip_dashboard_focus_order = dashboard_controls
+        self._dip_project_focus_order = project_controls
         self._dip_review_focus_order = review_controls
 
     def _move_scoped_focus(self, widget, forward):
         declared = (
             self._dip_dashboard_focus_order
             if widget in self._dip_dashboard_focus_order
+            else self._dip_project_focus_order
+            if widget in self._dip_project_focus_order
             else self._dip_review_focus_order
         )
         cycle = tuple(value for value in declared if self._focus_eligible(value))
@@ -844,6 +923,8 @@ class App(tk.Tk):
         target.focus_set()
         if target in self._dip_dashboard_focus_order:
             self._reveal_dashboard_control(target)
+        elif target in self._dip_project_focus_order:
+            self._reveal_project_control(target)
         return "break"
 
     @staticmethod
@@ -868,6 +949,26 @@ class App(tk.Tk):
                 canvas.yview_moveto(max(0.0, top / total))
             elif bottom > view_bottom:
                 canvas.yview_moveto(min(1.0, max(0.0, (bottom - canvas.winfo_height()) / total)))
+        except tk.TclError:
+            return
+
+    def _reveal_project_control(self, widget):
+        try:
+            canvas = self.project_canvas
+            canvas.update_idletasks()
+            top = widget.winfo_rooty() - self.project_content.winfo_rooty()
+            bottom = top + widget.winfo_height()
+            total = max(1, self.project_content.winfo_reqheight())
+            view_top, view_bottom = (value * total for value in canvas.yview())
+            if top < view_top:
+                canvas.yview_moveto(max(0.0, top / total))
+            elif bottom > view_bottom:
+                canvas.yview_moveto(
+                    min(
+                        1.0,
+                        max(0.0, (bottom - canvas.winfo_height()) / total),
+                    )
+                )
         except tk.TclError:
             return
 
@@ -1134,12 +1235,33 @@ class App(tk.Tk):
         )
 
         self.queue_detail_var = tk.StringVar(value="Select a queue item.")
-        ttk.Label(
-            right,
-            textvariable=self.queue_detail_var,
-            wraplength=540,
-            justify="left",
-        ).pack(anchor="w", fill="x")
+        self.queue_detail_viewport = ttk.Frame(right)
+        self.queue_detail_text = tk.Text(
+            self.queue_detail_viewport,
+            height=5,
+            wrap="word",
+            padx=4,
+            pady=4,
+            takefocus=False,
+        )
+        self.queue_detail_scroll = ttk.Scrollbar(
+            self.queue_detail_viewport,
+            orient="vertical",
+            command=self.queue_detail_text.yview,
+        )
+        self.queue_detail_text.configure(
+            yscrollcommand=self.queue_detail_scroll.set,
+            state="disabled",
+        )
+        self.queue_detail_viewport.rowconfigure(0, weight=1)
+        self.queue_detail_viewport.columnconfigure(0, weight=1)
+        self.queue_detail_text.grid(row=0, column=0, sticky="nsew")
+        self.queue_detail_scroll.grid(row=0, column=1, sticky="ns")
+        self.queue_detail_viewport.pack(anchor="w", fill="x")
+        self.queue_detail_var.trace_add(
+            "write", self._render_queue_detail_text
+        )
+        self._render_queue_detail_text()
         ttk.Label(right, text="Review note").pack(
             anchor="w",
             pady=(12, 4),
@@ -1196,6 +1318,15 @@ class App(tk.Tk):
         actions.pack(side="bottom", fill="x", pady=(8, 0))
         self.queue_note.pack(fill="both", expand=True)
         self._set_queue_controls_enabled(False)
+
+    def _render_queue_detail_text(self, *_args):
+        """Render complete queue metadata in its bounded read-only viewport."""
+
+        self.queue_detail_text.configure(state="normal")
+        self.queue_detail_text.delete("1.0", "end")
+        self.queue_detail_text.insert("1.0", self.queue_detail_var.get())
+        self.queue_detail_text.configure(state="disabled")
+        self.queue_detail_text.yview_moveto(0.0)
 
     def _layout_queue_actions(self, event=None):
         """Keep every queue action visible in narrow and expanded panes."""
@@ -1997,25 +2128,61 @@ class App(tk.Tk):
             self.refresh_weekend_review_queue()
 
     def _build_project_workspace(self):
+        self.project_canvas = tk.Canvas(
+            self.project_tab,
+            highlightthickness=0,
+            takefocus=True,
+        )
+        self.project_scrollbar = ttk.Scrollbar(
+            self.project_tab,
+            orient="vertical",
+            command=self.project_canvas.yview,
+        )
+        self.project_canvas.configure(yscrollcommand=self.project_scrollbar.set)
+        self.project_scrollbar.pack(side="right", fill="y")
+        self.project_canvas.pack(side="left", fill="both", expand=True)
+        self.project_content = ttk.Frame(self.project_canvas)
+        self.project_window = self.project_canvas.create_window(
+            (0, 0), window=self.project_content, anchor="nw"
+        )
+        self.project_content.bind(
+            "<Configure>",
+            lambda _event: self.project_canvas.configure(
+                scrollregion=self.project_canvas.bbox("all")
+            ),
+        )
+        self.project_canvas.bind("<Configure>", self._layout_project_viewport)
+        self.project_action_buttons = []
+        self.project_section_cards = []
+        self.project_body_labels = []
         if self.project_workspace_controller is None:
             ttk.Label(
-                self.project_tab, text="Project Workspace is unavailable."
+                self.project_content, text="Project Workspace is unavailable."
             ).pack(anchor="w")
             return
         rendered = self.project_workspace_controller.open()
-        ttk.Label(
-            self.project_tab, text=rendered.title, font=("Helvetica", 22, "bold")
-        ).pack(anchor="w", pady=(0, 14))
+        self.project_title_label = ttk.Label(
+            self.project_content,
+            text=rendered.title,
+            font=("Helvetica", 22, "bold"),
+        )
+        self.project_title_label.pack(anchor="w", pady=(0, 14))
         for section in rendered.sections:
-            frame = ttk.LabelFrame(self.project_tab, text=section.title, padding=14)
+            frame = ttk.LabelFrame(
+                self.project_content, text=section.title, padding=14
+            )
             frame.pack(fill="x", pady=6)
-            ttk.Label(
+            label = ttk.Label(
                 frame, text=section.body, wraplength=1000, justify="left"
-            ).pack(anchor="w")
+            )
+            label.pack(anchor="w", fill="x")
+            label.bind("<Configure>", self._wrap_project_label)
+            self.project_section_cards.append(frame)
+            self.project_body_labels.append(label)
             if section.title == "Quick Actions":
                 actions = ttk.Frame(frame)
-                actions.pack(anchor="w", pady=(10, 0))
-                for action in rendered.actions:
+                actions.pack(anchor="w", fill="x", pady=(10, 0))
+                for row, action in enumerate(rendered.actions):
                     button = ttk.Button(
                         actions,
                         text=action.label,
@@ -2023,7 +2190,23 @@ class App(tk.Tk):
                     )
                     if not action.enabled:
                         button.state(["disabled"])
-                    button.pack(side="left", padx=(0, 8))
+                    button.grid(row=row, column=0, pady=(0, 4), sticky="w")
+                    self.project_action_buttons.append(button)
+
+    def _layout_project_viewport(self, event=None):
+        """Fit Project content to its final canvas viewport width."""
+
+        width = getattr(event, "width", 0) or self.project_canvas.winfo_width()
+        if width > 1:
+            self.project_canvas.itemconfigure(self.project_window, width=width)
+
+    @staticmethod
+    def _wrap_project_label(event):
+        """Wrap Project body copy to its final card allocation."""
+
+        width = getattr(event, "width", 0)
+        if width > 1 and int(event.widget.cget("wraplength")) != width:
+            event.widget.configure(wraplength=width)
 
     def _open_project_target(self, target):
         if target is ProjectWorkspaceNavigationTarget.DASHBOARD:

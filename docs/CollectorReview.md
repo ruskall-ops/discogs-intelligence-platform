@@ -181,6 +181,9 @@ evidence, provider, or write boundaries.
 At the supported compact geometry, Weekend Review Queue actions use a complete
 three-row arrangement; expanded panes use two rows while preserving logical
 action and focus order.
+Selected queue metadata remains complete in a bounded, read-only word-wrapped
+viewport with a visible vertical scrollbar; it does not enlarge or displace
+the reviewed action and disabled-reason layout.
 Disabled-reason copy wraps to the pane's
 actual allocation, so unavailable and no-selection states remain fully readable
 without changing which controls are focus-eligible. The stable queue-detail

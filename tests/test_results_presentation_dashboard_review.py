@@ -34,6 +34,14 @@ from tests.test_collector_review_desktop import _workspace
 from dip.experience.desktop.app import App
 from dip.experience.dashboard import DashboardHomepageViewModelBuilder
 from dip.experience.desktop.hidden_gems_renderer import DesktopHiddenGemsController
+from dip.experience.desktop.project_workspace_renderer import (
+    DesktopProjectWorkspaceController,
+)
+from dip.experience.project_workspace import (
+    Project,
+    ProjectStatus,
+    ProjectWorkspaceBuilder,
+)
 from dip.collector_review import (
     MarketplaceEvidenceDetail, ObservationWarning, QueueMembership,
     WeekendObservationSource,
@@ -290,6 +298,17 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.directory = tempfile.TemporaryDirectory()
         self.database = Database(Path(self.directory.name) / "ui.sqlite3")
+        self.project_presentation = Mock()
+        self.project_presentation.workspace.return_value = (
+            ProjectWorkspaceBuilder().build(
+                Project(
+                    "current",
+                    "Current Collection",
+                    "The current collector working environment.",
+                    ProjectStatus.ACTIVE,
+                )
+            )
+        )
         dependencies = SimpleNamespace(
             database=self.database,
             dashboard_homepage=Mock(),
@@ -298,6 +317,9 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             hidden_gems_controller=DesktopHiddenGemsController(Mock()),
             portfolio_overview_controller=Mock(),
             portfolio_controller=Mock(),
+            project_workspace_controller=DesktopProjectWorkspaceController(
+                self.project_presentation
+            ),
         )
         self.dependencies = dependencies
         self.import_callback = patch.object(App, "import_csv", autospec=True)
@@ -317,6 +339,7 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             dependencies.collection_explorer_controller,
             dependencies.portfolio_overview_controller,
             dependencies.portfolio_controller,
+            self.project_presentation,
         ):
             dependency.reset_mock()
 
@@ -508,6 +531,129 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
 
     def test_production_dashboard_sections_and_complete_mapped_focus_cycle(self) -> None:
         traced_sql: list[str] = []
+        self.root.tabs.select(self.root.project_tab)
+        self.root.update()
+        self.assertEqual(self.root.geometry().split("+")[0], "800x560")
+        self.assertTrue(self.root.project_scrollbar.winfo_ismapped())
+        self.assertTrue(self.root.project_scrollbar.winfo_viewable())
+        self.assertEqual(
+            self.root.project_content.winfo_width(),
+            self.root.project_canvas.winfo_width(),
+        )
+        self.assertLess(self.root.project_canvas.yview()[1], 1.0)
+        self.assertEqual(
+            tuple(card.cget("text") for card in self.root.project_section_cards),
+            (
+                "Active Project",
+                "Recent Projects",
+                "Project Summary",
+                "Quick Actions",
+            ),
+        )
+        expected_project_text = (
+            "Current Collection\n"
+            "The current collector working environment.\nStatus: Active",
+            "No recent projects have been supplied.",
+            "Collector working environment\n"
+            "Dashboard, Portfolio, Marketplace, and Historical Intelligence "
+            "describe the platform direction; unavailable destinations are "
+            "clearly marked in this release.\n"
+            "Project identity and active state are stored in SQLite; primary "
+            "desktop session restoration is enabled.",
+            "Open Project\nCreate Project\nRefresh Collection\nOpen Dashboard\n"
+            "Open Portfolio Workspace — Not available in this release",
+        )
+        self.assertEqual(
+            tuple(label.cget("text") for label in self.root.project_body_labels),
+            expected_project_text,
+        )
+
+        def assert_horizontal_containment(widget, container):
+            self.assertGreater(widget.winfo_width(), 1, widget)
+            self.assertGreaterEqual(widget.winfo_rootx(), container.winfo_rootx())
+            self.assertLessEqual(
+                widget.winfo_rootx() + widget.winfo_width(),
+                container.winfo_rootx() + container.winfo_width(),
+                widget,
+            )
+
+        for card, label in zip(
+            self.root.project_section_cards,
+            self.root.project_body_labels,
+        ):
+            self.root.project_canvas.yview_moveto(
+                card.winfo_y()
+                / max(1, self.root.project_content.winfo_reqheight())
+            )
+            self.root.update_idletasks()
+            self.assertTrue(card.winfo_ismapped(), card.cget("text"))
+            self.assertTrue(card.winfo_viewable(), card.cget("text"))
+            assert_horizontal_containment(card, self.root.project_content)
+            assert_horizontal_containment(label, card)
+            self.assertLessEqual(int(label.cget("wraplength")), label.winfo_width())
+        project_nested = self.root.project_body_labels[0]
+        self.root.project_canvas.yview_moveto(0.0)
+        project_start = self.root.project_canvas.yview()
+        project_nested.event_generate("<MouseWheel>", delta=-120)
+        self.root.update()
+        self.assertGreater(self.root.project_canvas.yview()[0], project_start[0])
+        for event in (
+            SimpleNamespace(widget=project_nested, delta=-1, num=None),
+            SimpleNamespace(widget=project_nested, delta=-120, num=None),
+            SimpleNamespace(widget=project_nested, delta=0, num=5),
+        ):
+            self.root.project_canvas.yview_moveto(0.0)
+            self.assertEqual(self.root._scroll_project_from_wheel(event), "break")
+            self.assertGreater(self.root.project_canvas.yview()[0], 0.0)
+        project_calls = tuple(self.project_presentation.method_calls)
+        project_changes = self.database.conn.total_changes
+        project_eligible = tuple(
+            widget for widget in self.root._dip_project_focus_order
+            if self.root._focus_eligible(widget)
+        )
+        self.assertEqual(
+            project_eligible,
+            (
+                self.root.project_canvas,
+                next(
+                    button for button in self.root.project_action_buttons
+                    if button.cget("text") == "Open Dashboard"
+                ),
+            ),
+        )
+        self.root.project_canvas.focus_force()
+        self.assertEqual(
+            self.root._move_scoped_focus(self.root.project_canvas, True),
+            "break",
+        )
+        self.assertIs(self.root.focus_get(), project_eligible[1])
+        self.assertGreater(self.root.project_canvas.yview()[0], 0.0)
+        self.assertEqual(
+            self.root._move_scoped_focus(project_eligible[1], False), "break"
+        )
+        self.assertIs(self.root.focus_get(), self.root.project_canvas)
+        self.assertEqual(tuple(self.project_presentation.method_calls), project_calls)
+        self.assertEqual(self.database.conn.total_changes, project_changes)
+        project_compact_width = self.root.project_canvas.winfo_width()
+        self.root.geometry("1024x768")
+        self.root.update()
+        self.assertGreater(
+            self.root.project_canvas.winfo_width(), project_compact_width
+        )
+        self.assertEqual(
+            self.root.project_content.winfo_width(),
+            self.root.project_canvas.winfo_width(),
+        )
+        self.root.geometry("800x560")
+        self.root.update()
+        self.assertEqual(
+            self.root.project_canvas.winfo_width(), project_compact_width
+        )
+        self.assertEqual(
+            self.root.project_content.winfo_width(),
+            self.root.project_canvas.winfo_width(),
+        )
+
         self.root.tabs.select(self.root.dashboard_tab)
         self.root.update()
         self.assertEqual(
@@ -528,6 +674,10 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         self.root.dashboard_command_vars["Marketplace Highlights"][0].set(
             "Not available in this version. Marketplace evidence remains visible "
             "as complete wrapped explanatory copy."
+        )
+        self.root.dashboard_collection_state_var.set(
+            "Collection facts are shown separately above. Calculated values use "
+            "the latest completed Collector Run intelligence."
         )
         self.root.update()
         compact_homepage_positions = (
@@ -600,6 +750,26 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             self.root.dashboard_canvas.winfo_width(),
         )
         assert_card_containment(cards)
+        self.assertEqual(
+            self.root.dashboard_collection_state_label.cget("textvariable"),
+            str(self.root.dashboard_collection_state_var),
+        )
+        self.assertEqual(
+            self.root.dashboard_collection_state_var.get(),
+            "Collection facts are shown separately above. Calculated values use "
+            "the latest completed Collector Run intelligence.",
+        )
+        assert_horizontal_containment(
+            self.root.dashboard_collection_state_label,
+            self.root.dashboard_primary_sections[0],
+        )
+        self.assertLessEqual(
+            int(self.root.dashboard_collection_state_label.cget("wraplength")),
+            self.root.dashboard_collection_state_label.winfo_width(),
+        )
+        self.assertGreater(
+            self.root.dashboard_collection_state_label.winfo_height(), 20
+        )
         long_labels = {
             card.cget("text"): label
             for card, label in cards
@@ -736,6 +906,30 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         self.root.tree.yview_scroll(1, "units")
         self.assertGreater(self.root.tree.yview()[0], tree_before[0])
         self.assertEqual(canvas.yview(), canvas_before)
+
+        def descendants(widget):
+            for child in widget.winfo_children():
+                yield child
+                yield from descendants(child)
+
+        for page in (
+            self.root.observations_tab,
+            self.root.queue_tab,
+            self.root.decisions_tab,
+        ):
+            self.root.collection_review_tabs.select(page)
+            self.root.update()
+            for label in (
+                widget for widget in descendants(page)
+                if widget.winfo_class() == "TLabel"
+                and (widget.cget("text") or widget.cget("textvariable"))
+                and widget.winfo_ismapped()
+                and widget.winfo_viewable()
+            ):
+                assert_horizontal_containment(label, label.master)
+                wraplength = str(label.cget("wraplength"))
+                if wraplength:
+                    self.assertLessEqual(int(wraplength), label.winfo_width())
 
         retired = ttk.Label(self.root.dashboard_content, text="Retired")
         retired.destroy()
@@ -1263,6 +1457,42 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         )
         self.root._load_queue_item(active)
         assert_enabled(*queue_buttons)
+        self.root.update()
+        self.assertTrue(self.root.queue_detail_text.winfo_ismapped())
+        self.assertTrue(self.root.queue_detail_text.winfo_viewable())
+        self.assertTrue(self.root.queue_detail_scroll.winfo_ismapped())
+        self.assertTrue(self.root.queue_detail_scroll.winfo_viewable())
+        self.assertEqual(
+            self.root.queue_detail_text.get("1.0", "end-1c"),
+            self.root.queue_detail_var.get(),
+        )
+        self.assertEqual(self.root.queue_detail_text.cget("wrap"), "word")
+        self.assertTrue(self.root.queue_detail_text.cget("yscrollcommand"))
+        self.assertGreaterEqual(
+            self.root.queue_detail_text.winfo_rootx(),
+            self.root.queue_detail_panel.winfo_rootx(),
+        )
+        self.assertLessEqual(
+            self.root.queue_detail_scroll.winfo_rootx()
+            + self.root.queue_detail_scroll.winfo_width(),
+            self.root.queue_detail_panel.winfo_rootx()
+            + self.root.queue_detail_panel.winfo_width(),
+        )
+        self.assertLess(self.root.queue_detail_text.yview()[1], 1.0)
+        before = self.root.queue_detail_text.yview()
+        self.root.tk.call(
+            str(self.root.queue_detail_scroll.cget("command")),
+            "moveto",
+            1.0,
+        )
+        self.root.update()
+        self.assertGreater(
+            self.root.queue_detail_text.yview()[0], before[0]
+        )
+        self.assertIsNotNone(
+            self.root.queue_detail_text.dlineinfo("end-2c")
+        )
+        self.root.queue_detail_text.yview_moveto(0.0)
         service_calls = tuple(self.root.collector_review_service.method_calls)
         eligible = tuple(
             widget for widget in self.root._dip_review_focus_order
