@@ -1200,15 +1200,18 @@ class App(tk.Tk):
             textvariable=self.queue_summary_var,
         ).pack(side="left", padx=12)
 
-        content = ttk.Panedwindow(self.queue_tab, orient="horizontal")
-        content.pack(fill="both", expand=True)
-        left = ttk.Frame(content)
-        right = ttk.Frame(content, padding=(10, 0, 0, 0))
-        content.add(left, weight=1)
-        content.add(right, weight=2)
+        self.queue_panes = ttk.Panedwindow(
+            self.queue_tab, orient="horizontal"
+        )
+        self.queue_panes.pack(fill="both", expand=True)
+        self.queue_table_panel = ttk.Frame(self.queue_panes)
+        right = ttk.Frame(self.queue_panes, padding=(10, 0, 0, 0))
+        self.queue_panes.add(self.queue_table_panel, weight=1)
+        self.queue_panes.add(right, weight=2)
+        self.queue_panes.bind("<Configure>", self._layout_queue_panes)
 
         self.queue_tree = ttk.Treeview(
-            left,
+            self.queue_table_panel,
             columns=("artist", "title", "status", "source"),
             show="headings",
             selectmode="browse",
@@ -1222,7 +1225,7 @@ class App(tk.Tk):
             self.queue_tree.heading(column, text=label)
             self.queue_tree.column(column, width=width, anchor="w")
         queue_scroll = ttk.Scrollbar(
-            left,
+            self.queue_table_panel,
             orient="vertical",
             command=self.queue_tree.yview,
         )
@@ -1345,8 +1348,6 @@ class App(tk.Tk):
         )
         expanded_width = self._queue_expanded_action_width()
         mode = "expanded" if width >= expanded_width else "compact"
-        if mode == self._queue_action_layout:
-            return
         for button in buttons:
             button.grid_forget()
         for column in range(5):
@@ -1398,19 +1399,64 @@ class App(tk.Tk):
             )
         self._queue_action_layout = mode
 
-    def _queue_expanded_action_width(self):
-        """Return the native width required by the complete expanded action row."""
+    def _layout_queue_panes(self, event=None):
+        """Allocate detail width from the current native workflow labels."""
 
-        buttons = (
-            self.queue_save_button,
-            self.queue_status_button,
-            self.queue_resolve_button,
-            self.queue_remove_button,
-            self.queue_decision_button,
+        width = getattr(event, "width", 0) or self.queue_panes.winfo_width()
+        if width <= 1:
+            return
+        sash_width = max(
+            0,
+            width
+            - self.queue_table_panel.winfo_width()
+            - self.queue_detail_panel.winfo_width(),
         )
+        usable_width = max(1, width - sash_width)
+        compact_detail_width = self._queue_compact_action_width() + 10
+        expanded_detail_width = self._queue_expanded_action_width() + 10
+        detail_width = (
+            expanded_detail_width
+            if usable_width >= expanded_detail_width * 2
+            else compact_detail_width
+        )
+        detail_width = min(detail_width, max(1, usable_width - 1))
+        target = max(1, usable_width - detail_width)
+        if self.queue_panes.sashpos(0) != target:
+            self.queue_panes.sashpos(0, target)
+
+    def _refresh_queue_action_geometry(self):
+        """Re-measure and reflow after authoritative action text changes."""
+
+        self.queue_actions.update_idletasks()
+        self._layout_queue_panes()
+        self.queue_detail_panel.update_idletasks()
+        self._layout_queue_actions()
+
+    def _queue_compact_action_width(self):
+        """Return the native width required by the widest compact row."""
+
         return max(
-            sum(button.winfo_reqwidth() for button in buttons[:3]) + 10,
-            sum(button.winfo_reqwidth() for button in buttons[3:]) + 5,
+            self.queue_save_button.winfo_reqwidth()
+            + self.queue_status_button.winfo_reqwidth(),
+            self.queue_resolve_button.winfo_reqwidth()
+            + self.queue_remove_button.winfo_reqwidth(),
+            self.queue_decision_button.winfo_reqwidth(),
+        )
+
+    def _queue_expanded_action_width(self):
+        """Return the shared-column width required by expanded action rows."""
+
+        return (
+            max(
+                self.queue_save_button.winfo_reqwidth(),
+                self.queue_remove_button.winfo_reqwidth(),
+            )
+            + max(
+                self.queue_status_button.winfo_reqwidth(),
+                self.queue_decision_button.winfo_reqwidth(),
+            )
+            + self.queue_resolve_button.winfo_reqwidth()
+            + 10
         )
 
     def _wrap_queue_action_reason(self, event):
@@ -1705,7 +1751,7 @@ class App(tk.Tk):
 
     def refresh_weekend_review_queue(self, preserve_queue_item_id=None):
         if self.collector_review_service is None:
-            self.queue_summary_var.set("Weekend Review Queue is unavailable.")
+            self._show_queue_unavailable()
             return
         if preserve_queue_item_id is None and self.current_queue_item is not None:
             preserve_queue_item_id = self.current_queue_item.queue_item_id
@@ -1714,7 +1760,7 @@ class App(tk.Tk):
                 self._queue_statuses()
             )
         except Exception:
-            self.queue_summary_var.set("Weekend Review Queue is unavailable.")
+            self._show_queue_unavailable()
             return
         for item in self.queue_tree.get_children():
             self.queue_tree.delete(item)
@@ -1746,6 +1792,30 @@ class App(tk.Tk):
             self.queue_tree.see(str(preserve_queue_item_id))
         else:
             self._load_queue_item(None)
+
+    def _show_queue_unavailable(self):
+        """Render truthful unavailable state without discarding a dirty note."""
+
+        self.queue_summary_var.set("Weekend Review Queue is unavailable.")
+        for queue_item_id in self.queue_tree.get_children():
+            self.queue_tree.delete(queue_item_id)
+        self.queue_detail_var.set("Weekend Review Queue is unavailable.")
+        self.queue_status_button.configure(text="Start Review")
+        self.queue_resolve_button.configure(text="Resolve")
+        dirty_note = self._queue_note_dirty
+        if not dirty_note:
+            self.current_queue_item = None
+            self._queue_note_loading = True
+            self.queue_note.configure(state="normal")
+            self.queue_note.delete("1.0", "end")
+            self._queue_note_loading = False
+        self._set_queue_controls_enabled(False)
+        self.queue_action_reason_var.set(
+            DisabledActionReason.QUEUE_SERVICE_UNAVAILABLE.value
+        )
+        if dirty_note:
+            self.queue_note.configure(state="normal")
+        self._refresh_queue_action_geometry()
 
     def _release_display(self, release_id):
         for section in (
@@ -1791,6 +1861,8 @@ class App(tk.Tk):
         self.queue_note.delete("1.0", "end")
         if item is None:
             self.queue_detail_var.set("Select a queue item.")
+            self.queue_status_button.configure(text="Start Review")
+            self.queue_resolve_button.configure(text="Resolve")
             self.queue_note.configure(state="disabled")
             self._set_queue_controls_enabled(False)
         else:
@@ -1835,6 +1907,7 @@ class App(tk.Tk):
                     else "Resolve"
                 )
             )
+        self._refresh_queue_action_geometry()
         self._queue_note_dirty = False
         self._queue_note_loading = False
 

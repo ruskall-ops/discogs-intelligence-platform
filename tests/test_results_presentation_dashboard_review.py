@@ -1307,6 +1307,19 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             for button in buttons:
                 self.assertNotIn("disabled", button.state())
 
+        def assert_queue_focus(expected_buttons, service):
+            focused_actions = tuple(
+                widget
+                for widget in self.root._dip_review_focus_order
+                if widget in queue_buttons and self.root._focus_eligible(widget)
+            )
+            self.assertEqual(focused_actions, tuple(expected_buttons))
+            calls_before = tuple(service.method_calls)
+            for widget in focused_actions:
+                self.root._move_scoped_focus(widget, True)
+                self.root._move_scoped_focus(widget, False)
+            self.assertEqual(tuple(service.method_calls), calls_before)
+
         observation_buttons = (
             self.root.add_observation_button,
             self.root.reopen_observation_button,
@@ -1329,6 +1342,14 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             )
             root_right = self.root.winfo_rootx() + self.root.winfo_width()
             root_bottom = self.root.winfo_rooty() + self.root.winfo_height()
+            actions_right = (
+                self.root.queue_actions.winfo_rootx()
+                + self.root.queue_actions.winfo_width()
+            )
+            detail_right = (
+                self.root.queue_detail_panel.winfo_rootx()
+                + self.root.queue_detail_panel.winfo_width()
+            )
             for button in queue_buttons:
                 self.assertTrue(button.winfo_ismapped(), button.cget("text"))
                 self.assertTrue(button.winfo_viewable(), button.cget("text"))
@@ -1338,6 +1359,14 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
                 )
                 self.assertLessEqual(
                     button.winfo_rootx() + button.winfo_width(), root_right,
+                    button.cget("text"),
+                )
+                self.assertLessEqual(
+                    button.winfo_rootx() + button.winfo_width(), actions_right,
+                    button.cget("text"),
+                )
+                self.assertLessEqual(
+                    button.winfo_rootx() + button.winfo_width(), detail_right,
                     button.cget("text"),
                 )
                 self.assertLessEqual(
@@ -1358,6 +1387,30 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             reason = self.root.queue_action_reason_label
             self.assertLessEqual(int(reason.cget("wraplength")), reason.winfo_width())
             self.assertGreaterEqual(reason.winfo_height(), reason.winfo_reqheight())
+            self.assertLessEqual(
+                reason.winfo_rootx() + reason.winfo_width(), detail_right
+            )
+            native_widths = tuple(
+                button.winfo_reqwidth() for button in queue_buttons
+            )
+            self.assertEqual(
+                self.root._queue_compact_action_width(),
+                max(
+                    native_widths[0] + native_widths[1],
+                    native_widths[2] + native_widths[3],
+                    native_widths[4],
+                ),
+            )
+            if expected_mode == "compact":
+                self.assertGreaterEqual(
+                    self.root.queue_actions.winfo_width(),
+                    self.root._queue_compact_action_width(),
+                )
+            else:
+                self.assertGreaterEqual(
+                    self.root.queue_actions.winfo_width(),
+                    self.root._queue_expanded_action_width(),
+                )
         self.root.tabs.select(self.root.review_tab)
         self.root.collection_review_tabs.select(self.root.observations_tab)
         self.root.update()
@@ -1426,9 +1479,11 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
 
         self.root.collection_review_tabs.select(self.root.queue_tab)
         self.root.update()
-        self.root.collector_review_service = Mock()
+        queue_service = Mock()
+        self.root.collector_review_service = queue_service
         self.root._load_queue_item(None)
         assert_disabled(*queue_buttons)
+        assert_queue_focus((), queue_service)
         compact_positions = (
             (0, 0, 1),
             (0, 1, 1),
@@ -1458,6 +1513,10 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         self.root._load_queue_item(active)
         assert_enabled(*queue_buttons)
         self.root.update()
+        self.assertEqual(self.root.queue_status_button.cget("text"), "Start Review")
+        self.assertEqual(self.root.queue_resolve_button.cget("text"), "Resolve")
+        assert_queue_layout("compact", compact_positions)
+        assert_queue_focus(queue_buttons, queue_service)
         self.assertTrue(self.root.queue_detail_text.winfo_ismapped())
         self.assertTrue(self.root.queue_detail_text.winfo_viewable())
         self.assertTrue(self.root.queue_detail_scroll.winfo_ismapped())
@@ -1493,7 +1552,7 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             self.root.queue_detail_text.dlineinfo("end-2c")
         )
         self.root.queue_detail_text.yview_moveto(0.0)
-        service_calls = tuple(self.root.collector_review_service.method_calls)
+        service_calls = tuple(queue_service.method_calls)
         eligible = tuple(
             widget for widget in self.root._dip_review_focus_order
             if self.root._focus_eligible(widget)
@@ -1502,7 +1561,7 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             self.root._move_scoped_focus(widget, True)
             self.root._move_scoped_focus(widget, False)
         self.assertEqual(
-            tuple(self.root.collector_review_service.method_calls), service_calls
+            tuple(queue_service.method_calls), service_calls
         )
         assert_reason(
             self.root.queue_action_reason_label,
@@ -1535,47 +1594,42 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         ):
             self.assertTrue(self.root._confirm_unsaved_queue_note())
         self.assertFalse(self.root._queue_note_dirty)
-        resolved = replace(
-            active,
-            queue_item_id=2,
-            release_id=2,
-            status=WeekendReviewStatus.RESOLVED,
-            resolved_at=now,
+        self.root.queue_filter_var.set("All")
+        reviewing = replace(active, status=WeekendReviewStatus.REVIEWING)
+        queue_service.set_active_status.return_value = reviewing
+        queue_service.list_queue.return_value = (reviewing,)
+        queue_service.get.return_value = reviewing
+        self.root._toggle_queue_status()
+        self.root._on_queue_selected()
+        self.root.update()
+        queue_service.set_active_status.assert_called_once_with(
+            active.queue_item_id,
+            WeekendReviewStatus.REVIEWING,
+            expected_updated_at=active.updated_at,
         )
-        self.root._load_queue_item(resolved)
-        self.assertIn("disabled", self.root.queue_status_button.state())
-        assert_enabled(
-            self.root.queue_save_button,
-            self.root.queue_resolve_button,
-            self.root.queue_remove_button,
-            self.root.queue_decision_button,
+        self.assertEqual(
+            self.root.current_queue_item.status,
+            WeekendReviewStatus.REVIEWING,
         )
+        self.assertEqual(
+            self.root.queue_status_button.cget("text"), "Return to Review"
+        )
+        self.assertEqual(self.root.queue_resolve_button.cget("text"), "Resolve")
+        assert_queue_layout("compact", compact_positions)
+        assert_queue_focus(queue_buttons, queue_service)
         assert_reason(
             self.root.queue_action_reason_label,
             self.root.queue_action_reason_var,
-            DisabledActionReason.RESOLVED_START_REVIEW,
-        )
-        self.root.collector_review_service.list_queue.return_value = (
-            active, resolved
-        )
-        self.root.queue_filter_var.set("All")
-        self.root.refresh_weekend_review_queue()
-        self.assertEqual(len(self.root.queue_tree.get_children()), 2)
-        self.assertEqual(
-            {
-                self.root.queue_tree.item(item, "values")[2]
-                for item in self.root.queue_tree.get_children()
-            },
-            {"To Review", "Resolved"},
+            DisabledActionReason.QUEUE_ACTIONS_AVAILABLE,
         )
         expanded_threshold = self.root._queue_expanded_action_width()
         native_widths = tuple(button.winfo_reqwidth() for button in queue_buttons)
         self.assertEqual(
             expanded_threshold,
-            max(
-                sum(native_widths[:3]) + 10,
-                sum(native_widths[3:]) + 5,
-            ),
+            max(native_widths[0], native_widths[3])
+            + max(native_widths[1], native_widths[4])
+            + native_widths[2]
+            + 10,
         )
         compact_root_width = self.root.winfo_width()
         compact_queue_width = self.root.queue_tab.winfo_width()
@@ -1609,18 +1663,131 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             tuple(widget for widget in compact_eligible if widget in queue_buttons),
             tuple(widget for widget in expanded_eligible if widget in queue_buttons),
         )
+
+        queue_service.set_active_status.reset_mock()
+        queue_service.set_active_status.return_value = active
+        queue_service.list_queue.return_value = (active,)
+        queue_service.get.return_value = active
+        self.root._toggle_queue_status()
+        self.root._on_queue_selected()
+        self.root.update()
+        queue_service.set_active_status.assert_called_once_with(
+            reviewing.queue_item_id,
+            WeekendReviewStatus.TO_REVIEW,
+            expected_updated_at=reviewing.updated_at,
+        )
+        self.assertEqual(self.root.queue_status_button.cget("text"), "Start Review")
+        assert_queue_layout("compact", compact_positions)
+
+        queue_service.set_active_status.reset_mock()
+        queue_service.set_active_status.return_value = reviewing
+        queue_service.list_queue.return_value = (reviewing,)
+        queue_service.get.return_value = reviewing
+        self.root._toggle_queue_status()
+        self.root._on_queue_selected()
+        self.root.update()
+        queue_service.set_active_status.assert_called_once()
+        self.assertEqual(
+            self.root.queue_status_button.cget("text"), "Return to Review"
+        )
+        assert_queue_layout("compact", compact_positions)
+
+        resolved = replace(
+            reviewing,
+            status=WeekendReviewStatus.RESOLVED,
+            resolved_at=now,
+        )
+        queue_service.resolve.return_value = resolved
+        queue_service.list_queue.return_value = (resolved,)
+        queue_service.get.return_value = resolved
+        self.root._resolve_or_reopen_queue_item()
+        self.root._on_queue_selected()
+        self.root.update()
+        queue_service.resolve.assert_called_once_with(
+            reviewing.queue_item_id,
+            expected_updated_at=reviewing.updated_at,
+        )
+        self.assertEqual(self.root.queue_status_button.cget("text"), "Start Review")
+        self.assertEqual(self.root.queue_resolve_button.cget("text"), "Reopen")
+        self.assertIn("disabled", self.root.queue_status_button.state())
+        assert_enabled(
+            self.root.queue_save_button,
+            self.root.queue_resolve_button,
+            self.root.queue_remove_button,
+            self.root.queue_decision_button,
+        )
+        assert_queue_layout("compact", compact_positions)
+        assert_queue_focus(
+            (
+                self.root.queue_save_button,
+                self.root.queue_resolve_button,
+                self.root.queue_remove_button,
+                self.root.queue_decision_button,
+            ),
+            queue_service,
+        )
+        assert_reason(
+            self.root.queue_action_reason_label,
+            self.root.queue_action_reason_var,
+            DisabledActionReason.RESOLVED_START_REVIEW,
+        )
+
+        queue_service.reopen.return_value = active
+        queue_service.list_queue.return_value = (active,)
+        queue_service.get.return_value = active
+        self.root._resolve_or_reopen_queue_item()
+        self.root._on_queue_selected()
+        self.root.update()
+        queue_service.reopen.assert_called_once_with(
+            resolved.queue_item_id,
+            expected_updated_at=resolved.updated_at,
+        )
+        self.assertEqual(self.root.queue_status_button.cget("text"), "Start Review")
+        self.assertEqual(self.root.queue_resolve_button.cget("text"), "Resolve")
+        assert_queue_layout("compact", compact_positions)
+        assert_queue_focus(queue_buttons, queue_service)
         for hostile in ("TOKEN", "provider", "SQL", "/private", "PERSONAL NOTE"):
             self.assertNotIn(hostile, self.root.observation_action_reason_var.get())
             self.assertNotIn(hostile, self.root.queue_action_reason_var.get())
+
+        self.root._load_queue_item(reviewing)
+        self.root.queue_note.insert("end", "preserved dirty note")
+        self.root._on_queue_note_edited()
+        dirty_note = self.root.queue_note.get("1.0", "end-1c")
+        queue_service.list_queue.side_effect = RuntimeError("contained")
+        self.root.refresh_weekend_review_queue()
+        self.root.update()
+        self.assertTrue(self.root._queue_note_dirty)
+        self.assertEqual(
+            self.root.queue_note.get("1.0", "end-1c"), dirty_note
+        )
+        self.assertEqual(self.root.queue_note.cget("state"), "normal")
+        self.assertEqual(self.root.queue_status_button.cget("text"), "Start Review")
+        self.assertEqual(self.root.queue_resolve_button.cget("text"), "Resolve")
+        assert_disabled(*queue_buttons)
+        assert_queue_layout("compact", compact_positions)
+
+        queue_service.list_queue.side_effect = None
+        self.root._queue_note_dirty = False
+        self.root._load_queue_item(reviewing)
         self.root.collector_review_service = None
         self.root.refresh_weekend_review_queue()
+        self.root.update()
         self.assertEqual(
             self.root.queue_summary_var.get(),
             "Weekend Review Queue is unavailable.",
         )
-        self.root._load_queue_item(None)
+        self.assertIsNone(self.root.current_queue_item)
+        self.assertEqual(
+            self.root.queue_detail_var.get(),
+            "Weekend Review Queue is unavailable.",
+        )
+        self.assertEqual(self.root.queue_status_button.cget("text"), "Start Review")
+        self.assertEqual(self.root.queue_resolve_button.cget("text"), "Resolve")
+        self.assertEqual(self.root.queue_note.get("1.0", "end-1c"), "")
         assert_disabled(*queue_buttons)
         assert_queue_layout("compact", compact_positions)
+        assert_queue_focus((), queue_service)
         assert_reason(
             self.root.queue_action_reason_label,
             self.root.queue_action_reason_var,

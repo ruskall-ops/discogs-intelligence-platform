@@ -187,8 +187,16 @@ the reviewed action and disabled-reason layout.
 Disabled-reason copy wraps to the pane's
 actual allocation, so unavailable and no-selection states remain fully readable
 without changing which controls are focus-eligible. The stable queue-detail
-pane allocation drives compact/expanded transitions after each completed resize;
-the action row's layout-dependent requested width does not drive its own mode.
+pane allocation is recalculated from the current native workflow labels after
+each completed resize and queue-state transition. Compact allocation measures
+the widest current row, including **Start Review** / **Return to Review** and
+**Resolve** / **Reopen** changes. Expanded allocation measures the shared grid
+columns used by both visual rows, so a label change cannot leave stale column
+widths or move an action outside the detail pane.
+If the queue service becomes unavailable, stale rows, metadata, action labels,
+and focus eligibility are cleared through one unavailable-state boundary. An
+already dirty note remains readable and byte-for-byte unchanged for recovery;
+the unavailable transition never silently discards that draft.
 
 ## Persistence
 
