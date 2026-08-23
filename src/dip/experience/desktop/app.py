@@ -1028,7 +1028,7 @@ class App(tk.Tk):
             "<Configure>", self._layout_observation_panes
         )
 
-        columns = ("artist", "title", "signal", "queue")
+        columns = ("artist", "title", "signal", "queue", "scroll_end")
         self.observation_tree = ttk.Treeview(
             self.observation_table_panel,
             columns=columns,
@@ -1042,7 +1042,23 @@ class App(tk.Tk):
             ("queue", "Queue", 110),
         ):
             self.observation_tree.heading(column, text=label)
-            self.observation_tree.column(column, width=width, anchor="w")
+            self.observation_tree.column(
+                column,
+                width=width,
+                minwidth=width,
+                stretch=False,
+                anchor="w",
+            )
+        # A non-data terminal gutter keeps the final Queue column clear of
+        # native Treeview borders when the horizontal viewport is fully right.
+        self.observation_tree.heading("scroll_end", text="")
+        self.observation_tree.column(
+            "scroll_end",
+            width=20,
+            minwidth=20,
+            stretch=False,
+            anchor="w",
+        )
         self.observation_vertical_scroll = ttk.Scrollbar(
             self.observation_table_panel,
             orient="vertical",
@@ -1066,6 +1082,16 @@ class App(tk.Tk):
             "<<TreeviewSelect>>",
             self._on_observation_selected,
         )
+        for sequence in (
+            "<Shift-MouseWheel>",
+            "<Shift-Button-4>",
+            "<Shift-Button-5>",
+        ):
+            self.observation_tree.bind(
+                sequence,
+                self._scroll_observation_table_horizontally,
+                add="+",
+            )
 
         self.observation_detail_viewport = ttk.Frame(
             self.observation_detail_panel
@@ -1170,6 +1196,18 @@ class App(tk.Tk):
                 self.observation_detail.yview_scroll(units, "units")
         except tk.TclError:
             return "break"
+        return "break"
+
+    def _scroll_observation_table_horizontally(self, event):
+        """Route scoped cross-platform horizontal gestures to the table."""
+
+        units = self._wheel_scroll_units(event)
+        if units == 0:
+            return None
+        try:
+            self.observation_tree.xview_scroll(units, "units")
+        except tk.TclError:
+            return None
         return "break"
 
     def _build_weekend_queue_ui(self):

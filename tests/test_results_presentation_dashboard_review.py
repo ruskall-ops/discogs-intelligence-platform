@@ -1099,6 +1099,20 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             queue_membership=QueueMembership(1, WeekendReviewStatus.TO_REVIEW),
         )
         self.root.collector_review_service = Mock()
+        workspace = _workspace(1)
+        self.root.current_observation_workspace = replace(
+            workspace,
+            hot_now_section=replace(
+                workspace.hot_now_section,
+                observations=(queued_observation,),
+            ),
+        )
+        self.root._render_observations()
+        self.root.observation_summary_var.set(
+            "12 stored Hot now research signals with complete retained context."
+        )
+        rendered_iid = self.root.observation_tree.get_children("")[0]
+        self.root.observation_tree.selection_set(rendered_iid)
         self.root._show_observation_detail(queued_observation)
         self.root.update()
         self.assertEqual(self.root.winfo_width(), 800)
@@ -1136,6 +1150,30 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             assert_inside(scrollbar, self.root.observation_table_panel)
         self.assertTrue(self.root.observation_tree.cget("xscrollcommand"))
         self.assertTrue(self.root.observation_tree.cget("yscrollcommand"))
+        self.assertEqual(
+            tuple(str(value) for value in self.root.observation_tree.cget("columns")),
+            ("artist", "title", "signal", "queue", "scroll_end"),
+        )
+        for column in ("artist", "title", "signal", "queue", "scroll_end"):
+            self.assertFalse(bool(self.root.observation_tree.column(column, "stretch")))
+            self.assertEqual(
+                self.root.observation_tree.column(column, "minwidth"),
+                self.root.observation_tree.column(column, "width"),
+            )
+        configured_width = sum(
+            self.root.observation_tree.column(column, "width")
+            for column in self.root.observation_tree.cget("columns")
+        )
+        self.assertGreater(configured_width, self.root.observation_tree.winfo_width())
+        self.assertTrue(self.root.observation_tree.bind("<Shift-MouseWheel>"))
+        self.assertTrue(self.root.observation_tree.bind("<Shift-Button-4>"))
+        self.assertTrue(self.root.observation_tree.bind("<Shift-Button-5>"))
+        horizontal_sql: list[str] = []
+        horizontal_changes = self.database.conn.total_changes
+        horizontal_calls = tuple(self.root.collector_review_service.method_calls)
+        horizontal_selection = self.root.observation_tree.selection()
+        horizontal_detail = self.root.observation_detail.get("1.0", "end-1c")
+        self.database.conn.set_trace_callback(horizontal_sql.append)
         self.assertLess(self.root.observation_tree.xview()[1], 1.0)
         tree_x_before = self.root.observation_tree.xview()
         self.root.tk.call(
@@ -1146,6 +1184,57 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         self.root.update()
         self.assertGreater(self.root.observation_tree.xview()[0], tree_x_before[0])
         self.assertEqual(self.root.observation_tree.xview()[1], 1.0)
+        first_observation = self.root.observation_tree.get_children("")[0]
+        queue_bbox = self.root.observation_tree.bbox(first_observation, "queue")
+        gutter_bbox = self.root.observation_tree.bbox(first_observation, "scroll_end")
+        self.assertTrue(queue_bbox)
+        self.assertTrue(gutter_bbox)
+        self.assertGreaterEqual(queue_bbox[0], 0)
+        self.assertLess(
+            queue_bbox[0] + queue_bbox[2],
+            self.root.observation_tree.winfo_width(),
+        )
+        self.assertGreaterEqual(gutter_bbox[0], queue_bbox[0] + queue_bbox[2])
+        queue_heading_width = int(
+            self.root.tk.call("font", "measure", "TkHeadingFont", "Queue")
+        )
+        queue_value_width = max(
+            int(self.root.tk.call("font", "measure", "TkDefaultFont", value))
+            for value in ("Not queued", "Queued", "Resolved")
+        )
+        self.assertLess(queue_heading_width, queue_bbox[2])
+        self.assertLess(queue_value_width, queue_bbox[2])
+        self.assertEqual(
+            len(self.root.observation_tree.item(first_observation, "values")),
+            4,
+        )
+        self.root.observation_tree.xview_moveto(0.0)
+        self.root.update_idletasks()
+        for event in (
+            SimpleNamespace(delta=-1, num=None),
+            SimpleNamespace(delta=-120, num=None),
+            SimpleNamespace(delta=0, num=5),
+        ):
+            before_horizontal = self.root.observation_tree.xview()
+            self.assertEqual(
+                self.root._scroll_observation_table_horizontally(event),
+                "break",
+            )
+            self.assertGreater(
+                self.root.observation_tree.xview()[0], before_horizontal[0]
+            )
+        self.database.conn.set_trace_callback(None)
+        self.assertEqual(horizontal_sql, [])
+        self.assertEqual(self.database.conn.total_changes, horizontal_changes)
+        self.assertEqual(
+            tuple(self.root.collector_review_service.method_calls), horizontal_calls
+        )
+        self.assertEqual(
+            self.root.observation_tree.selection(), horizontal_selection
+        )
+        self.assertEqual(
+            self.root.observation_detail.get("1.0", "end-1c"), horizontal_detail
+        )
 
         rendered = self.root.observation_detail.get("1.0", "end-1c")
         section_positions = tuple(

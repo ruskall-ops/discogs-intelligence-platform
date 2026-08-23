@@ -170,7 +170,10 @@ values exist. Current catalogue labels are identified as current and are not
 represented as historical evidence. Workflow actions are visually separate,
 and disabled controls have nearby textual explanations. At `800×560`, the
 table and detail panes receive equal usable width after final layout. The table
-has visible horizontal and vertical overflow controls; the selectable,
+has visible horizontal and vertical overflow controls. A non-data terminal
+gutter keeps the final Queue column inside the native bordered viewport at the
+right scroll limit, and scoped Shift-wheel gestures provide cross-platform
+horizontal movement without changing table selection. The selectable,
 word-wrapped detail has a visible vertical scrollbar and scoped cross-platform
 wheel routing. Status and disabled-reason copy wrap to their actual allocation,
 and the complete observation action set uses two rows without changing its
