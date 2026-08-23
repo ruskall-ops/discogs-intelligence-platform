@@ -40,7 +40,8 @@ identity and are not silently reinterpreted.
 
 Unreleased work on the unversioned Results Presentation milestone now includes
 shared immutable factual-state copy and comparison context, a summary-first
-Price/Supply layout, and responsive Collection Explorer navigation. The six
+Price/Supply layout, responsive Collection Explorer navigation, and Dashboard
+and Collection Review readability refinements. The six
 production-enabled destinations use a full-label selector backed by one
 authoritative availability registry; unavailable destinations remain visible
 and explicitly explained outside it. Canonical stale and Collector-Run-blocked
@@ -48,8 +49,18 @@ refresh copy, displayed keyboard shortcuts, equivalent-content scroll
 restoration, and the complete main-toolbar **Marketplace** label are included.
 The released Price/Supply evidence, classification, ordering, transactional
 replacement, query/cache, provider, persistence, and session lifecycles remain
-unchanged. Dashboard, Collection Review, filtering, and sorting refinements
-remain future slices and are not part of the v0.5.1 release.
+unchanged. Dashboard now separates collection facts from latest completed
+intelligence and separates active from unavailable destinations. Collection
+Decisions retains all columns with numeric alignment and horizontal overflow;
+selected observations use typed detail sections and actions expose disabled
+reasons. Collection Decision and Priority filters expose canonical choices plus
+exact retained stored values; retained choices are session-local and safely
+persist as **All**, while decision writes remain canonical-only. Latest
+intelligence contains only execution-bound History values;
+mutable legacy score aggregates remain available through their existing
+workflows without being attributed to that execution. Queue, evidence,
+provider, and persistence lifecycles remain unchanged. These changes are
+unreleased and are not part of v0.5.1.
 
 ## Available after sufficient history
 

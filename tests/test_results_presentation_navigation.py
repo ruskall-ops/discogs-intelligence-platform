@@ -376,16 +376,23 @@ class ResultsPresentationRealTkBoundaryTest(unittest.TestCase):
         app.children = root.children
         app._collector_run_active = False
         app._marketplace_explorer_handles = {}
-        window = tk.Toplevel(root)
-        window.withdraw()
+        root.deiconify()
+        root.update_idletasks()
         rendered = DesktopCollectionExplorerRenderer().render(
             replace(
                 build_explorer(available_homepage()),
                 selected_destination=CollectionExplorerDestination.PRICE_CHANGES,
             )
         )
+        window = tk.Toplevel(root)
         App._populate_intelligence_explorer_window(app, window, rendered)
-        window.deiconify()
+        root.update_idletasks()
+        root.update()
+        self.assertIn(window.state(), {"normal", "zoomed"})
+        self.assertIs(
+            window._dip_selected_destination,
+            CollectionExplorerDestination.PRICE_CHANGES,
+        )
         navigation = window._dip_explorer_navigation
         descendants = self._descendants(window)
         buttons = {
@@ -395,7 +402,10 @@ class ResultsPresentationRealTkBoundaryTest(unittest.TestCase):
         }
         for width, height in ((1050, 720), (800, 560)):
             window.geometry(f"{width}x{height}")
-            window.update_idletasks()
+            root.update_idletasks()
+            root.update()
+            self.assertTrue(navigation.winfo_ismapped())
+            self.assertTrue(navigation.winfo_viewable())
             self.assertGreaterEqual(navigation.winfo_width(), navigation.winfo_reqwidth())
             for child in descendants:
                 if isinstance(child, ttk.Label) and child.cget("text") in {

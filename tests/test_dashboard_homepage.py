@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import FrozenInstanceError, replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import unittest
 
 from dip.app import HistoricalIntelligenceExecution
@@ -279,7 +279,10 @@ def execution(
 ) -> HistoricalIntelligenceExecution:
     run = IntelligenceHistoryRun(
         run_id=run_id,
-        executed_at=datetime(2026, 7, run_id, 10, 0, tzinfo=timezone.utc),
+        executed_at=(
+            datetime(2026, 7, 1, 10, 0, tzinfo=timezone.utc)
+            + timedelta(days=run_id)
+        ),
         engine_version=engine_version,
         result_count=len(records),
     )

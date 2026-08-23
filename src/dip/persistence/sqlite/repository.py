@@ -8,6 +8,13 @@ from pathlib import Path
 from threading import RLock
 from typing import Any, Iterable
 
+from dip.collection_decision_vocabulary import (
+    ReviewFilterChoice,
+    ReviewFilterChoiceKind,
+    ReviewFilterField,
+    validate_writable_decision,
+)
+
 from .connection import create_connection
 from .schema import initialise_schema
 
@@ -663,8 +670,8 @@ class Database:
     def review_rows(
         self,
         search: str = "",
-        priority: str = "",
-        decision: str = "",
+        priority: str | ReviewFilterChoice = "",
+        decision: str | ReviewFilterChoice = "",
         limit: int = 2000,
     ) -> list[sqlite3.Row]:
         where: list[str] = []
@@ -684,13 +691,16 @@ class Database:
             query = f"%{search}%"
             params.extend([query, query, query, query])
 
-        if priority and priority != "All":
-            where.append("s.priority = ?")
-            params.append(priority)
+        priority_value = _review_filter_value(priority, ReviewFilterField.PRIORITY)
+        decision_value = _review_filter_value(decision, ReviewFilterField.DECISION)
 
-        if decision and decision != "All":
-            where.append("d.decision = ?")
-            params.append(decision)
+        if priority_value is not None:
+            where.append("COALESCE(s.priority, 'Not scored') = ?")
+            params.append(priority_value)
+
+        if decision_value is not None:
+            where.append("COALESCE(d.decision, 'Review') = ?")
+            params.append(decision_value)
 
         clause = f"WHERE {' AND '.join(where)}" if where else ""
         params.append(max(1, int(limit)))
@@ -717,16 +727,16 @@ class Database:
                     r.title,
                     r.label,
                     r.catalog_no,
-                    COALESCE(l.wants, 0) AS wants,
-                    COALESCE(l.haves, 0) AS haves,
-                    COALESCE(l.copies_for_sale, 0) AS copies_for_sale,
-                    COALESCE(l.lowest_price, 0) AS lowest_price,
-                    COALESCE(l.currency, '') AS currency,
-                    COALESCE(s.value_score, 0) AS value_score,
-                    COALESCE(s.demand_score, 0) AS demand_score,
-                    COALESCE(s.liquidity_score, 0) AS liquidity_score,
-                    COALESCE(s.momentum_score, 0) AS momentum_score,
-                    COALESCE(s.opportunity_score, 0) AS opportunity_score,
+                    l.wants AS wants,
+                    l.haves AS haves,
+                    l.copies_for_sale AS copies_for_sale,
+                    l.lowest_price AS lowest_price,
+                    l.currency AS currency,
+                    s.value_score AS value_score,
+                    s.demand_score AS demand_score,
+                    s.liquidity_score AS liquidity_score,
+                    s.momentum_score AS momentum_score,
+                    s.opportunity_score AS opportunity_score,
                     COALESCE(s.sell_window, 'Not scored') AS sell_window,
                     COALESCE(s.priority, 'Not scored') AS priority,
                     COALESCE(s.explanation, '') AS explanation,
@@ -751,6 +761,26 @@ class Database:
                 params,
             ).fetchall()
 
+    def review_filter_values(self) -> tuple[tuple[str, ...], tuple[str, ...]]:
+        """Return exact visible priority and decision values deterministically."""
+
+        with self._lock:
+            rows = self.conn.execute(
+                """
+                SELECT DISTINCT
+                    COALESCE(s.priority, 'Not scored') AS priority,
+                    COALESCE(d.decision, 'Review') AS decision
+                FROM releases r
+                LEFT JOIN scores s ON s.release_id = r.release_id
+                LEFT JOIN decisions d ON d.release_id = r.release_id
+                ORDER BY 1 COLLATE BINARY, 2 COLLATE BINARY
+                """
+            ).fetchall()
+        return (
+            tuple(sorted({row["priority"] for row in rows})),
+            tuple(sorted({row["decision"] for row in rows})),
+        )
+
     def save_decision(
         self,
         release_id: int,
@@ -759,6 +789,7 @@ class Database:
         notes: str,
         protected: bool,
     ) -> None:
+        decision = validate_writable_decision(decision)
         with self._lock, self.conn:
             self.conn.execute(
                 """
@@ -786,3 +817,18 @@ class Database:
                     int(protected),
                 ),
             )
+
+
+def _review_filter_value(
+    selection: str | ReviewFilterChoice,
+    field: ReviewFilterField,
+) -> str | None:
+    if type(selection) is ReviewFilterChoice:
+        if selection.field is not field:
+            raise ValueError("Review filter field does not match its query.")
+        if selection.kind is ReviewFilterChoiceKind.ALL:
+            return None
+        return selection.query_value
+    if type(selection) is not str:
+        raise TypeError("review filter must be a string or ReviewFilterChoice.")
+    return None if not selection or selection == "All" else selection

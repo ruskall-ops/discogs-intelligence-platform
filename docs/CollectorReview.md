@@ -49,6 +49,19 @@ Marketplace evidence may mark it stale but is never substituted.
 Safe warnings distinguish retained scores, failed source runs, unavailable
 provenance, stale scores, and partial Marketplace evidence. Failed, empty, or
 unavailable canonical observations cannot substantiate a score.
+Warning codes are mapped to fixed public copy; raw provider messages, paths,
+serialized payloads, database details, and personal notes are never rendered.
+The warning projection accepts a closed semantic state: evidence limitations
+are shown only in the compatible state, while incompatible states suppress
+both known and unknown warnings. Unknown compatible warnings collapse to one
+fixed generic limitation.
+Observation detail keeps calculated facts, Marketplace evidence, limitations,
+queue state, and indented technical provenance as distinct labelled sections.
+
+Collection Decisions preserve unavailable numeric facts as an em dash and
+preserve real zeroes as `0.00` for prices, `0` for counts, and `0.0` for
+scores. The horizontally scrollable table does not truncate long artist or
+title values in the underlying row and retains selection only by release ID.
 
 Hidden Gems preserves the stored candidate order, factors, metrics, evidence,
 execution identity, and canonical Marketplace provenance. A completed result
@@ -113,6 +126,87 @@ selection, changing Collection Review destination, or closing the application.
 Refresh never silently saves or discards the buffer. Queue controls remain
 available while Collector Run executes; its Tkinter terminal callback refreshes
 calculated Observations only.
+
+Collection Decisions retains every existing column and adds horizontal
+overflow. Artist, title, classifications, priority, and decision remain
+left-aligned; price, wants, supply, and score facts are right-aligned. Missing
+facts use an em dash and remain distinct from genuine zero. The supplied lowest-
+price numeric value is formatted to two decimal places in the fixed `Lowest £`
+column: missing price evidence appears as an em dash and genuine zero as
+`0.00`. The repository currency field is not separately projected in this table.
+Filtering and reload preserve the exact selected release while it remains
+visible and clear selection without choosing a substitute when it does not.
+Decision and Priority filters use one immutable typed vocabulary. Canonical
+choices keep their established order. Any other exact values retained by an
+older or externally populated database remain displayed and exported unchanged
+and appear afterward as deterministic, read-only `Retained: …` filter choices.
+The rendered label is never parsed as query identity: canonical, retained, and
+the unfiltered **All** choice remain distinct even when retained data is itself
+named `All` or differs only by case. Filtering continues to use exact stored
+equality and performs no normalization, inference, provider request, write, or
+score calculation.
+Each table reload performs one bounded-purpose distinct-value discovery query
+followed by the existing bounded row query. Switching tabs alone does not run
+either query; the established load/reload boundary does.
+
+The Collection Decision editor continues to offer exactly **Review**, **Keep**,
+**List for sale**, **Maybe**, and **Ignore** for new writes. Persistence rejects
+unknown, blank, untrimmed, boolean, and non-string decision inputs before a
+transaction begins. Opening or cancelling an editor for a retained value does
+not rewrite it; saving requires an explicit canonical choice. There is no data
+migration or automatic normalization.
+
+Canonical Decision and Priority filters participate in session restoration.
+Retained compatibility selections are intentionally session-local. When one is
+selected at graceful close, session v1 stores the existing canonical **All**
+token; after restart the table restores **All** and rediscovers every retained
+value as an individually selectable choice. This fallback neither normalizes
+stored rows nor substitutes or infers a canonical meaning.
+
+Selected Observation detail is grouped from typed fields into Calculated
+observation, Marketplace evidence, Evidence limitations / warnings, Weekend
+Review Queue state, and subordinate Technical provenance sections when those
+values exist. Current catalogue labels are identified as current and are not
+represented as historical evidence. Workflow actions are visually separate,
+and disabled controls have nearby textual explanations. At `800×560`, the
+table and detail panes receive equal usable width after final layout. The table
+has visible horizontal and vertical overflow controls. A non-data terminal
+gutter keeps the final Queue column inside the native bordered viewport at the
+right scroll limit, and scoped Shift-wheel gestures provide cross-platform
+horizontal movement without changing table selection. The selectable,
+word-wrapped detail has a visible vertical scrollbar and scoped cross-platform
+wheel routing. Status and disabled-reason copy wrap to their actual allocation,
+and the complete observation action set uses two rows without changing its
+logical focus order. Wider and subsequent compact layouts recalculate from the
+actual pane width. Local Tab, Shift-Tab, Return, and Space handling preserves
+mouse and keyboard use without changing queue lifecycle, unsaved-note,
+evidence, provider, or write boundaries.
+At the supported compact geometry, Weekend Review Queue actions use a complete
+three-row arrangement; expanded panes use two rows while preserving logical
+action and focus order.
+Selected queue metadata remains complete in a bounded, read-only word-wrapped
+viewport with a visible vertical scrollbar; it does not enlarge or displace
+the reviewed action and disabled-reason layout.
+The complete Queue detail region—metadata, review note, actions, and reason
+copy—uses an outer vertical viewport when its content exceeds the available
+height. Scoped macOS/Windows wheel and Linux button-wheel routing lets nested
+labels and controls move that viewport without application-global bindings;
+the metadata and note Text widgets retain their own established scrolling.
+Keyboard traversal reveals an off-screen Queue control completely while
+preserving workflow callbacks, action order, and unsaved-note safeguards.
+Disabled-reason copy wraps to the pane's
+actual allocation, so unavailable and no-selection states remain fully readable
+without changing which controls are focus-eligible. The stable queue-detail
+pane allocation is recalculated from the current native workflow labels after
+each completed resize and queue-state transition. Compact allocation measures
+the widest current row, including **Start Review** / **Return to Review** and
+**Resolve** / **Reopen** changes. Expanded allocation measures the shared grid
+columns used by both visual rows, so a label change cannot leave stale column
+widths or move an action outside the detail pane.
+If the queue service becomes unavailable, stale rows, metadata, action labels,
+and focus eligibility are cleared through one unavailable-state boundary. An
+already dirty note remains readable and byte-for-byte unchanged for recovery;
+the unavailable transition never silently discards that draft.
 
 ## Persistence
 

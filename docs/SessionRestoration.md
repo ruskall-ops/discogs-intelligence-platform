@@ -51,6 +51,16 @@ Version 1 restores:
 Search text is deliberately not saved. Display labels and notebook indexes are
 mapped to stable enum values before persistence.
 
+Canonical Collection Decision and Priority filter selections restore exactly.
+Read-only retained compatibility values are intentionally session-local because
+the version 1 record and its SQL constraints contain only the closed canonical
+filter enums. Capturing either retained filter stores the existing **All** enum
+token. Restart therefore restores **All**, then the normal Collection Decisions
+load rediscovers each retained value as an exact, individually selectable
+choice. No retained value is serialized, inferred as another canonical value,
+or written back to decision or score data. This is a truthful presentation
+fallback, not data normalization or semantic substitution.
+
 Selections are applied only after fresh queries. A missing or filtered-out
 identity clears selection without changing filters, choosing a substitute,
 opening an editor, or mutating domain state.
@@ -129,6 +139,8 @@ default row, foreign key, additional index, history, checksum, or optimistic
 lock. `get()` returns `None` when absent. `save()` uses the shared
 savepoint-aware database transaction boundary and single-process
 last-write-wins replacement.
+The schema remains format version 1: retained Collection Decision compatibility
+filters add no field, migration, side channel, or encoded enum token.
 
 Timestamps are aware UTC ISO 8601 values with microseconds. Structural
 corruption rejects the complete stored record. Unknown format versions are

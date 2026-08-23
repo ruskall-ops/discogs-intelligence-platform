@@ -148,6 +148,18 @@ fallback identity, and canonical order. Tk applies only shared heading styles
 and scrolling; it owns no classification, count, comparison, warning, or
 provenance logic.
 
+Destination-specific frozen presentation values may also describe Dashboard
+grouping, Collection Review columns, factual availability, typed detail
+sections, and disabled-action explanations. These values only project supplied
+facts and fixed copy. Tk remains responsible for alignment, wrapping,
+scrollbars, mapping, focus, and widget state; it must not parse rendered text to
+recover evidence or derive conclusions.
+
+The latest-intelligence Dashboard region accepts only values identity-bound to
+its reconstructed Intelligence History execution. Mutable legacy score
+aggregates remain outside that region when no authoritative execution-specific
+association exists.
+
 ### Application Services
 
 Application services coordinate complete use cases. Implemented examples
@@ -340,8 +352,10 @@ Project-scoped data boundaries.
 
 ### Dashboard
 
-The Dashboard command centre composes existing presentation foundations into
-eight deterministic cards:
+The Dashboard preserves the information from its existing presentation
+foundations in a summary-first hierarchy: current collection facts, latest
+completed intelligence, available destinations, and unavailable destinations.
+The command-centre model continues to compose eight deterministic cards:
 Portfolio Summary, Collection Health, Opportunity Highlights, Collection
 Changes, Historical Changes, Marketplace Highlights, Research Summary, and
 Quick Actions. Production-wired Collection actions remain enabled. Portfolio,
@@ -351,8 +365,15 @@ do not invoke their reusable controllers or open placeholder windows.
 The earlier Collection Intelligence Dashboard homepage and its dedicated
 Collection Health and Hidden Gems detail views remain active presentation
 components. Dashboard refresh also obtains one immutable Collector Review
-observation workspace: its Hot-now count and drill-down therefore describe the
-same calculated rows.
+observation workspace. That workspace determines whether the Hot-now
+destination can be opened; the Dashboard does not render a separate Hot-now
+count.
+
+The desktop does not render duplicated active command cards where the same fact
+and action are already present in the latest-intelligence or available-
+destination sections. Unavailable destinations retain fixed textual status and
+explanation. This is a presentation choice only; callbacks and controller
+boundaries are unchanged.
 
 ### Portfolio Workspace
 
@@ -390,7 +411,13 @@ Intelligence History, and canonical Marketplace evidence without executing
 intelligence. Only an explicit user Add creates a durable queue item. Frozen
 source evidence does not change when later Collector Runs refresh calculated
 observations, and Collection Decisions continue to use their independent
-editor and persistence. See [Collector Review](CollectorReview.md).
+editor and persistence. Collection Decision and Priority filtering crosses a
+narrow immutable vocabulary boundary: canonical choices remain closed and
+ordered, while exact noncanonical persisted values are projected as
+read-only retained choices. Typed query selections, rather than rendered
+labels, distinguish unfiltered state from retained collisions. Writers accept
+only canonical decisions; readers and exports preserve retained text without a
+migration or semantic remapping. See [Collector Review](CollectorReview.md).
 
 ## Data and history boundaries
 

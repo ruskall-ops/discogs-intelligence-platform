@@ -78,6 +78,15 @@ The workspace presents:
 - a presentation-ready project summary; and
 - deterministic quick actions.
 
+At the supported `800×560` desktop geometry, the production workspace uses a
+width-fitted vertical canvas viewport. Active Project, Recent Projects, Project
+Summary, and Quick Actions remain in deterministic order; every body wraps to
+its final card allocation and Quick Actions use one contained logical column.
+A mapped scrollbar, scoped macOS/Windows/Linux wheel routing over nested
+content, and focus-driven exposure make the complete lower content reachable.
+Wider windows expand the same content without horizontal scrolling, and a
+subsequent compact resize recalculates from the final canvas width.
+
 Open Project, Create Project, and Refresh Collection are disabled placeholders.
 Open Dashboard and Open Portfolio Workspace navigate through existing desktop
 methods. No routing framework or controller logic is duplicated.
