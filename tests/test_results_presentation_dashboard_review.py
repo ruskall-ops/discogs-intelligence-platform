@@ -1382,6 +1382,9 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             if previous is not None:
                 self.assertNotEqual(variable.get(), previous)
             previous_reasons[label] = variable.get()
+            if label is self.root.queue_action_reason_label:
+                self.root._reveal_queue_detail_control(label)
+                self.root.update()
             self.assertGreaterEqual(label.winfo_rooty(), self.root.review_tab.winfo_rooty())
             self.assertLessEqual(
                 label.winfo_rooty() + label.winfo_height(),
@@ -1397,17 +1400,65 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
                 self.assertNotIn("disabled", button.state())
 
         def assert_queue_focus(expected_buttons, service):
-            focused_actions = tuple(
+            eligible = tuple(
                 widget
                 for widget in self.root._dip_review_focus_order
-                if widget in queue_buttons and self.root._focus_eligible(widget)
+                if self.root._focus_eligible(widget)
+            )
+            focused_actions = tuple(
+                widget
+                for widget in eligible
+                if widget in queue_buttons
             )
             self.assertEqual(focused_actions, tuple(expected_buttons))
             calls_before = tuple(service.method_calls)
+            dependency_calls = tuple(
+                tuple(dependency.method_calls)
+                for dependency in (
+                    self.dependencies.dashboard_homepage,
+                    self.dependencies.collection_health_controller,
+                    self.dependencies.collection_explorer_controller,
+                    self.dependencies.portfolio_overview_controller,
+                    self.dependencies.portfolio_controller,
+                    self.project_presentation,
+                )
+            )
+            changes_before = self.database.conn.total_changes
+            traced_sql = []
+            self.database.conn.set_trace_callback(traced_sql.append)
+            canvas_top = self.root.queue_detail_canvas.winfo_rooty()
+            canvas_bottom = canvas_top + self.root.queue_detail_canvas.winfo_height()
             for widget in focused_actions:
-                self.root._move_scoped_focus(widget, True)
-                self.root._move_scoped_focus(widget, False)
+                prior = eligible[(eligible.index(widget) - 1) % len(eligible)]
+                self.root.queue_detail_canvas.yview_moveto(
+                    1.0 if widget.winfo_rooty() < canvas_top else 0.0
+                )
+                prior.focus_force()
+                self.root._move_scoped_focus(prior, True)
+                self.root.update()
+                self.assertIs(self.root.focus_get(), widget)
+                self.assertGreaterEqual(widget.winfo_rooty(), canvas_top)
+                self.assertLessEqual(
+                    widget.winfo_rooty() + widget.winfo_height(), canvas_bottom
+                )
+            self.database.conn.set_trace_callback(None)
             self.assertEqual(tuple(service.method_calls), calls_before)
+            self.assertEqual(traced_sql, [])
+            self.assertEqual(self.database.conn.total_changes, changes_before)
+            self.assertEqual(
+                tuple(
+                    tuple(dependency.method_calls)
+                    for dependency in (
+                        self.dependencies.dashboard_homepage,
+                        self.dependencies.collection_health_controller,
+                        self.dependencies.collection_explorer_controller,
+                        self.dependencies.portfolio_overview_controller,
+                        self.dependencies.portfolio_controller,
+                        self.project_presentation,
+                    )
+                ),
+                dependency_calls,
+            )
 
         observation_buttons = (
             self.root.add_observation_button,
@@ -1424,10 +1475,19 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
 
         def assert_queue_layout(expected_mode, expected_positions):
             self.root.update()
-            self.assertEqual(self.root._queue_action_layout, expected_mode)
+            self.assertEqual(
+                self.root._queue_action_layout,
+                expected_mode,
+                (
+                    self.root.queue_detail_content.winfo_width(),
+                    self.root.queue_detail_canvas.winfo_width(),
+                    self.root.queue_detail_panel.winfo_width(),
+                    self.root._queue_expanded_action_width(),
+                ),
+            )
             self.assertEqual(
                 self.root.queue_actions.winfo_width(),
-                self.root.queue_detail_panel.winfo_width() - 10,
+                self.root.queue_detail_content.winfo_width(),
             )
             root_right = self.root.winfo_rootx() + self.root.winfo_width()
             root_bottom = self.root.winfo_rooty() + self.root.winfo_height()
@@ -1438,6 +1498,25 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             detail_right = (
                 self.root.queue_detail_panel.winfo_rootx()
                 + self.root.queue_detail_panel.winfo_width()
+            )
+            self.assertTrue(self.root.queue_detail_canvas.winfo_ismapped())
+            self.assertTrue(self.root.queue_detail_canvas.winfo_viewable())
+            self.assertTrue(self.root.queue_detail_outer_scroll.winfo_ismapped())
+            self.assertTrue(self.root.queue_detail_outer_scroll.winfo_viewable())
+            self.assertTrue(self.root.queue_detail_outer_scroll.cget("command"))
+            self.assertTrue(self.root.queue_detail_canvas.cget("yscrollcommand"))
+            outer_yview = self.root.queue_detail_canvas.yview()
+            overflow = (
+                self.root.queue_detail_content.winfo_reqheight()
+                > self.root.queue_detail_canvas.winfo_height()
+            )
+            self.assertEqual(
+                outer_yview[0] > 0.0 or outer_yview[1] < 1.0,
+                overflow,
+            )
+            self.assertGreaterEqual(
+                self.root.queue_actions.winfo_height(),
+                self.root.queue_actions.winfo_reqheight(),
             )
             for button in queue_buttons:
                 self.assertTrue(button.winfo_ismapped(), button.cget("text"))
@@ -1459,7 +1538,14 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
                     button.cget("text"),
                 )
                 self.assertLessEqual(
-                    button.winfo_rooty() + button.winfo_height(), root_bottom,
+                    button.winfo_rooty() + button.winfo_height(),
+                    self.root.queue_actions.winfo_rooty()
+                    + self.root.queue_actions.winfo_height(),
+                    button.cget("text"),
+                )
+                self.assertGreaterEqual(
+                    button.winfo_rooty(),
+                    self.root.queue_actions.winfo_rooty(),
                     button.cget("text"),
                 )
             self.assertEqual(
@@ -1479,6 +1565,36 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             self.assertLessEqual(
                 reason.winfo_rootx() + reason.winfo_width(), detail_right
             )
+            self.assertGreaterEqual(
+                reason.winfo_rooty(),
+                self.root.queue_actions.winfo_rooty()
+                + self.root.queue_actions.winfo_height(),
+            )
+            canvas_top = self.root.queue_detail_canvas.winfo_rooty()
+            canvas_bottom = canvas_top + self.root.queue_detail_canvas.winfo_height()
+            for widget in (
+                self.root.queue_detail_viewport,
+                self.root.queue_note,
+                self.root.queue_actions,
+                self.root.queue_decision_button,
+                reason,
+            ):
+                self.root._reveal_queue_detail_control(widget)
+                self.root.update()
+                self.assertGreaterEqual(widget.winfo_rooty(), canvas_top)
+                self.assertLessEqual(
+                    widget.winfo_rooty() + widget.winfo_height(),
+                    canvas_bottom,
+                    str(widget),
+                )
+            self.root.queue_detail_canvas.yview_moveto(0.0)
+            self.root.update()
+            self.assertEqual(self.root.queue_detail_canvas.yview()[0], 0.0)
+            self.root.queue_detail_canvas.yview_moveto(1.0)
+            self.root.update()
+            self.assertEqual(self.root.queue_detail_canvas.yview()[1], 1.0)
+            if overflow:
+                self.assertGreater(self.root.queue_detail_canvas.yview()[0], 0.0)
             native_widths = tuple(
                 button.winfo_reqwidth() for button in queue_buttons
             )
@@ -1641,6 +1757,58 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             self.root.queue_detail_text.dlineinfo("end-2c")
         )
         self.root.queue_detail_text.yview_moveto(0.0)
+        self.assertTrue(self.root.bind("<MouseWheel>"))
+        self.assertTrue(self.root.bind("<Button-4>"))
+        self.assertTrue(self.root.bind("<Button-5>"))
+        self.assertFalse(self.root.bind_all("<MouseWheel>"))
+        self.assertFalse(self.root.bind_all("<Button-4>"))
+        self.assertFalse(self.root.bind_all("<Button-5>"))
+        self.assertIn("Text", self.root.queue_detail_text.bindtags())
+        self.assertTrue(
+            self.root.bind_class("Text", "<MouseWheel>")
+            or self.root.bind_class("Text", "<Button-4>")
+        )
+        outer_selection = self.root.queue_tree.selection()
+        outer_detail = self.root.queue_detail_text.get("1.0", "end-1c")
+        outer_note = self.root.queue_note.get("1.0", "end-1c")
+        outer_calls = tuple(queue_service.method_calls)
+        outer_changes = self.database.conn.total_changes
+        outer_sql = []
+        self.database.conn.set_trace_callback(outer_sql.append)
+        for event in (
+            SimpleNamespace(widget=self.root.queue_note_label, delta=-1, num=None),
+            SimpleNamespace(widget=self.root.queue_note_label, delta=-120, num=None),
+            SimpleNamespace(widget=self.root.queue_note_label, delta=0, num=5),
+        ):
+            self.root.queue_detail_canvas.yview_moveto(0.0)
+            self.assertEqual(self.root._scroll_queue_detail_from_wheel(event), "break")
+            self.assertGreater(self.root.queue_detail_canvas.yview()[0], 0.0)
+        self.root.queue_detail_canvas.yview_moveto(0.5)
+        before_outer = self.root.queue_detail_canvas.yview()
+        self.assertEqual(
+            self.root._scroll_queue_detail_from_wheel(
+                SimpleNamespace(widget=self.root.queue_note_label, delta=0, num=4)
+            ),
+            "break",
+        )
+        self.assertLess(self.root.queue_detail_canvas.yview()[0], before_outer[0])
+        for nested_text in (self.root.queue_detail_text, self.root.queue_note):
+            before_outer = self.root.queue_detail_canvas.yview()
+            self.assertIsNone(
+                self.root._scroll_queue_detail_from_wheel(
+                    SimpleNamespace(widget=nested_text, delta=-120, num=None)
+                )
+            )
+            self.assertEqual(self.root.queue_detail_canvas.yview(), before_outer)
+        self.database.conn.set_trace_callback(None)
+        self.assertEqual(outer_sql, [])
+        self.assertEqual(self.database.conn.total_changes, outer_changes)
+        self.assertEqual(tuple(queue_service.method_calls), outer_calls)
+        self.assertEqual(self.root.queue_tree.selection(), outer_selection)
+        self.assertEqual(
+            self.root.queue_detail_text.get("1.0", "end-1c"), outer_detail
+        )
+        self.assertEqual(self.root.queue_note.get("1.0", "end-1c"), outer_note)
         service_calls = tuple(queue_service.method_calls)
         eligible = tuple(
             widget for widget in self.root._dip_review_focus_order
@@ -1661,6 +1829,11 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         self.root.queue_note.insert("1.0", "changed")
         self.root._on_queue_note_edited()
         self.assertTrue(self.root._queue_note_dirty)
+        dirty_before_scroll = self.root.queue_note.get("1.0", "end-1c")
+        assert_queue_layout("compact", compact_positions)
+        self.assertEqual(
+            self.root.queue_note.get("1.0", "end-1c"), dirty_before_scroll
+        )
         assert_enabled(*queue_buttons)
         assert_reason(
             self.root.queue_action_reason_label,

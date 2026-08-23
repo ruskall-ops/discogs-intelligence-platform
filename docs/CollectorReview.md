@@ -187,6 +187,13 @@ action and focus order.
 Selected queue metadata remains complete in a bounded, read-only word-wrapped
 viewport with a visible vertical scrollbar; it does not enlarge or displace
 the reviewed action and disabled-reason layout.
+The complete Queue detail region—metadata, review note, actions, and reason
+copy—uses an outer vertical viewport when its content exceeds the available
+height. Scoped macOS/Windows wheel and Linux button-wheel routing lets nested
+labels and controls move that viewport without application-global bindings;
+the metadata and note Text widgets retain their own established scrolling.
+Keyboard traversal reveals an off-screen Queue control completely while
+preserving workflow callbacks, action order, and unsaved-note safeguards.
 Disabled-reason copy wraps to the pane's
 actual allocation, so unavailable and no-selection states remain fully readable
 without changing which controls are focus-eligible. The stable queue-detail

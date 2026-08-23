@@ -732,6 +732,9 @@ class App(tk.Tk):
         self.bind("<MouseWheel>", self._scroll_project_from_wheel, add="+")
         self.bind("<Button-4>", self._scroll_project_from_wheel, add="+")
         self.bind("<Button-5>", self._scroll_project_from_wheel, add="+")
+        self.bind("<MouseWheel>", self._scroll_queue_detail_from_wheel, add="+")
+        self.bind("<Button-4>", self._scroll_queue_detail_from_wheel, add="+")
+        self.bind("<Button-5>", self._scroll_queue_detail_from_wheel, add="+")
 
     def _scroll_dashboard_from_wheel(self, event):
         """Scroll only when the wheel originated inside the live Dashboard."""
@@ -788,6 +791,58 @@ class App(tk.Tk):
             current = widget
             while current is not None:
                 if current in (self.project_canvas, self.project_content):
+                    return True
+                parent_name = current.winfo_parent()
+                if not parent_name:
+                    return False
+                current = current._nametowidget(parent_name)
+        except (KeyError, tk.TclError):
+            return False
+        return False
+
+    def _scroll_queue_detail_from_wheel(self, event):
+        """Scroll only the live Queue detail viewport outside nested Texts."""
+
+        widget = getattr(event, "widget", None)
+        if not self._is_live_queue_detail_widget(widget):
+            return None
+        if self._widget_is_or_descends_from(
+            widget,
+            (self.queue_detail_text, self.queue_detail_scroll, self.queue_note),
+        ):
+            return None
+        units = self._wheel_scroll_units(event)
+        if units == 0:
+            return None
+        try:
+            self.queue_detail_canvas.yview_scroll(units, "units")
+        except tk.TclError:
+            return None
+        return "break"
+
+    def _is_live_queue_detail_widget(self, widget):
+        try:
+            return (
+                widget is not None
+                and self.queue_detail_canvas.winfo_exists()
+                and self._widget_is_or_descends_from(
+                    widget,
+                    (
+                        self.queue_detail_canvas,
+                        self.queue_detail_content,
+                        self.queue_detail_outer_scroll,
+                    ),
+                )
+            )
+        except tk.TclError:
+            return False
+
+    @staticmethod
+    def _widget_is_or_descends_from(widget, ancestors):
+        try:
+            current = widget
+            while current is not None:
+                if current in ancestors:
                     return True
                 parent_name = current.winfo_parent()
                 if not parent_name:
@@ -925,6 +980,11 @@ class App(tk.Tk):
             self._reveal_dashboard_control(target)
         elif target in self._dip_project_focus_order:
             self._reveal_project_control(target)
+        elif self._widget_is_or_descends_from(
+            target,
+            (self.queue_detail_content,),
+        ):
+            self._reveal_queue_detail_control(target)
         return "break"
 
     @staticmethod
@@ -959,6 +1019,31 @@ class App(tk.Tk):
             top = widget.winfo_rooty() - self.project_content.winfo_rooty()
             bottom = top + widget.winfo_height()
             total = max(1, self.project_content.winfo_reqheight())
+            view_top, view_bottom = (value * total for value in canvas.yview())
+            if top < view_top:
+                canvas.yview_moveto(max(0.0, top / total))
+            elif bottom > view_bottom:
+                canvas.yview_moveto(
+                    min(
+                        1.0,
+                        max(0.0, (bottom - canvas.winfo_height()) / total),
+                    )
+                )
+        except tk.TclError:
+            return
+
+    def _reveal_queue_detail_control(self, widget):
+        """Reveal one complete focused Queue control in the outer viewport."""
+
+        try:
+            canvas = self.queue_detail_canvas
+            canvas.update_idletasks()
+            bbox = canvas.bbox("all")
+            if bbox is None:
+                return
+            total = max(1, bbox[3] - bbox[1])
+            top = widget.winfo_rooty() - self.queue_detail_content.winfo_rooty()
+            bottom = top + widget.winfo_height()
             view_top, view_bottom = (value * total for value in canvas.yview())
             if top < view_top:
                 canvas.yview_moveto(max(0.0, top / total))
@@ -1248,6 +1333,36 @@ class App(tk.Tk):
         self.queue_panes.add(right, weight=2)
         self.queue_panes.bind("<Configure>", self._layout_queue_panes)
 
+        self.queue_detail_canvas = tk.Canvas(
+            right,
+            highlightthickness=0,
+            takefocus=False,
+        )
+        self.queue_detail_outer_scroll = ttk.Scrollbar(
+            right,
+            orient="vertical",
+            command=self.queue_detail_canvas.yview,
+        )
+        self.queue_detail_canvas.configure(
+            yscrollcommand=self.queue_detail_outer_scroll.set
+        )
+        right.rowconfigure(0, weight=1)
+        right.columnconfigure(0, weight=1)
+        self.queue_detail_canvas.grid(row=0, column=0, sticky="nsew")
+        self.queue_detail_outer_scroll.grid(row=0, column=1, sticky="ns")
+        self.queue_detail_content = ttk.Frame(self.queue_detail_canvas)
+        self.queue_detail_window = self.queue_detail_canvas.create_window(
+            (0, 0),
+            window=self.queue_detail_content,
+            anchor="nw",
+        )
+        self.queue_detail_canvas.bind(
+            "<Configure>", self._layout_queue_detail_viewport
+        )
+        self.queue_detail_content.bind(
+            "<Configure>", self._layout_queue_detail_viewport
+        )
+
         self.queue_tree = ttk.Treeview(
             self.queue_table_panel,
             columns=("artist", "title", "status", "source"),
@@ -1276,7 +1391,7 @@ class App(tk.Tk):
         )
 
         self.queue_detail_var = tk.StringVar(value="Select a queue item.")
-        self.queue_detail_viewport = ttk.Frame(right)
+        self.queue_detail_viewport = ttk.Frame(self.queue_detail_content)
         self.queue_detail_text = tk.Text(
             self.queue_detail_viewport,
             height=5,
@@ -1303,15 +1418,23 @@ class App(tk.Tk):
             "write", self._render_queue_detail_text
         )
         self._render_queue_detail_text()
-        ttk.Label(right, text="Review note").pack(
+        self.queue_note_label = ttk.Label(
+            self.queue_detail_content,
+            text="Review note",
+        )
+        self.queue_note_label.pack(
             anchor="w",
             pady=(12, 4),
         )
-        self.queue_note = tk.Text(right, height=10, wrap="word")
+        self.queue_note = tk.Text(
+            self.queue_detail_content,
+            height=10,
+            wrap="word",
+        )
         self.queue_note.bind("<KeyRelease>", self._on_queue_note_edited)
         self.queue_note.configure(state="disabled")
 
-        actions = ttk.Frame(right)
+        actions = ttk.Frame(self.queue_detail_content)
         self.queue_save_button = ttk.Button(
             actions,
             text="Save note",
@@ -1341,23 +1464,26 @@ class App(tk.Tk):
         self.queue_detail_panel = right
         self._queue_action_layout = None
         right.bind("<Configure>", self._layout_queue_actions)
+        self.queue_detail_content.bind(
+            "<Configure>", self._layout_queue_actions, add="+"
+        )
         self._layout_queue_actions()
         self.queue_action_reason_var = tk.StringVar()
         self.queue_action_reason_label = ttk.Label(
-            right,
+            self.queue_detail_content,
             textvariable=self.queue_action_reason_var,
             wraplength=520,
             justify="left",
             takefocus=True,
         )
+        self.queue_note.pack(fill="x")
+        actions.pack(fill="x", pady=(8, 0))
         self.queue_action_reason_label.pack(
-            side="bottom", anchor="w", fill="x", pady=(6, 0)
+            anchor="w", fill="x", pady=(6, 0)
         )
         self.queue_action_reason_label.bind(
             "<Configure>", self._wrap_queue_action_reason
         )
-        actions.pack(side="bottom", fill="x", pady=(8, 0))
-        self.queue_note.pack(fill="both", expand=True)
         self._set_queue_controls_enabled(False)
 
     def _render_queue_detail_text(self, *_args):
@@ -1372,11 +1498,20 @@ class App(tk.Tk):
     def _layout_queue_actions(self, event=None):
         """Keep every queue action visible in narrow and expanded panes."""
 
+        content_width = self.queue_detail_content.winfo_width()
         width = (
-            getattr(event, "width", 0)
-            or self.queue_detail_panel.winfo_width()
+            content_width
+            if content_width > 1
+            else max(
+                0,
+                (
+                    getattr(event, "width", 0)
+                    or self.queue_detail_panel.winfo_width()
+                )
+                - 10
+                - self.queue_detail_outer_scroll.winfo_reqwidth(),
+            )
         )
-        width = max(0, width - 10)
         buttons = (
             self.queue_save_button,
             self.queue_status_button,
@@ -1437,6 +1572,20 @@ class App(tk.Tk):
             )
         self._queue_action_layout = mode
 
+    def _layout_queue_detail_viewport(self, _event=None):
+        """Fit Queue detail width and preserve complete vertical overflow."""
+
+        try:
+            canvas = self.queue_detail_canvas
+            width = canvas.winfo_width()
+            if width > 1:
+                canvas.itemconfigure(self.queue_detail_window, width=width)
+            bbox = canvas.bbox("all")
+            if bbox is not None:
+                canvas.configure(scrollregion=bbox)
+        except tk.TclError:
+            return
+
     def _layout_queue_panes(self, event=None):
         """Allocate detail width from the current native workflow labels."""
 
@@ -1450,8 +1599,9 @@ class App(tk.Tk):
             - self.queue_detail_panel.winfo_width(),
         )
         usable_width = max(1, width - sash_width)
-        compact_detail_width = self._queue_compact_action_width() + 10
-        expanded_detail_width = self._queue_expanded_action_width() + 10
+        detail_chrome = 10 + self.queue_detail_outer_scroll.winfo_reqwidth()
+        compact_detail_width = self._queue_compact_action_width() + detail_chrome
+        expanded_detail_width = self._queue_expanded_action_width() + detail_chrome
         detail_width = (
             expanded_detail_width
             if usable_width >= expanded_detail_width * 2
@@ -1469,6 +1619,8 @@ class App(tk.Tk):
         self._layout_queue_panes()
         self.queue_detail_panel.update_idletasks()
         self._layout_queue_actions()
+        self.queue_detail_content.update_idletasks()
+        self._layout_queue_detail_viewport()
 
     def _queue_compact_action_width(self):
         """Return the native width required by the widest compact row."""
