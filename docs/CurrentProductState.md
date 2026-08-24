@@ -62,6 +62,16 @@ workflows without being attributed to that execution. Queue, evidence,
 provider, and persistence lifecycles remain unchanged. These changes are
 unreleased and are not part of v0.5.1.
 
+The final terminology audit adds an unreleased presentation-only glossary.
+Marketplace comparisons say **Previous snapshot** and **Latest snapshot**;
+present-day artist/title identification is **Current catalogue metadata** or
+**current collection labels** and is never represented as captured snapshot
+evidence. **Collector Run** remains the explicit provider-backed workflow,
+while **Marketplace Changes** remains the read-only Price/Supply comparison.
+Legacy Markdown and Excel outputs are now labelled **Legacy Collector Run
+analysis** without changing any stored or exported calculation value. This
+work remains outside the released v0.5.1 capability boundary.
+
 ## Available after sufficient history
 
 - What Changed;

@@ -61,7 +61,10 @@ from dip.experience.desktop.homepage_renderer import (
     DesktopDashboardHomepageRenderer,
 )
 from dip.experience.results_presentation import (
+    PresentationSurface,
     PresentationStateKind,
+    PresentationTerm,
+    presentation_label,
     presentation_state_copy,
 )
 from dip.exports import export_excel
@@ -117,6 +120,14 @@ _MARKETPLACE_REFRESH_EXPLANATION = (
 )
 _MARKETPLACE_REFRESH_BLOCKED = (
     "Marketplace refresh is unavailable while Collector Run is active."
+)
+_LEGACY_REPORT_LABEL = presentation_label(
+    PresentationTerm.LEGACY_COLLECTOR_RUN_ANALYSIS,
+    PresentationSurface.LEGACY_MARKDOWN,
+)
+_LEGACY_REVIEW_LABEL = presentation_label(
+    PresentationTerm.LEGACY_COLLECTOR_RUN_REVIEW_ANALYSIS,
+    PresentationSurface.LEGACY_EXCEL,
 )
 
 
@@ -272,7 +283,7 @@ class App(tk.Tk):
         self.import_csv_button.grid(row=0, column=0, padx=3, sticky="ew")
         self.refresh_discogs_button = ttk.Button(
             primary_toolbar,
-            text="Refresh Discogs Data",
+            text="Start Collector Run",
             command=self.start_refresh,
         )
         self.refresh_discogs_button.grid(row=0, column=1, padx=3, sticky="ew")
@@ -282,9 +293,17 @@ class App(tk.Tk):
             command=self.back_up_database,
         )
         self.database_backup_button.grid(row=0, column=2, padx=3, sticky="ew")
-        self.export_excel_button = ttk.Button(primary_toolbar, text="Export Excel", command=self.export_report)
+        self.export_excel_button = ttk.Button(
+            primary_toolbar,
+            text="Export Legacy Review Excel",
+            command=self.export_report,
+        )
         self.export_excel_button.grid(row=1, column=0, padx=3, pady=(5, 0), sticky="ew")
-        self.export_intelligence_button = ttk.Button(primary_toolbar, text="Export Intelligence Report", command=self.export_intelligence_report)
+        self.export_intelligence_button = ttk.Button(
+            primary_toolbar,
+            text="Export Legacy Analysis Report",
+            command=self.export_intelligence_report,
+        )
         self.export_intelligence_button.grid(row=1, column=1, padx=3, pady=(5, 0), sticky="ew")
         self.refresh_view_button = ttk.Button(primary_toolbar, text="Refresh View", command=self.load_table)
         self.refresh_view_button.grid(row=1, column=2, padx=3, pady=(5, 0), sticky="ew")
@@ -3982,7 +4001,7 @@ class App(tk.Tk):
         ttk.Button(window, text="Save", command=save).pack(pady=12)
     def export_intelligence_report(self):
         path = filedialog.asksaveasfilename(
-            title="Save intelligence report",
+            title=f"Save {_LEGACY_REPORT_LABEL}",
             defaultextension=".md",
             filetypes=[
                 ("Markdown files", "*.md"),
@@ -4005,19 +4024,19 @@ class App(tk.Tk):
             )
 
             messagebox.showinfo(
-                "Report exported",
-                f"Intelligence report created:\n\n{Path(path).name}",
+                "Legacy report exported",
+                f"{_LEGACY_REPORT_LABEL} created:\n\n{Path(path).name}",
             )
 
         except Exception:
             messagebox.showerror(
-                "Report export failed",
-                "The Intelligence report could not be exported.",
+                "Legacy report export failed",
+                f"The {_LEGACY_REPORT_LABEL} could not be exported.",
             )
 
     def export_report(self):
         path = filedialog.asksaveasfilename(
-            title="Save Excel export",
+            title=f"Save {_LEGACY_REVIEW_LABEL}",
             defaultextension=".xlsx",
             initialfile="Discogs_Intelligence_Export.xlsx",
             filetypes=[("Excel workbook","*.xlsx")]
@@ -4030,12 +4049,12 @@ class App(tk.Tk):
         except Exception:
             messagebox.showerror(
                 "Export failed",
-                "The Excel report could not be exported.",
+                f"The {_LEGACY_REVIEW_LABEL} could not be exported.",
             )
             return
         messagebox.showinfo(
             "Export complete",
-            f"Excel report created:\n{Path(path).name}",
+            f"{_LEGACY_REVIEW_LABEL} created:\n{Path(path).name}",
         )
 
     def _restore_session_and_load(self):

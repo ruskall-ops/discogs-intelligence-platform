@@ -52,6 +52,17 @@ release**. Their presentation foundations do not yet receive production data.
 The former `Portfolio Health` label is `Collection Health` because it presents
 the Collection Health result.
 
+## Terminology boundary
+
+Dashboard copy uses **Collector Run** only for the explicit provider-backed
+workflow and **Marketplace Changes** only for the cached read-only Price/Supply
+comparison. **Latest completed intelligence** identifies an immutable
+Intelligence History execution; it is not a synonym for current legacy score
+rows. Current artist/title identification is **current collection labels** or
+**Current catalogue metadata**, never snapshot evidence. Export controls label
+the existing Markdown and Excel outputs as legacy Collector Run analysis rather
+than implying that they contain Price Changes 2.0 or Supply Changes 2.0 data.
+
 ## Purpose
 
 The Dashboard is the application's command centre. It retains the Version 0.2

@@ -3,6 +3,12 @@ from __future__ import annotations
 from pathlib import Path
 import xlsxwriter
 
+from dip.experience.results_presentation import (
+    PresentationSurface,
+    PresentationTerm,
+    presentation_label,
+)
+
 def export_excel(path: Path, rows):
     wb = xlsxwriter.Workbook(path)
     ws = wb.add_worksheet("Review")
@@ -32,9 +38,21 @@ def export_excel(path: Path, rows):
         ("Discogs", "discogs_uri"),
     ]
 
-    ws.merge_range(0, 0, 0, len(columns)-1,
-                   "Discogs Intelligence Platform — Review Export", title)
-    ws.write(1, 0, "Excel is an export; SQLite remains the source of truth.", note)
+    legacy_title = presentation_label(
+        PresentationTerm.LEGACY_COLLECTOR_RUN_REVIEW_ANALYSIS,
+        PresentationSurface.LEGACY_EXCEL,
+    )
+    ws.merge_range(
+        0, 0, 0, len(columns)-1,
+        f"Discogs Intelligence Platform — {legacy_title}", title,
+    )
+    ws.write(
+        1,
+        0,
+        "Legacy scores, wants, scarcity, rankings, movers, and percentages are "
+        "unchanged. SQLite remains the source of truth.",
+        note,
+    )
 
     for c, (label, _) in enumerate(columns):
         ws.write(3, c, label, header)

@@ -286,6 +286,19 @@ canonical vocabulary. Retained selections intentionally restore as **All**
 after restart because session schema v1 represents only canonical filters;
 decision writes remain canonical-only and retained values are not rewritten.
 
+The fifth implementation slice establishes one closed immutable presentation
+glossary for screen and legacy-export terminology. Screens distinguish
+**Previous snapshot**, **Latest snapshot**, current catalogue metadata,
+**Collector Run**, and **Marketplace Changes** without parsing rendered copy.
+The existing Markdown movers report and Excel review workbook are labelled
+**Legacy Collector Run analysis** so their unchanged score, wants, scarcity,
+mover, ranking, and percentage payloads cannot be confused with Price Changes
+2.0 or Supply Changes 2.0. Deterministic volume coverage exercises 500 Price
+rows, 500 Supply rows, 75 Hidden Gems, 1,000 Collection Decisions, and 300
+Observations without adding queries, calculations, caches, pagination, schema,
+provider, or workflow behavior. This final implementation slice remains
+unversioned, unreleased, and outside v0.5.1 while milestone gates are pending.
+
 The milestone explicitly excludes new Marketplace evidence, listing acquisition
 or history, Rare Appearances or Marketplace Activity activation, scoring,
 recommendations, demand, liquidity, scarcity, opportunity, or advisory

@@ -14,10 +14,11 @@ from dip.experience.price_changes import (
     ReleasePriceChangeViewModel,
 )
 from dip.marketplace_intelligence import MarketplaceMoney, PriceChangeDelta, ReleasePriceChangeKind
+from dip.experience.results_presentation import PresentationTerm, presentation_label
 
 
 _LEGACY_METADATA_COPY = (
-    "Artist and title are current collection metadata provided for identification. "
+    "Artist and title are current catalogue metadata provided for identification. "
     "They were not captured with the Marketplace snapshots."
 )
 
@@ -115,8 +116,10 @@ def _context(detail: PriceChangesDetailViewModel) -> str:
     if context is None:
         return ""
     lines = (
-        f"Previous snapshot capture time: {_timestamp(context.previous_captured_at)}",
-        f"Latest snapshot capture time: {_timestamp(context.latest_captured_at)}",
+        f"{presentation_label(PresentationTerm.PREVIOUS_SNAPSHOT)} capture time: "
+        f"{_timestamp(context.previous_captured_at)}",
+        f"{presentation_label(PresentationTerm.LATEST_SNAPSHOT)} capture time: "
+        f"{_timestamp(context.latest_captured_at)}",
         f"Source: {context.source}",
     )
     if context.source_version is not None:
@@ -131,9 +134,9 @@ def _provenance(detail: PriceChangesDetailViewModel) -> str:
         return ""
     return "\n".join(
         (
-            f"Previous snapshot ID: {detail.previous_snapshot.snapshot_id}",
+            f"{presentation_label(PresentationTerm.PREVIOUS_SNAPSHOT)} ID: {detail.previous_snapshot.snapshot_id}",
             f"Previous status: {_label(detail.previous_snapshot.status.value)}",
-            f"Latest snapshot ID: {detail.latest_snapshot.snapshot_id}",
+            f"{presentation_label(PresentationTerm.LATEST_SNAPSHOT)} ID: {detail.latest_snapshot.snapshot_id}",
             f"Latest status: {_label(detail.latest_snapshot.status.value)}",
             f"Comparison state: {_label(detail.comparison_state.value)}",
         )
@@ -154,8 +157,8 @@ def _listing_change(position: int, change: ListingPriceChangeViewModel) -> Deskt
                 f"Delta: {_optional_delta(change.delta)}",
                 f"Previous observed: {_optional_timestamp(change.previous_observed_at)}",
                 f"Latest observed: {_optional_timestamp(change.latest_observed_at)}",
-                f"Previous snapshot: {change.previous_snapshot_id}",
-                f"Latest snapshot: {change.latest_snapshot_id}",
+                f"{presentation_label(PresentationTerm.PREVIOUS_SNAPSHOT)}: {change.previous_snapshot_id}",
+                f"{presentation_label(PresentationTerm.LATEST_SNAPSHOT)}: {change.latest_snapshot_id}",
                 "Evidence:",
                 *(f"• {value}" for value in change.evidence),
             )

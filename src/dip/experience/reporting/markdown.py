@@ -3,6 +3,18 @@ from __future__ import annotations
 from decimal import Decimal
 
 from .models import IntelligenceReport, ReportMover
+from dip.experience.results_presentation import (
+    PresentationSurface,
+    PresentationTerm,
+    presentation_label,
+)
+
+
+_SURFACE = PresentationSurface.LEGACY_MARKDOWN
+_COLLECTOR_RUN = presentation_label(PresentationTerm.COLLECTOR_RUN, _SURFACE)
+_LEGACY_ANALYSIS = presentation_label(
+    PresentationTerm.LEGACY_COLLECTOR_RUN_ANALYSIS, _SURFACE
+)
 
 
 def render_markdown(report: IntelligenceReport) -> str:
@@ -22,14 +34,14 @@ def render_markdown(report: IntelligenceReport) -> str:
         f"- Hot now: {report.collection.hot_now:,}",
         f"- Protected / Keep: {report.collection.protected:,}",
         "",
-        "## Latest Analysis Run",
+        f"## Latest {_COLLECTOR_RUN}",
         "",
     ]
 
     if report.latest_run is None:
         lines.extend(
             [
-                "No completed marketplace analysis run is available.",
+                f"No completed {_COLLECTOR_RUN} is available.",
                 "",
             ]
         )
@@ -49,7 +61,7 @@ def render_markdown(report: IntelligenceReport) -> str:
 
     lines.extend(
         [
-            "## Historical Comparison",
+            f"## {_LEGACY_ANALYSIS} comparison",
             "",
         ]
     )
@@ -57,8 +69,8 @@ def render_markdown(report: IntelligenceReport) -> str:
     if report.historical is None:
         lines.extend(
             [
-                "At least two completed marketplace runs are required "
-                "for historical comparison.",
+                f"At least two completed {_COLLECTOR_RUN} executions are required "
+                f"for {_LEGACY_ANALYSIS} comparison.",
                 "",
             ]
         )
@@ -79,17 +91,17 @@ def render_markdown(report: IntelligenceReport) -> str:
 
     _append_movers(
         lines,
-        "Top Price Movers",
+        "Legacy price movers",
         report.top_price_movers,
     )
     _append_movers(
         lines,
-        "Top Demand Movers",
+        "Legacy demand movers",
         report.top_demand_movers,
     )
     _append_movers(
         lines,
-        "Top Scarcity Movers",
+        "Legacy scarcity movers",
         report.top_scarcity_movers,
     )
 
@@ -97,8 +109,10 @@ def render_markdown(report: IntelligenceReport) -> str:
         [
             "---",
             "",
-            "*This report presents observed marketplace changes only. "
-            "It does not provide buy or sell recommendations.*",
+            f"*This {_LEGACY_ANALYSIS} preserves the existing legacy scores, wants, "
+            "scarcity, mover, ranking, and percentage calculations. It is not "
+            "Price Changes 2.0 or Supply Changes 2.0 and does not provide buy or "
+            "sell recommendations.*",
             "",
         ]
     )

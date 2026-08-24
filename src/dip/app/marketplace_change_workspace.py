@@ -44,17 +44,17 @@ from dip.marketplace_intelligence import (
 
 INCOMPATIBLE_HISTORY_COPY = (
     "Newer historical snapshots were skipped because they were not compatible "
-    "with the current snapshot’s source contract."
+    "with the latest snapshot’s source contract."
 )
 NO_COMPATIBLE_BASELINE_COPY = (
     "No earlier compatible Marketplace snapshot is available for comparison."
 )
 METADATA_COPY = (
-    "Artist and title are current collection metadata provided for identification. "
+    "Artist and title are current catalogue metadata provided for identification. "
     "They were not captured with the Marketplace snapshots."
 )
 METADATA_FAILURE_COPY = (
-    "Current collection metadata could not be loaded. Marketplace changes remain "
+    "Current catalogue metadata could not be loaded. Marketplace Changes remain "
     "available and are identified by release ID."
 )
 PARTIAL_COPY = (

@@ -35,6 +35,13 @@ The release also makes desktop availability truthful, presents safe
 value-neutral diagnostics, validates genuine v0.4.0 upgrades, and adds Linux
 and macOS CI with isolated wheel and source-distribution validation.
 
+Unreleased Results Presentation work uses a closed screen/export glossary:
+**Previous snapshot**, **Latest snapshot**, current catalogue metadata,
+**Collector Run**, and **Marketplace Changes** retain distinct meanings. The
+existing Markdown movers report and Excel review workbook are labelled
+**Legacy Collector Run analysis** without changing their calculations or data
+payloads. This unversioned work remains in progress and outside v0.5.1.
+
 ## Implemented capabilities
 
 ### Core platform

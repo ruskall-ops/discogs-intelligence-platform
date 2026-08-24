@@ -52,9 +52,9 @@ INCOMPLETE_EVIDENCE_LIMITATION = (
 
 _SAFE_EVIDENCE_LIMITATIONS = (
     "Newer historical snapshots were skipped because they were not compatible with "
-    "the current snapshot’s source contract.",
+    "the latest snapshot’s source contract.",
     "No earlier compatible Marketplace snapshot is available for comparison.",
-    "Current collection metadata could not be loaded. Marketplace changes remain "
+    "Current catalogue metadata could not be loaded. Marketplace Changes remain "
     "available and are identified by release ID.",
     "Failed or unavailable Marketplace snapshots were skipped.",
     "Equal-time Marketplace snapshots were skipped because they cannot establish direction.",
@@ -63,7 +63,7 @@ _SAFE_EVIDENCE_LIMITATIONS = (
 )
 
 _LEGACY_METADATA_DIAGNOSTIC = (
-    "Artist and title are current collection metadata provided for identification. "
+    "Artist and title are current catalogue metadata provided for identification. "
     "They were not captured with the Marketplace snapshots."
 )
 

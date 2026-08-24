@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 from dip.experience.intelligence_change_analysis import IntelligenceChangeAnalysisViewModel
+from dip.experience.results_presentation import PresentationTerm, presentation_label
 
 
 @dataclass(frozen=True)
@@ -62,8 +63,10 @@ class DesktopIntelligenceChangeAnalysisRenderer:
                 "\n".join((
                     f"Previous module: {output.provenance.previous_module_id} {output.provenance.previous_module_version}",
                     f"Current module: {output.provenance.current_module_id} {output.provenance.current_module_version}",
-                    f"Previous snapshot: {output.provenance.previous_collection_snapshot_id}",
-                    f"Current snapshot: {output.provenance.current_collection_snapshot_id}",
+                    f"{presentation_label(PresentationTerm.PREVIOUS_SNAPSHOT)}: "
+                    f"{output.provenance.previous_collection_snapshot_id}",
+                    f"{presentation_label(PresentationTerm.LATEST_SNAPSHOT)}: "
+                    f"{output.provenance.current_collection_snapshot_id}",
                     f"Comparison rule set: {output.provenance.comparison_rule_set_version}",
                     f"Supported module: {output.provenance.supported_module_id}",
                 )),

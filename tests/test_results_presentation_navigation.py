@@ -340,8 +340,8 @@ class ResultsPresentationRealTkBoundaryTest(unittest.TestCase):
         self.assertEqual(
             tuple(buttons),
             (
-                "Import Collection CSV", "Refresh Discogs Data", "Back Up Database…",
-                "Export Excel", "Export Intelligence Report", "Refresh View",
+                "Import Collection CSV", "Start Collector Run", "Back Up Database…",
+                "Export Legacy Review Excel", "Export Legacy Analysis Report", "Refresh View",
                 "Portfolio", "Historical Intelligence", "Marketplace",
             ),
         )
@@ -354,10 +354,10 @@ class ResultsPresentationRealTkBoundaryTest(unittest.TestCase):
                 self.assertGreaterEqual(button.winfo_width(), button.winfo_reqwidth())
         expected = {
             "Import Collection CSV": "import_csv",
-            "Refresh Discogs Data": "start_refresh",
+            "Start Collector Run": "start_refresh",
             "Back Up Database…": "back_up_database",
-            "Export Excel": "export_report",
-            "Export Intelligence Report": "export_intelligence_report",
+            "Export Legacy Review Excel": "export_report",
+            "Export Legacy Analysis Report": "export_intelligence_report",
             "Refresh View": "load_table",
             "Portfolio": "open_portfolio_overview",
             "Historical Intelligence": "open_intelligence_change_analysis",
