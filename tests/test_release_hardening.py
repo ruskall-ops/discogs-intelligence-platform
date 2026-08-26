@@ -309,7 +309,7 @@ class ReleaseHardeningTestCase(unittest.TestCase):
             application.export_report()
         self.assertEqual(
             error.call_args.args[1],
-            "The Excel report could not be exported.",
+            "The Legacy Collector Run review analysis could not be exported.",
         )
         self.assertNotIn(sentinel, " ".join(map(str, error.call_args.args)))
 
@@ -329,7 +329,7 @@ class ReleaseHardeningTestCase(unittest.TestCase):
             application.export_intelligence_report()
         self.assertEqual(
             error.call_args.args[1],
-            "The Intelligence report could not be exported.",
+            "The Legacy Collector Run analysis could not be exported.",
         )
         self.assertNotIn(sentinel, " ".join(map(str, error.call_args.args)))
 

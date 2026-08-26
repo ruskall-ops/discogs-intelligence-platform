@@ -2061,6 +2061,15 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         first = self.root.import_csv_button
         second = self.root.refresh_discogs_button
         self.root.update_idletasks()
+        self.assertEqual(second.cget("text"), "Start Collector Run")
+        self.assertEqual(
+            self.root.export_excel_button.cget("text"),
+            "Export Legacy Review Excel",
+        )
+        self.assertEqual(
+            self.root.export_intelligence_button.cget("text"),
+            "Export Legacy Analysis Report",
+        )
         first.focus_force()
         first.event_generate("<Return>")
         second.focus_force()

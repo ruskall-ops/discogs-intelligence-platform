@@ -163,6 +163,13 @@ token; after restart the table restores **All** and rediscovers every retained
 value as an individually selectable choice. This fallback neither normalizes
 stored rows nor substitutes or infers a canonical meaning.
 
+The Excel review workbook is explicitly labelled **Legacy Collector Run review
+analysis**. Its worksheet name, rows, columns, decisions, retained compatibility
+values, scores, wants, supply, prices, rankings, percentages, ordering, and
+formatting inputs are unchanged. The label distinguishes legacy review evidence
+from Price Changes 2.0 and Supply Changes 2.0; it does not normalize stored
+values or add Marketplace Changes results.
+
 Selected Observation detail is grouped from typed fields into Calculated
 observation, Marketplace evidence, Evidence limitations / warnings, Weekend
 Review Queue state, and subordinate Technical provenance sections when those

@@ -10,6 +10,11 @@ from dip.experience.reporting.models import (
     IntelligenceReport,
     ReportMover,
 )
+from dip.experience.results_presentation import (
+    PresentationSurface,
+    PresentationTerm,
+    presentation_label,
+)
 from dip.persistence.sqlite import Database
 from dip.snapshots.services.historical_intelligence import (
     HistoricalComparison,
@@ -121,7 +126,10 @@ class ReportingService:
             )
 
         return IntelligenceReport(
-            title="Discogs Intelligence Report",
+            title=presentation_label(
+                PresentationTerm.LEGACY_COLLECTOR_RUN_ANALYSIS,
+                PresentationSurface.LEGACY_MARKDOWN,
+            ),
             generated_at=datetime.now(),
             collection=collection_summary,
             latest_run=analysis_run_summary,

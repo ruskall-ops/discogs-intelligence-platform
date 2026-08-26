@@ -194,6 +194,17 @@ comparison, classification, delta, incomparability, evidence, and ordering.
 The shared vocabulary does not activate a destination, wire an action, or alter
 the established stale-window, query, cache, or refresh lifecycle.
 
+The final Results Presentation terminology boundary uses **Previous snapshot**
+and **Latest snapshot** for this selected ordered pair. **Current catalogue
+metadata** or **current collection labels** identifies present-day artist/title
+copy attached after comparison and never implies snapshot capture. **Collector
+Run** names provider-backed acquisition; **Marketplace Changes** names the
+cached read-only Price/Supply workspace. Production Price and Supply screens
+need no suffix because their builders accept only version 2.0; explicit
+**Price Changes 2.0**, **Supply Changes 2.0**, **Listing Price Changes 1.0**, and
+**Marketplace Activity 1.0** labels are reserved for genuine version
+distinction. Legacy Collector Run exports remain separate and unchanged.
+
 The second Results Presentation refinement adds destination-specific immutable
 group projections over the existing typed release changes. Group membership is
 selected only from `ReleasePriceChangeKind` or `SupplyChangeKind`; renderers do

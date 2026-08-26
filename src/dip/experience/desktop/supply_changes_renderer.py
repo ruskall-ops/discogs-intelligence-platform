@@ -8,10 +8,11 @@ from dip.experience.supply_changes import (
     SupplyResultGroup,
 )
 from dip.marketplace_intelligence import SupplyChangeKind
+from dip.experience.results_presentation import PresentationTerm, presentation_label
 
 
 _LEGACY_METADATA_COPY = (
-    "Artist and title are current collection metadata provided for identification. "
+    "Artist and title are current catalogue metadata provided for identification. "
     "They were not captured with the Marketplace snapshots."
 )
 
@@ -85,8 +86,10 @@ def _context(detail: SupplyChangesDetailViewModel) -> str:
     if context is None:
         return ""
     lines = (
-        f"Previous snapshot capture time: {context.previous_captured_at.isoformat(timespec='minutes')}",
-        f"Latest snapshot capture time: {context.latest_captured_at.isoformat(timespec='minutes')}",
+        f"{presentation_label(PresentationTerm.PREVIOUS_SNAPSHOT)} capture time: "
+        f"{context.previous_captured_at.isoformat(timespec='minutes')}",
+        f"{presentation_label(PresentationTerm.LATEST_SNAPSHOT)} capture time: "
+        f"{context.latest_captured_at.isoformat(timespec='minutes')}",
         f"Source: {context.source}",
     )
     if context.source_version is not None:
@@ -101,9 +104,9 @@ def _provenance(detail: SupplyChangesDetailViewModel) -> str:
         return ""
     return "\n".join(
         (
-            f"Previous snapshot ID: {detail.previous_snapshot.snapshot_id}",
+            f"{presentation_label(PresentationTerm.PREVIOUS_SNAPSHOT)} ID: {detail.previous_snapshot.snapshot_id}",
             f"Previous status: {_label(detail.previous_snapshot.status.value)}",
-            f"Latest snapshot ID: {detail.latest_snapshot.snapshot_id}",
+            f"{presentation_label(PresentationTerm.LATEST_SNAPSHOT)} ID: {detail.latest_snapshot.snapshot_id}",
             f"Latest status: {_label(detail.latest_snapshot.status.value)}",
             f"Comparison state: {_label(detail.comparison_state.value)}",
         )

@@ -163,7 +163,7 @@ Supply Changes displays only explicit `num_for_sale` facts. Missing facts are
 never zero; only explicit zero-to-positive and positive-to-zero transitions are
 labelled became available and no copies observed for sale. Wants are excluded.
 
-Artist and title are current collection metadata provided for identification.
+Artist and title are current catalogue metadata provided for identification.
 They were not captured with the Marketplace snapshots. Release ID remains the
 stable identity and missing metadata falls back to `Release <release_id>`.
 
@@ -370,6 +370,23 @@ mapping, rule evaluation, sorting, or lower-level intelligence access. An
 absent result remains unavailable without degrading the other destinations.
 The wording describes observed Marketplace alignment rather than financial
 advice, value, or predicted outcomes.
+
+## Results terminology
+
+Collection Explorer uses **Previous snapshot** for the earlier member and
+**Latest snapshot** for the later member of its selected comparison pair.
+Artist and title are **Current catalogue metadata** used only to identify the
+release; they were not captured with either snapshot. **Marketplace Changes**
+means the shared read-only Price Changes and Supply Changes workspace. The
+provider-backed refresh workflow is **Collector Run**. Internal application
+fields named `baseline` or `current` remain typed implementation identities and
+are not parsed or projected as alternative screen vocabulary.
+
+Price Changes and Supply Changes screens omit a version suffix because their
+production destinations already accept only the authoritative 2.0 contracts.
+Versioned labels are used where historical or legacy output could otherwise be
+confused. Listing Price Changes 1.0 and Marketplace Activity 1.0 remain
+separate capabilities and are not substitutes for Price/Supply 2.0.
 
 ## Current limitations
 

@@ -69,12 +69,12 @@ reports/models.py
 
 Represents a complete report independent of output format.
 
-Current sections include:
+Current legacy sections include:
 
 - Collection summary
-- Latest analysis run
-- Historical comparison
-- Marketplace movers
+- Latest Collector Run
+- Legacy Collector Run comparison
+- Legacy price, demand, and scarcity movers
 
 ---
 
@@ -94,19 +94,26 @@ No database access occurs during rendering.
 
 # Current Report Contents
 
-Version 0.1 includes:
+Version 0.1 is now visibly labelled **Legacy Collector Run analysis**. It
+includes:
 
 - Report title
 - Generated timestamp
 - Collection summary
-- Latest completed analysis run
-- Historical comparison summary
+- Latest completed Collector Run
+- Legacy Collector Run comparison summary
 - Changed / unchanged / new / missing counts
 - Top price movers
 - Top demand movers
 - Top scarcity movers
 
 If insufficient historical data exists, the report explains this gracefully.
+
+This labelling change does not alter a calculation or payload. Existing scores,
+wants, scarcity, movers, rankings, percentages, row inclusion, ordering, and
+numeric formatting remain byte/value-equivalent at their structured boundary.
+The report is not Price Changes 2.0 or Supply Changes 2.0 and does not add data
+from those results.
 
 ---
 

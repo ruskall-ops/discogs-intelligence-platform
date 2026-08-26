@@ -419,6 +419,23 @@ labels, distinguish unfiltered state from retained collisions. Writers accept
 only canonical decisions; readers and exports preserve retained text without a
 migration or semantic remapping. See [Collector Review](CollectorReview.md).
 
+### Presentation terminology and legacy outputs
+
+Potentially ambiguous fixed copy crosses one closed immutable presentation
+vocabulary keyed by typed term and surface identifiers. Screen and legacy
+Markdown/Excel labels may differ only where their evidence semantics differ;
+renderers never parse labels to recover state. Previous and Latest identify an
+ordered snapshot pair, while current catalogue metadata identifies present-day
+release labels only. Collector Run identifies provider-backed orchestration;
+Marketplace Changes identifies the cached read-only Price/Supply workspace.
+
+The Markdown movers report and Excel review workbook consume legacy scores,
+wants, scarcity, rankings, movers, and percentages. Their fixed headings say
+**Legacy Collector Run analysis** and cannot accept provider, diagnostic, path,
+SQL, token, exception, or personal-note text. Labelling does not change their
+calculation payload, storage, ordering, rows, filenames, worksheet structure,
+or relationship to SQLite, and does not reinterpret them as Price/Supply 2.0.
+
 ## Data and history boundaries
 
 DIP preserves three distinct kinds of history:

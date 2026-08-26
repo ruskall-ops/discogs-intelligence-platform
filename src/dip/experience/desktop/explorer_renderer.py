@@ -12,6 +12,7 @@ from dip.experience.explorer import (
     CollectionIntelligenceExplorerPresenter,
 )
 from dip.experience.dashboard import IntelligenceDashboardViewModel
+from dip.experience.results_presentation import PresentationTerm, presentation_label
 
 
 @dataclass(frozen=True)
@@ -100,8 +101,10 @@ class DesktopExplorerRenderer:
         lines = [
             self._state(section.state.value),
             section.summary,
-            f"Latest snapshot: {section.latest_snapshot or 'Unavailable'}",
-            f"Previous snapshot: {section.previous_snapshot or 'Unavailable'}",
+            f"{presentation_label(PresentationTerm.LATEST_SNAPSHOT)}: "
+            f"{section.latest_snapshot or 'Unavailable'}",
+            f"{presentation_label(PresentationTerm.PREVIOUS_SNAPSHOT)}: "
+            f"{section.previous_snapshot or 'Unavailable'}",
             f"Collection size change: {self._signed(section.collection_size_change)}",
             f"Collection value change: {section.collection_value_change or 'Unavailable'}",
             f"Average value change: {section.average_value_change or 'Unavailable'}",
