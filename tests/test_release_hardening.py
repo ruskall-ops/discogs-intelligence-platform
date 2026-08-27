@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.metadata
 import importlib.resources
 import tempfile
+import tomllib
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -82,6 +83,21 @@ class ReleaseHardeningTestCase(unittest.TestCase):
             changelog,
         )
         self.assertIn("Released 2 August 2026.", changelog)
+        candidate_changelog = changelog.split("# Version 0.5.1", 1)[0]
+        self.assertIn(
+            "Version 0.6.0 — Results Presentation and UX Refinement",
+            candidate_changelog,
+        )
+        self.assertIn("Unreleased.", candidate_changelog)
+        self.assertIn("publication is not", candidate_changelog)
+        notes = (root / "RELEASE_NOTES.md").read_text(encoding="utf-8")
+        self.assertIn("Draft — unreleased; release preparation only.", notes)
+        self.assertIn("4acd518488d187657c3c652236f06309ed56fdb6", notes)
+        self.assertIn("7141911b867cddd7a1031f4c8a8132df7194351a", notes)
+        self.assertIn(
+            "migrations exactly 1–7 and no migration 8", " ".join(notes.split())
+        )
+        self.assertIn("Legacy Collector Run review analysis", notes)
 
         database_document = dict(documents)["docs/Database.md"]
         database_contract = " ".join(database_document.lower().split())
@@ -92,7 +108,7 @@ class ReleaseHardeningTestCase(unittest.TestCase):
         self.assertIn("ordinary exception", database_contract)
         self.assertIn("post-commit display failure", database_contract)
 
-    def test_roadmap_has_unversioned_results_presentation_milestone(self) -> None:
+    def test_roadmap_has_accepted_unreleased_v0_6_0_milestone(self) -> None:
         root = Path(__file__).resolve().parents[1]
         roadmap = (root / "docs/Roadmap.md").read_text(encoding="utf-8")
 
@@ -100,12 +116,14 @@ class ReleaseHardeningTestCase(unittest.TestCase):
             "## Version 0.5.1 — Marketplace Change Explorer"
         )
         milestone_position = roadmap.index(
-            "## Results Presentation and UX Refinement"
+            "## Version 0.6.0 — Results Presentation and UX Refinement"
         )
         follow_on_position = roadmap.index("Candidate follow-on slices include:")
         self.assertLess(release_position, milestone_position)
         self.assertLess(milestone_position, follow_on_position)
-        self.assertIn("no public version assigned", roadmap)
+        self.assertIn("All five slices merged; milestone accepted", roadmap)
+        self.assertIn("release preparation; unreleased", roadmap)
+        self.assertNotIn("no public version assigned", roadmap)
         self.assertNotIn(
             "Version 0.5.2 — Results Presentation and UX Refinement",
             roadmap,
@@ -116,34 +134,39 @@ class ReleaseHardeningTestCase(unittest.TestCase):
         self.assertIn("provider calls during tab switching", roadmap)
         self.assertIn("commercial-distribution work", roadmap)
 
-    def test_release_checklist_targets_v0_5_1_in_required_order(self) -> None:
+    def test_release_checklist_targets_v0_6_0_in_required_order(self) -> None:
         root = Path(__file__).resolve().parents[1]
         checklist = (root / "docs/ReleaseChecklist.md").read_text(
             encoding="utf-8"
         )
 
-        self.assertIn("| `RELEASE_VERSION` | `0.5.1` |", checklist)
-        self.assertIn("| `RELEASE_TAG` | `v0.5.1` |", checklist)
-        self.assertIn("| `RELEASE_BRANCH` | `release/v0.5.1` |", checklist)
+        self.assertIn("| `RELEASE_VERSION` | `0.6.0` |", checklist)
+        self.assertIn("| `RELEASE_TAG` | `v0.6.0` |", checklist)
+        self.assertIn("| `RELEASE_BRANCH` | `release/v0.6.0` |", checklist)
         self.assertIn(
-            "| `RELEASE_TITLE` | `DIP v0.5.1 — Marketplace Change Explorer` |",
+            "| `RELEASE_TITLE` | `DIP v0.6.0 — Results Presentation and UX Refinement` |",
             checklist,
         )
-        self.assertIn("| `PREVIOUS_TAG` | `v0.5.0` |", checklist)
+        self.assertIn("| `PREVIOUS_TAG` | `v0.5.1` |", checklist)
 
         self.assertNotIn("git tag -a v0.5.0", checklist)
         self.assertNotIn("git push origin v0.5.0", checklist)
         self.assertNotIn("gh release create v0.5.0", checklist)
-        self.assertIn("git tag -a v0.5.1", checklist)
-        self.assertIn("git push origin v0.5.1", checklist)
-        self.assertIn("gh release create v0.5.1", checklist)
+        self.assertNotIn("git tag -a v0.5.1", checklist)
+        self.assertNotIn("git push origin v0.5.1", checklist)
+        self.assertNotIn("gh release create v0.5.1", checklist)
+        self.assertIn("git tag -a v0.6.0", checklist)
+        self.assertIn("git push origin v0.6.0", checklist)
+        self.assertIn("gh release create v0.6.0", checklist)
+        self.assertIn("run=7 pass=7 skip=0 error=0 failure=0", checklist)
+        self.assertIn("Stop after local preparation and validation", checklist)
 
         ordered_gates = (
             "1. Prepare release changes",
             "2. Validate the complete candidate",
             "3. Obtain independent read-only approval",
             "4. Commit the approved release preparation",
-            "5. Push only the `release/v0.5.1` branch",
+            "5. Push only the `release/v0.6.0` branch",
             "6. Open a pull request",
             "7. Require Linux and macOS CI to pass",
             "8. Review and merge the pull request",
@@ -151,9 +174,9 @@ class ReleaseHardeningTestCase(unittest.TestCase):
             "10. Verify that local `main` equals `origin/main`",
             "11. Rebuild and install the wheel and source distribution",
             "12. Perform the final installed macOS verification",
-            "13. Create the annotated `v0.5.1` tag",
-            "14. Verify locally that `v0.5.1^{commit}`",
-            "15. Push only the `v0.5.1` tag",
+            "13. Create the annotated `v0.6.0` tag",
+            "14. Verify locally that `v0.6.0^{commit}`",
+            "15. Push only the `v0.6.0` tag",
             "16. Create the GitHub release titled",
             "17. Verify the GitHub release title",
             "18. Complete post-release documentation housekeeping",
@@ -163,14 +186,20 @@ class ReleaseHardeningTestCase(unittest.TestCase):
 
         self.assertIn("## Manual GitHub website path", checklist)
         self.assertIn("Draft a new release", checklist)
-        self.assertIn("Select the existing verified tag `v0.5.1`", checklist)
+        self.assertIn("Select the existing verified tag `v0.6.0`", checklist)
         self.assertIn("## Optional GitHub CLI path", checklist)
 
     def test_runtime_packaging_entry_point_and_schema_contract(self) -> None:
-        self.assertEqual(dip.__version__, "0.5.1")
+        self.assertEqual(dip.__version__, "0.6.0")
+        root = Path(__file__).resolve().parents[1]
+        project = tomllib.loads(
+            (root / "pyproject.toml").read_text(encoding="utf-8")
+        )
+        self.assertEqual(project["project"]["version"], dip.__version__)
         distribution = importlib.metadata.distribution(
             "discogs-intelligence-platform"
         )
+        self.assertEqual(distribution.version, dip.__version__)
         entry_points = {
             value.name: value.value for value in distribution.entry_points
         }

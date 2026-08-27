@@ -33,12 +33,20 @@ Version 0.5.1 releases read-only release-level Price and Supply Changes in
 Collection Explorer from one compatible canonical Marketplace snapshot pair.
 Its released target also includes truthful transactional CSV-import feedback.
 
-Unreleased Results Presentation work distinguishes **Previous snapshot**,
+**Version 0.6.0 — Results Presentation and UX Refinement (unreleased)**
+
+All five presentation slices are merged and the milestone is accepted. The
+package/runtime candidate is `0.6.0`; v0.5.1 remains the latest public release.
+Release preparation does not authorise a merge, tag, or publication. See the
+[draft release notes](RELEASE_NOTES.md) and [release checklist](docs/ReleaseChecklist.md).
+
+The accepted Results Presentation work distinguishes **Previous snapshot**,
 **Latest snapshot**, current catalogue metadata, **Collector Run**, and
 **Marketplace Changes** through one closed presentation glossary. Existing
-Markdown and Excel outputs are visibly labelled **Legacy Collector Run
-analysis** while preserving their legacy calculations and payload values. The
-milestone remains unversioned, in progress, and outside v0.5.1.
+Markdown output is labelled **Legacy Collector Run analysis** and Excel output
+is labelled **Legacy Collector Run review analysis**, preserving their legacy
+calculations and payload values. The milestone remains unreleased and outside
+v0.5.1.
 
 Project creation/opening UI, Project-scoped refresh, multi-project workflows,
 automatic backup, and in-app restore are not implemented. Collection,

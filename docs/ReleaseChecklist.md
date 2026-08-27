@@ -1,12 +1,29 @@
 # Personal-Use Release Checklist
 
+## Preparation status and authority
+
+The active target is **v0.6.0 — Results Presentation and UX Refinement**.
+All five slices are merged and the milestone is accepted, but v0.6.0 is
+unreleased. v0.5.1 remains the latest completed public release.
+
+Only preparation is authorised: version metadata, release documents, and
+corresponding release assertions. Use a fresh artifact-clean checkout; do not
+remove existing ignored builds, caches, or personal databases.
+
+The procedure below documents later gates; it does not authorise executing
+them. Stop after local preparation and validation for independent read-only
+review. Commit, push, PR creation, merge, tag creation, and publication each
+remain subject to explicit authorisation. See [draft release notes](../RELEASE_NOTES.md).
+
 ## Automated gates
 
 - full unittest suite;
 - source and test compilation;
 - range-based whitespace validation;
 - changed-document link validation;
-- Linux and macOS GitHub Actions;
+- Linux and macOS GitHub Actions for the exact release candidate;
+- mandatory production Tk on Linux/Xvfb and macOS/Aqua, exactly
+  `run=7 pass=7 skip=0 error=0 failure=0`, without mandatory skips;
 - fresh temporary database with migrations 1–7;
 - genuine released-v0.4.0 upgrade through migrations 5–7;
 - wheel and source-distribution installation;
@@ -17,6 +34,12 @@
 
 ## Manual macOS gates
 
+Run these only when separately authorised, from the exact installed candidate.
+Use disposable synthetic data by default. Any real personal Discogs run or
+personal-database access requires explicit permission; a historical smoke does
+not establish success for a newly versioned candidate. Unexecuted gates remain
+pending, not passed.
+
 - installed clean launch and fresh database;
 - CSV import;
 - controlled Collector Run and close blocking;
@@ -26,7 +49,10 @@
 - disabled destination behavior;
 - safe error presentation;
 - disposable manual-recovery rehearsal;
-- one controlled real personal Discogs run.
+- one controlled real personal Discogs run, only with separate permission;
+- Project, Dashboard, Collection Review, Explorer Overview/Trends, Price
+  Changes, and Supply Changes at `800×560`;
+- legacy Markdown and Excel labels and unchanged analytical payloads.
 
 ## Release procedure
 
@@ -35,29 +61,30 @@ variables:
 
 | Identifier | Active value |
 |---|---|
-| `RELEASE_VERSION` | `0.5.1` |
-| `RELEASE_TAG` | `v0.5.1` |
-| `RELEASE_BRANCH` | `release/v0.5.1` |
-| `RELEASE_TITLE` | `DIP v0.5.1 — Marketplace Change Explorer` |
-| `PREVIOUS_TAG` | `v0.5.0` |
+| `RELEASE_VERSION` | `0.6.0` |
+| `RELEASE_TAG` | `v0.6.0` |
+| `RELEASE_BRANCH` | `release/v0.6.0` |
+| `RELEASE_TITLE` | `DIP v0.6.0 — Results Presentation and UX Refinement` |
+| `PREVIOUS_TAG` | `v0.5.1` |
 | Base branch | `main` |
 
 `PREVIOUS_TAG` is historical comparison context only. It is not the active tag
 and must never be used by the active tag-creation, tag-push, or GitHub release
 commands.
 
-For a prepared and validated release candidate, perform the release in this
-exact order:
+Only after each required authorisation, follow this exact release order:
 
-1. Prepare release changes on `release/v0.5.1`.
+1. Prepare release changes on `release/v0.6.0`.
 2. Validate the complete candidate, including focused and full tests,
    compilation, links, artifacts, databases, upgrades, and generated-artifact
    checks.
 3. Obtain independent read-only approval of the uncommitted preparation.
 4. Commit the approved release preparation intentionally.
-5. Push only the `release/v0.5.1` branch with its upstream.
-6. Open a pull request from `release/v0.5.1` to `main`.
-7. Require Linux and macOS CI to pass.
+5. Push only the `release/v0.6.0` branch with its upstream.
+6. Open a pull request from `release/v0.6.0` to `main`.
+7. Require Linux and macOS CI to pass for the exact candidate, including
+   mandatory Tk 7/7 with no skips, full discovery, compilation, artifacts,
+   and whitespace validation.
 8. Review and merge the pull request without rewriting history.
 9. Fetch/prune and synchronize local `main` with `origin/main` using a
    fast-forward-only pull.
@@ -66,12 +93,13 @@ exact order:
 11. Rebuild and install the wheel and source distribution from clean, reviewed
     `main`; recheck version, metadata, entry point, packaged schema, migrations,
     Project reuse, provider laziness, and both User-Agent paths.
-12. Perform the final installed macOS verification where required.
-13. Create the annotated `v0.5.1` tag from the reviewed commit on `main`.
-14. Verify locally that `v0.5.1^{commit}` equals the reviewed `main` commit.
-15. Push only the `v0.5.1` tag.
+12. Perform the final installed macOS verification where required; do not
+    substitute historical feature-commit smoke evidence.
+13. Create the annotated `v0.6.0` tag from the reviewed commit on `main`.
+14. Verify locally that `v0.6.0^{commit}` equals the reviewed `main` commit.
+15. Push only the `v0.6.0` tag.
 16. Create the GitHub release titled
-    `DIP v0.5.1 — Marketplace Change Explorer` from the verified `v0.5.1` tag.
+    `DIP v0.6.0 — Results Presentation and UX Refinement` from the verified `v0.6.0` tag.
 17. Verify the GitHub release title, tag, target commit, Latest state, and notes;
     attach or publish artifacts only when explicitly approved.
 18. Complete post-release documentation housekeeping in a separate reviewed
@@ -86,15 +114,15 @@ Stop immediately if:
 - any Linux or macOS CI job fails;
 - wheel or source-distribution validation fails;
 - the required installed macOS smoke fails;
-- `v0.5.1` already exists locally or remotely at an unexpected target;
-- the proposed `v0.5.1` target is not the reviewed `main` commit;
-- package or runtime version is not exactly `0.5.1`;
+- `v0.6.0` already exists locally or remotely at an unexpected target;
+- the proposed `v0.6.0` target is not the reviewed `main` commit;
+- package or runtime version is not exactly `0.6.0`;
 - migrations differ from exactly 1–7 or migration 8 exists;
 - generated build, distribution, egg-info, wheel, source-distribution,
   bytecode, or cache artifacts remain;
 - the reviewed commit is absent from `main`;
 - any failure would require history rewriting or moving an existing release
-  tag, including historical `v0.5.0`.
+  tag, including historical `v0.5.0` and `v0.5.1`.
 
 ## Annotated tag and tag-only push
 
@@ -102,24 +130,24 @@ Run these commands only from clean, synchronized, reviewed `main`, after every
 preceding gate passes:
 
 ```shell
-git tag -a v0.5.1 -m "DIP v0.5.1 — Marketplace Change Explorer"
+git tag -a v0.6.0 -m "DIP v0.6.0 — Results Presentation and UX Refinement"
 git rev-parse HEAD
-git rev-parse 'v0.5.1^{commit}'
-git push origin v0.5.1
+git rev-parse 'v0.6.0^{commit}'
+git push origin v0.6.0
 ```
 
 The two resolved commits must be identical before the tag push. The push command
-must push only `v0.5.1`, never a branch or another tag.
+must push only `v0.6.0`, never a branch or another tag.
 
 ## Manual GitHub website path
 
 The manual website path is authoritative when GitHub CLI is unavailable:
 
 1. Open the repository's **Releases** page and choose **Draft a new release**.
-2. Select the existing verified tag `v0.5.1`; do not create or retarget a tag
+2. Select the existing verified tag `v0.6.0`; do not create or retarget a tag
    in the release form.
 3. Confirm the selected tag targets the reviewed `main` commit.
-4. Enter the title `DIP v0.5.1 — Marketplace Change Explorer`.
+4. Enter the title `DIP v0.6.0 — Results Presentation and UX Refinement`.
 5. Enter the reviewed release notes and mark the release **Latest**.
 6. Do not attach artifacts unless that publication was explicitly approved.
 7. Publish the release only after rechecking the title, tag, target, and notes.
@@ -131,8 +159,8 @@ The manual website path is authoritative when GitHub CLI is unavailable:
 When `gh` is installed and authenticated, the optional equivalent path is:
 
 ```shell
-gh release create v0.5.1 --verify-tag --latest --title "DIP v0.5.1 — Marketplace Change Explorer" --notes-file RELEASE_NOTES.md
-gh release view v0.5.1
+gh release create v0.6.0 --verify-tag --latest --title "DIP v0.6.0 — Results Presentation and UX Refinement" --notes-file RELEASE_NOTES.md
+gh release view v0.6.0
 ```
 
 Use an approved reviewed notes file in place of `RELEASE_NOTES.md`. Do not

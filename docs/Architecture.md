@@ -33,6 +33,12 @@ Price and Supply changes, and batch-loads current catalogue labels at most once.
 The immutable result is cached by the Explorer controller; no provider or write
 is involved.
 
+The five Results Presentation slices are merged and accepted for the unreleased
+v0.6.0 candidate. Package/runtime metadata is `0.6.0`; this does not change
+schema, module versions, providers, calculations, or session ownership.
+v0.5.1 remains the latest public release. See the
+[draft release notes](../RELEASE_NOTES.md) for the bounded preparation scope.
+
 ## Implemented architecture
 
 The implementation uses a `src`-layout package, a Tkinter desktop shell, SQLite
@@ -430,8 +436,9 @@ release labels only. Collector Run identifies provider-backed orchestration;
 Marketplace Changes identifies the cached read-only Price/Supply workspace.
 
 The Markdown movers report and Excel review workbook consume legacy scores,
-wants, scarcity, rankings, movers, and percentages. Their fixed headings say
-**Legacy Collector Run analysis** and cannot accept provider, diagnostic, path,
+wants, scarcity, rankings, movers, and percentages. The fixed Markdown heading
+is **Legacy Collector Run analysis** and the Excel heading is
+**Legacy Collector Run review analysis**. They cannot accept provider, diagnostic, path,
 SQL, token, exception, or personal-note text. Labelling does not change their
 calculation payload, storage, ordering, rows, filenames, worksheet structure,
 or relationship to SQLite, and does not reinterpret them as Price/Supply 2.0.

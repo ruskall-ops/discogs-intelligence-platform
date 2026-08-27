@@ -35,12 +35,20 @@ The release also makes desktop availability truthful, presents safe
 value-neutral diagnostics, validates genuine v0.4.0 upgrades, and adds Linux
 and macOS CI with isolated wheel and source-distribution validation.
 
-Unreleased Results Presentation work uses a closed screen/export glossary:
+**Version 0.6.0 — Results Presentation and UX Refinement (unreleased)**
+
+All five presentation slices are merged and the milestone is accepted. Package
+and runtime version `0.6.0` identify this release-preparation candidate; no
+v0.6.0 tag or public release is claimed. See the [draft release notes](RELEASE_NOTES.md)
+and [release checklist](docs/ReleaseChecklist.md) for scope and remaining gates.
+
+The accepted Results Presentation work uses a closed screen/export glossary:
 **Previous snapshot**, **Latest snapshot**, current catalogue metadata,
 **Collector Run**, and **Marketplace Changes** retain distinct meanings. The
-existing Markdown movers report and Excel review workbook are labelled
-**Legacy Collector Run analysis** without changing their calculations or data
-payloads. This unversioned work remains in progress and outside v0.5.1.
+existing Markdown movers report is labelled **Legacy Collector Run analysis**;
+the Excel review workbook is labelled **Legacy Collector Run review analysis**.
+Their calculations and data payloads are unchanged. This work remains
+unreleased and outside v0.5.1.
 
 ## Implemented capabilities
 
@@ -110,8 +118,9 @@ recalculate the original modules or predict a future state.
 - **Project Workspace** is the application entry point. It presents one
   persisted active Project, recent-project state, a summary, and navigation to
   Dashboard and Portfolio Workspace.
-- **Dashboard** is the command centre. Eight summary cards answer what changed,
-  what deserves attention, and where to investigate next.
+- **Dashboard** is the command centre. Four sections separate current collection
+  facts, latest completed intelligence, available destinations, and unavailable
+  destinations.
 - **Collection Explorer** provides production-wired Overview, Collection
   Health, Hidden Gems, Collection Trends, Price Changes, and Supply Changes.
 - Portfolio, secondary Historical Intelligence, Marketplace Workspace, and
@@ -221,8 +230,10 @@ src/dip/
 - **0.4 — SQLite Project Persistence:** released.
 - **0.5.0 — Collector Workflow Foundation:** released on 31 July 2026.
 - **0.5.1 — Marketplace Change Explorer:** released on 2 August 2026; latest
-  completed, tagged public personal-use release. Package/runtime version is
+  completed, tagged public personal-use release. Its package/runtime version is
   0.5.1. The released target includes truthful transactional CSV-import feedback.
+- **0.6.0 — Results Presentation and UX Refinement:** all five slices merged;
+  milestone accepted; release preparation only, not yet released.
 
 See the [Roadmap](docs/Roadmap.md) for release scope and future direction.
 

@@ -94,8 +94,8 @@ import dip
 from dip.collection.services import ImportService
 from dip.composition import build_desktop_application_dependencies
 
-assert dip.__version__ == "0.5.1"
-assert importlib.metadata.version("discogs-intelligence-platform") == "0.5.1"
+assert dip.__version__ == "0.6.0"
+assert importlib.metadata.version("discogs-intelligence-platform") == "0.6.0"
 assert os.environ["DIP_VALIDATION_CHECKOUT"] not in str(
     Path(dip.__file__).resolve()
 )
@@ -196,7 +196,7 @@ finally:
 
 from dip.data_sources.discogs.client import DiscogsClient
 assert DiscogsClient("validation-token").session.headers["User-Agent"] == (
-    "RussellDiscogsIntelligencePlatform/0.5.1"
+    "RussellDiscogsIntelligencePlatform/0.6.0"
 )
 
 fake = Mock()
@@ -239,10 +239,10 @@ from pathlib import Path
 import dip
 from discogs_client import DiscogsClient
 
-assert dip.__version__ == "0.5.1"
+assert dip.__version__ == "0.6.0"
 assert {checkout!r} not in str(Path(dip.__file__).resolve())
 assert DiscogsClient("validation-token").session.headers["User-Agent"] == (
-    "RussellDiscogsIntelligencePlatform/0.5.1"
+    "RussellDiscogsIntelligencePlatform/0.6.0"
 )
 """
     isolated = dict(environment)
