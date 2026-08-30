@@ -1,5 +1,51 @@
 # Changelog
 
+# Version 0.6.0 — Results Presentation and UX Refinement
+
+Unreleased. All five presentation slices are merged and the milestone is
+accepted; release preparation is authorised, publication is not. v0.5.1 remains
+the latest completed public release. No release date is assigned.
+
+## Presentation and navigation
+
+- Added shared immutable factual-state wording and detached comparison context.
+- Made Price and Supply Changes summary-first, preserving exact typed values,
+  classifications, missing-evidence semantics, ordering, and provenance.
+- Added responsive Collection Explorer destination selection, explicit stale
+  and blocked-refresh wording, keyboard shortcuts, and equivalent-content
+  scroll restoration without changing refresh or cache ownership.
+- Reorganised Dashboard into current collection, latest completed intelligence,
+  available destinations, and unavailable destinations.
+- Refined Collection Review tables, typed observation detail, disabled-action
+  explanations, and keyboard/overflow behavior at `800×560`.
+- Preserved exact retained Decision/Priority filter values alongside canonical
+  choices. Retained filters restore as **All** under session v1; writes remain
+  canonical-only.
+
+## Terminology and compatibility
+
+- Distinguished Previous/Latest snapshots, current catalogue metadata,
+  Collector Run execution, and read-only Marketplace Changes.
+- Labelled Markdown **Legacy Collector Run analysis** and Excel **Legacy
+  Collector Run review analysis**, without altering filenames, worksheets,
+  formulas, calculations, ordering, numeric values, or retained decisions.
+- Added deterministic volume coverage for 500 Price rows, 500 Supply rows,
+  75 Hidden Gems, 1,000 Collection Decisions, and 300 Observations.
+- Included the post-v0.5.1 release-state documentation alignment from PR #65.
+
+## Unchanged boundaries
+
+- No new features beyond the accepted PRs #66–#70; no new Marketplace evidence,
+  listing acquisition, recommendations, or automatic refresh.
+- Migrations remain exactly 1–7; no migration 8 or schema/session change.
+- Price/Supply module versions remain 2.0; Listing Price Changes and Marketplace
+  Activity remain 1.0 and are not activated in production.
+- Marketplace Dashboard and Project partitioning remain unavailable.
+- Providers, persistence, dependencies, and analytical calculations are unchanged
+  by release preparation; the canonical application version becomes `0.6.0`.
+
+See [draft release notes](RELEASE_NOTES.md) for release gates and limitations.
+
 # Version 0.5.1 — Marketplace Change Explorer
 
 Released 2 August 2026.

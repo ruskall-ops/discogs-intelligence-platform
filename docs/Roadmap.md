@@ -205,9 +205,15 @@ snapshot pair, use current catalogue labels only for identification, and remain
 read-only. Listing-dependent and composite Marketplace features remain disabled.
 The released target also includes truthful transactional CSV-import feedback.
 
-## Results Presentation and UX Refinement
+## Version 0.6.0 — Results Presentation and UX Refinement
 
-**Status: Future milestone; implementation in progress; no public version assigned**
+**Status: All five slices merged; milestone accepted; release preparation; unreleased**
+
+Version `0.6.0` is authorised for release preparation only. The milestone is
+outside v0.5.1, which remains the latest public release. Release-candidate
+review, exact-candidate Linux/macOS CI, and required installed-wheel smoke
+remain release gates; merge, tagging, and publication require separate approval.
+See the [draft release notes](../RELEASE_NOTES.md) and [release checklist](ReleaseChecklist.md).
 
 This milestone makes existing factual results easier to understand, navigate,
 compare, and act upon without changing their evidence semantics. Presentation
@@ -231,8 +237,8 @@ The presentation scope is:
   results;
 - stable selection and navigation, clearer refresh and stale-state affordances,
   and useful empty states with next-step guidance;
-- accessibility improvements for keyboard navigation, focus order, selectable
-  text, contrast, and screen-reader-friendly labels where Tk supports them;
+- tested keyboard navigation, focus traversal, readable labels, and `800×560`
+  overflow behavior; no screen-reader certification is claimed;
 - consistent terminology across Dashboard, Explorer, exports, and documentation;
 - exact preservation of Decimal values, currencies, release IDs, snapshot
   provenance, current-metadata labelling, and evidence limitations;
@@ -243,10 +249,9 @@ copy, existing Price/Supply summary-count projection, and detached Marketplace
 comparison context. Price and Supply now use the same allowlisted headings and
 concise explanations for equivalent available, no-change, empty, partial,
 insufficient-history, insufficient-data, and safe-error states. This slice does
-not implement the planned summary-first layout, compact tables, grouping,
-filtering, sorting, Dashboard restructuring, navigation changes, or new actions.
-The existing stale-window lifecycle remains unchanged until its dedicated
-navigation slice.
+not itself implement summary-first layout, compact tables, grouping, filtering,
+sorting, Dashboard restructuring, navigation changes, or new actions. Later
+slices below supply their approved presentation and navigation refinements.
 
 The second implementation slice adds the summary-first Price and Supply
 presentation over those immutable values. Both destinations present canonical
@@ -290,14 +295,15 @@ The fifth implementation slice establishes one closed immutable presentation
 glossary for screen and legacy-export terminology. Screens distinguish
 **Previous snapshot**, **Latest snapshot**, current catalogue metadata,
 **Collector Run**, and **Marketplace Changes** without parsing rendered copy.
-The existing Markdown movers report and Excel review workbook are labelled
-**Legacy Collector Run analysis** so their unchanged score, wants, scarcity,
+The existing Markdown movers report is labelled **Legacy Collector Run analysis**
+and the Excel review workbook **Legacy Collector Run review analysis**, so
+their unchanged score, wants, scarcity,
 mover, ranking, and percentage payloads cannot be confused with Price Changes
 2.0 or Supply Changes 2.0. Deterministic volume coverage exercises 500 Price
 rows, 500 Supply rows, 75 Hidden Gems, 1,000 Collection Decisions, and 300
 Observations without adding queries, calculations, caches, pagination, schema,
-provider, or workflow behavior. This final implementation slice remains
-unversioned, unreleased, and outside v0.5.1 while milestone gates are pending.
+provider, or workflow behavior. All five implementation slices are accepted
+for the unreleased v0.6.0 candidate; their scope remains outside v0.5.1.
 
 The milestone explicitly excludes new Marketplace evidence, listing acquisition
 or history, Rare Appearances or Marketplace Activity activation, scoring,

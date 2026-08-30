@@ -7,11 +7,12 @@ foundations. It complements the product evolution in the [Roadmap](Roadmap.md)
 without treating the presence of a model, builder, or renderer as proof of a
 complete desktop feature.
 
-This is the released DIP v0.5.1 capability boundary. DIP v0.5.1 was released on
+This document records the released baseline and the accepted, unreleased
+v0.6.0 presentation candidate. DIP v0.5.1 was released on
 2 August 2026 and is the latest completed, tagged public personal-use release.
 Its annotated tag and GitHub release exist. The released target includes the
-truthful transactional CSV-import feedback correction. Application version
-0.5.1 is distinct from SQLite schema
+truthful transactional CSV-import feedback correction. Candidate application
+version 0.6.0 is distinct from SQLite schema
 version 7 (migrations 1–7). macOS is the primary personal-use platform; Linux
 receives automated headless compatibility validation, and Windows is not
 supported.
@@ -38,7 +39,9 @@ The current authoritative Price Changes and Supply Changes modules use version
 2.0 semantics. Historical persisted 1.0 results retain their original module
 identity and are not silently reinterpreted.
 
-Unreleased work on the unversioned Results Presentation milestone now includes
+All five Results Presentation slices are merged and the milestone is accepted
+for v0.6.0 release preparation. Publication remains unauthorised; the candidate
+is unreleased. Its scope includes
 shared immutable factual-state copy and comparison context, a summary-first
 Price/Supply layout, responsive Collection Explorer navigation, and Dashboard
 and Collection Review readability refinements. The six
@@ -68,9 +71,14 @@ present-day artist/title identification is **Current catalogue metadata** or
 **current collection labels** and is never represented as captured snapshot
 evidence. **Collector Run** remains the explicit provider-backed workflow,
 while **Marketplace Changes** remains the read-only Price/Supply comparison.
-Legacy Markdown and Excel outputs are now labelled **Legacy Collector Run
-analysis** without changing any stored or exported calculation value. This
+Legacy Markdown output is labelled **Legacy Collector Run analysis** and Excel
+output **Legacy Collector Run review analysis**, without changing any stored
+or exported calculation value. This
 work remains outside the released v0.5.1 capability boundary.
+
+The [draft release notes](../RELEASE_NOTES.md) and
+[release checklist](ReleaseChecklist.md) separate milestone acceptance from
+release-candidate validation and later publication authorisation.
 
 ## Available after sufficient history
 
