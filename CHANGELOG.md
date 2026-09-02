@@ -2,9 +2,8 @@
 
 # Version 0.6.0 — Results Presentation and UX Refinement
 
-Unreleased. All five presentation slices are merged and the milestone is
-accepted; release preparation is authorised, publication is not. v0.5.1 remains
-the latest completed public release. No release date is assigned.
+Released 2026-09-02. All five presentation slices are complete in v0.6.0.
+v0.5.1 is the previous public release.
 
 ## Presentation and navigation
 
@@ -44,7 +43,7 @@ the latest completed public release. No release date is assigned.
 - Providers, persistence, dependencies, and analytical calculations are unchanged
   by release preparation; the canonical application version becomes `0.6.0`.
 
-See [draft release notes](RELEASE_NOTES.md) for release gates and limitations.
+See the [v0.6.0 release notes](RELEASE_NOTES.md) for scope and limitations.
 
 # Version 0.5.1 — Marketplace Change Explorer
 

@@ -17,10 +17,16 @@ decisions.
 
 ## Current release and development state
 
-**Version 0.5.1 — Marketplace Change Explorer**
+**Version 0.6.0 — Results Presentation and UX Refinement**
 
-DIP v0.5.1 was released on 2 August 2026 and is the latest completed, tagged
-public personal-use release. Its annotated tag and GitHub release exist.
+DIP v0.6.0 is the current public personal-use release, dated 2026-09-02. The
+five-slice Results Presentation and UX Refinement milestone is complete and
+released. See the [v0.6.0 release notes](RELEASE_NOTES.md) and
+[release checklist](docs/ReleaseChecklist.md).
+
+**Previous public release: Version 0.5.1 — Marketplace Change Explorer**
+
+DIP v0.5.1 was released on 2 August 2026 and is the previous public release.
 Version 0.5 adds the single-collection
 Collector Run, canonical Marketplace and Intelligence History integration,
 Collector Review, primary desktop session restoration, explicit verified
@@ -33,20 +39,12 @@ Version 0.5.1 releases read-only release-level Price and Supply Changes in
 Collection Explorer from one compatible canonical Marketplace snapshot pair.
 Its released target also includes truthful transactional CSV-import feedback.
 
-**Version 0.6.0 — Results Presentation and UX Refinement (unreleased)**
-
-All five presentation slices are merged and the milestone is accepted. The
-package/runtime candidate is `0.6.0`; v0.5.1 remains the latest public release.
-Release preparation does not authorise a merge, tag, or publication. See the
-[draft release notes](RELEASE_NOTES.md) and [release checklist](docs/ReleaseChecklist.md).
-
-The accepted Results Presentation work distinguishes **Previous snapshot**,
+The released Results Presentation work distinguishes **Previous snapshot**,
 **Latest snapshot**, current catalogue metadata, **Collector Run**, and
 **Marketplace Changes** through one closed presentation glossary. Existing
 Markdown output is labelled **Legacy Collector Run analysis** and Excel output
 is labelled **Legacy Collector Run review analysis**, preserving their legacy
-calculations and payload values. The milestone remains unreleased and outside
-v0.5.1.
+calculations and payload values.
 
 Project creation/opening UI, Project-scoped refresh, multi-project workflows,
 automatic backup, and in-app restore are not implemented. Collection,

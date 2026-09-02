@@ -38,11 +38,10 @@ calculated screen models are not included.
 
 Restore a backup with the same DIP version or a newer compatible version that
 can migrate its schema. Do not open a newer-schema backup with an older DIP
-version. Schema version 7 and candidate application version 0.6.0 are separate
-version identities. The unreleased v0.6.0 candidate adds no migration or backup
-format change. DIP v0.5.1 was released on 2 August 2026 and is the latest
-completed, tagged public personal-use release. Its annotated tag and GitHub
-release exist.
+version. Schema version 7 and released application version 0.6.0 are separate
+version identities. The released v0.6.0 application adds no migration or backup
+format change. DIP v0.6.0 is the current public personal-use release, dated
+2026-09-02. DIP v0.5.1 is the previous public release.
 
 ## Manual recovery
 

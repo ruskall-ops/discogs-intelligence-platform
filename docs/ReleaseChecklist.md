@@ -1,19 +1,19 @@
 # Personal-Use Release Checklist
 
-## Preparation status and authority
+## Release status and authority
 
-The active target is **v0.6.0 — Results Presentation and UX Refinement**.
-All five slices are merged and the milestone is accepted, but v0.6.0 is
-unreleased. v0.5.1 remains the latest completed public release.
+The current public release is **v0.6.0 — Results Presentation and UX
+Refinement**, dated 2026-09-02. All five slices are complete and released.
+v0.5.1 is the previous public release.
 
-Only preparation is authorised: version metadata, release documents, and
-corresponding release assertions. Use a fresh artifact-clean checkout; do not
-remove existing ignored builds, caches, or personal databases.
+This checklist records the validated release scope and the controlled
+publication procedure. Use a fresh artifact-clean checkout; do not remove
+existing ignored builds, caches, or personal databases.
 
-The procedure below documents later gates; it does not authorise executing
-them. Stop after local preparation and validation for independent read-only
-review. Commit, push, PR creation, merge, tag creation, and publication each
-remain subject to explicit authorisation. See [draft release notes](../RELEASE_NOTES.md).
+The procedure below does not authorise executing a repository or publication
+operation. Commit, push, PR creation, merge, tag creation, artifact upload, and
+GitHub release each remain subject to explicit authorisation. See the
+[v0.6.0 release notes](../RELEASE_NOTES.md).
 
 ## Automated gates
 
@@ -63,7 +63,7 @@ variables:
 |---|---|
 | `RELEASE_VERSION` | `0.6.0` |
 | `RELEASE_TAG` | `v0.6.0` |
-| `RELEASE_BRANCH` | `release/v0.6.0` |
+| `RELEASE_BRANCH` | `release/v0.6.0-publication-state` |
 | `RELEASE_TITLE` | `DIP v0.6.0 — Results Presentation and UX Refinement` |
 | `PREVIOUS_TAG` | `v0.5.1` |
 | Base branch | `main` |
@@ -74,14 +74,15 @@ commands.
 
 Only after each required authorisation, follow this exact release order:
 
-1. Prepare release changes on `release/v0.6.0`.
+1. Prepare the final publication-state wording on
+   `release/v0.6.0-publication-state`.
 2. Validate the complete candidate, including focused and full tests,
    compilation, links, artifacts, databases, upgrades, and generated-artifact
    checks.
 3. Obtain independent read-only approval of the uncommitted preparation.
-4. Commit the approved release preparation intentionally.
-5. Push only the `release/v0.6.0` branch with its upstream.
-6. Open a pull request from `release/v0.6.0` to `main`.
+4. Commit the approved publication-state alignment intentionally.
+5. Push only the `release/v0.6.0-publication-state` branch with its upstream.
+6. Open a pull request from `release/v0.6.0-publication-state` to `main`.
 7. Require Linux and macOS CI to pass for the exact candidate, including
    mandatory Tk 7/7 with no skips, full discovery, compilation, artifacts,
    and whitespace validation.
