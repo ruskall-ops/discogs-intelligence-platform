@@ -17,9 +17,8 @@ workflows. Its governing principle is:
 The platform does not automate buying, selling, pricing, or collecting
 decisions.
 
-DIP v0.5.1 was released on 2 August 2026 and is the latest completed, tagged
-public personal-use release. Its annotated tag and GitHub release exist. The
-public Version 0.5 line applies a
+DIP v0.6.0 is the current public personal-use release, dated 2026-09-02. DIP
+v0.5.1 is the previous public release. The public Version 0.5 line applies a
 product-truthfulness rule: a desktop capability requires a real production
 execution and data path, not merely models, builders, renderers, or fixtures.
 Foundation-only destinations remain visible but disabled with **Not available
@@ -33,11 +32,10 @@ Price and Supply changes, and batch-loads current catalogue labels at most once.
 The immutable result is cached by the Explorer controller; no provider or write
 is involved.
 
-The five Results Presentation slices are merged and accepted for the unreleased
-v0.6.0 candidate. Package/runtime metadata is `0.6.0`; this does not change
+The five Results Presentation slices are complete and released in v0.6.0.
+Package/runtime metadata is `0.6.0`; this does not change
 schema, module versions, providers, calculations, or session ownership.
-v0.5.1 remains the latest public release. See the
-[draft release notes](../RELEASE_NOTES.md) for the bounded preparation scope.
+See the [v0.6.0 release notes](../RELEASE_NOTES.md) for the bounded scope.
 
 ## Implemented architecture
 

@@ -16,10 +16,17 @@ for every buying, selling, pricing, and collection decision.
 
 ## Current release and development state
 
-**Version 0.5.1 — Marketplace Change Explorer**
+**Version 0.6.0 — Results Presentation and UX Refinement**
 
-DIP v0.5.1 was released on 2 August 2026 and is the latest completed, tagged
-public personal-use release. Its annotated tag and GitHub release exist.
+DIP v0.6.0 is the current public personal-use release, dated 2026-09-02. The
+five-slice Results Presentation and UX Refinement milestone is complete and
+released. See the [v0.6.0 release notes](RELEASE_NOTES.md) and
+[release checklist](docs/ReleaseChecklist.md) for its bounded scope and
+publication procedure.
+
+**Previous public release: Version 0.5.1 — Marketplace Change Explorer**
+
+DIP v0.5.1 was released on 2 August 2026 and is the previous public release.
 Version 0.5 connects the single-collection
 Collector Run to canonical Marketplace History, Collection Intelligence,
 immutable Intelligence History, Dashboard and Collector Review workflows, the
@@ -35,20 +42,12 @@ The release also makes desktop availability truthful, presents safe
 value-neutral diagnostics, validates genuine v0.4.0 upgrades, and adds Linux
 and macOS CI with isolated wheel and source-distribution validation.
 
-**Version 0.6.0 — Results Presentation and UX Refinement (unreleased)**
-
-All five presentation slices are merged and the milestone is accepted. Package
-and runtime version `0.6.0` identify this release-preparation candidate; no
-v0.6.0 tag or public release is claimed. See the [draft release notes](RELEASE_NOTES.md)
-and [release checklist](docs/ReleaseChecklist.md) for scope and remaining gates.
-
-The accepted Results Presentation work uses a closed screen/export glossary:
+The released Results Presentation work uses a closed screen/export glossary:
 **Previous snapshot**, **Latest snapshot**, current catalogue metadata,
 **Collector Run**, and **Marketplace Changes** retain distinct meanings. The
 existing Markdown movers report is labelled **Legacy Collector Run analysis**;
 the Excel review workbook is labelled **Legacy Collector Run review analysis**.
-Their calculations and data payloads are unchanged. This work remains
-unreleased and outside v0.5.1.
+Their calculations and data payloads are unchanged from the previous release.
 
 ## Implemented capabilities
 
@@ -229,11 +228,11 @@ src/dip/
 - **0.3 — Marketplace Intelligence and Decision Support:** released.
 - **0.4 — SQLite Project Persistence:** released.
 - **0.5.0 — Collector Workflow Foundation:** released on 31 July 2026.
-- **0.5.1 — Marketplace Change Explorer:** released on 2 August 2026; latest
-  completed, tagged public personal-use release. Its package/runtime version is
-  0.5.1. The released target includes truthful transactional CSV-import feedback.
-- **0.6.0 — Results Presentation and UX Refinement:** all five slices merged;
-  milestone accepted; release preparation only, not yet released.
+- **0.5.1 — Marketplace Change Explorer:** released on 2 August 2026; previous
+  public release. Its package/runtime version is 0.5.1. The released target
+  includes truthful transactional CSV-import feedback.
+- **0.6.0 — Results Presentation and UX Refinement:** current public release,
+  dated 2026-09-02; all five slices completed and released.
 
 See the [Roadmap](docs/Roadmap.md) for release scope and future direction.
 

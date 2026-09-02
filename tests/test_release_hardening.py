@@ -58,13 +58,19 @@ class ReleaseHardeningTestCase(unittest.TestCase):
             with self.subTest(document=name):
                 normalized = " ".join(document.lower().split())
                 if name in current_state_names:
-                    self.assertIn("v0.5.1 was released on 2 august 2026", normalized)
+                    self.assertIn("v0.6.0", normalized)
                     self.assertIn(
-                        "latest completed, tagged public personal-use release",
+                        "current public personal-use release",
                         normalized,
                     )
-                    self.assertIn("annotated tag and github release exist", normalized)
+                    self.assertIn("2026-09-02", normalized)
+                    self.assertIn("is the previous public release", normalized)
                     for stale in (
+                        "v0.6.0 presentation candidate",
+                        "v0.6.0 candidate",
+                        "v0.6.0 is unreleased",
+                        "v0.5.1 remains the latest",
+                        "no v0.6.0 tag",
                         "prepared release candidate",
                         "awaiting release completion",
                         "v0.5.1 is untagged",
@@ -88,11 +94,12 @@ class ReleaseHardeningTestCase(unittest.TestCase):
             "Version 0.6.0 — Results Presentation and UX Refinement",
             candidate_changelog,
         )
-        self.assertIn("Unreleased.", candidate_changelog)
-        self.assertIn("publication is not", candidate_changelog)
+        self.assertIn("Released 2026-09-02.", candidate_changelog)
+        self.assertNotIn("Unreleased.", candidate_changelog)
+        self.assertNotIn("publication is not", candidate_changelog)
         notes = (root / "RELEASE_NOTES.md").read_text(encoding="utf-8")
-        self.assertIn("Draft — unreleased; release preparation only.", notes)
-        self.assertIn("4acd518488d187657c3c652236f06309ed56fdb6", notes)
+        self.assertIn("**Released 2026-09-02.**", notes)
+        self.assertNotIn("Draft — unreleased", notes)
         self.assertIn("7141911b867cddd7a1031f4c8a8132df7194351a", notes)
         self.assertIn(
             "migrations exactly 1–7 and no migration 8", " ".join(notes.split())
@@ -108,7 +115,7 @@ class ReleaseHardeningTestCase(unittest.TestCase):
         self.assertIn("ordinary exception", database_contract)
         self.assertIn("post-commit display failure", database_contract)
 
-    def test_roadmap_has_accepted_unreleased_v0_6_0_milestone(self) -> None:
+    def test_roadmap_has_released_v0_6_0_milestone(self) -> None:
         root = Path(__file__).resolve().parents[1]
         roadmap = (root / "docs/Roadmap.md").read_text(encoding="utf-8")
 
@@ -121,8 +128,12 @@ class ReleaseHardeningTestCase(unittest.TestCase):
         follow_on_position = roadmap.index("Candidate follow-on slices include:")
         self.assertLess(release_position, milestone_position)
         self.assertLess(milestone_position, follow_on_position)
-        self.assertIn("All five slices merged; milestone accepted", roadmap)
-        self.assertIn("release preparation; unreleased", roadmap)
+        self.assertIn("**Status: Released 2026-09-02**", roadmap)
+        self.assertIn(
+            "five-slice milestone is complete and released",
+            " ".join(roadmap.split()),
+        )
+        self.assertNotIn("release preparation; unreleased", roadmap)
         self.assertNotIn("no public version assigned", roadmap)
         self.assertNotIn(
             "Version 0.5.2 — Results Presentation and UX Refinement",
@@ -142,7 +153,10 @@ class ReleaseHardeningTestCase(unittest.TestCase):
 
         self.assertIn("| `RELEASE_VERSION` | `0.6.0` |", checklist)
         self.assertIn("| `RELEASE_TAG` | `v0.6.0` |", checklist)
-        self.assertIn("| `RELEASE_BRANCH` | `release/v0.6.0` |", checklist)
+        self.assertIn(
+            "| `RELEASE_BRANCH` | `release/v0.6.0-publication-state` |",
+            checklist,
+        )
         self.assertIn(
             "| `RELEASE_TITLE` | `DIP v0.6.0 — Results Presentation and UX Refinement` |",
             checklist,
@@ -159,14 +173,14 @@ class ReleaseHardeningTestCase(unittest.TestCase):
         self.assertIn("git push origin v0.6.0", checklist)
         self.assertIn("gh release create v0.6.0", checklist)
         self.assertIn("run=7 pass=7 skip=0 error=0 failure=0", checklist)
-        self.assertIn("Stop after local preparation and validation", checklist)
+        self.assertIn("each remain subject to explicit authorisation", checklist)
 
         ordered_gates = (
-            "1. Prepare release changes",
+            "1. Prepare the final publication-state wording",
             "2. Validate the complete candidate",
             "3. Obtain independent read-only approval",
-            "4. Commit the approved release preparation",
-            "5. Push only the `release/v0.6.0` branch",
+            "4. Commit the approved publication-state alignment",
+            "5. Push only the `release/v0.6.0-publication-state` branch",
             "6. Open a pull request",
             "7. Require Linux and macOS CI to pass",
             "8. Review and merge the pull request",

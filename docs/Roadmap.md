@@ -196,8 +196,7 @@ release; their numbering does not represent later public releases.
 
 **Status: Released on 2 August 2026**
 
-DIP v0.5.1 was released on 2 August 2026 and is the latest completed, tagged
-public personal-use release. Its annotated tag and GitHub release exist.
+DIP v0.5.1 was released on 2 August 2026 and is the previous public release.
 
 Version 0.5.1 enables release-level observed lowest-price and copies-for-sale
 changes in Collection Explorer. Both views share one exact-source/version
@@ -207,13 +206,12 @@ The released target also includes truthful transactional CSV-import feedback.
 
 ## Version 0.6.0 — Results Presentation and UX Refinement
 
-**Status: All five slices merged; milestone accepted; release preparation; unreleased**
+**Status: Released 2026-09-02**
 
-Version `0.6.0` is authorised for release preparation only. The milestone is
-outside v0.5.1, which remains the latest public release. Release-candidate
-review, exact-candidate Linux/macOS CI, and required installed-wheel smoke
-remain release gates; merge, tagging, and publication require separate approval.
-See the [draft release notes](../RELEASE_NOTES.md) and [release checklist](ReleaseChecklist.md).
+Version `0.6.0` is the current public personal-use release. The five-slice
+milestone is complete and released; v0.5.1 is the previous public release. See
+the [v0.6.0 release notes](../RELEASE_NOTES.md) and
+[release checklist](ReleaseChecklist.md).
 
 This milestone makes existing factual results easier to understand, navigate,
 compare, and act upon without changing their evidence semantics. Presentation
@@ -302,8 +300,8 @@ mover, ranking, and percentage payloads cannot be confused with Price Changes
 2.0 or Supply Changes 2.0. Deterministic volume coverage exercises 500 Price
 rows, 500 Supply rows, 75 Hidden Gems, 1,000 Collection Decisions, and 300
 Observations without adding queries, calculations, caches, pagination, schema,
-provider, or workflow behavior. All five implementation slices are accepted
-for the unreleased v0.6.0 candidate; their scope remains outside v0.5.1.
+provider, or workflow behavior. All five implementation slices are released in
+v0.6.0 and extend the previous v0.5.1 scope.
 
 The milestone explicitly excludes new Marketplace evidence, listing acquisition
 or history, Rare Appearances or Marketplace Activity activation, scoring,

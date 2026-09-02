@@ -201,8 +201,9 @@ class PresentationTerminologyTestCase(unittest.TestCase):
         ):
             self.assertIn(label, combined)
         self.assertIn("unchanged", documents["docs/ReportingEngine.md"])
-        self.assertIn("outside v0.5.1", documents["docs/Roadmap.md"])
-        self.assertIn("unreleased", documents["README.md"].lower())
+        self.assertIn("extend the previous v0.5.1 scope", documents["docs/Roadmap.md"])
+        self.assertIn("current public personal-use release", documents["README.md"])
+        self.assertNotIn("unreleased", documents["README.md"].lower())
         self.assertNotIn("VoiceOver certified", combined)
 
 

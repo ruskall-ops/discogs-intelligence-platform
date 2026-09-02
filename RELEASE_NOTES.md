@@ -1,16 +1,14 @@
 # DIP v0.6.0 — Results Presentation and UX Refinement
 
-**Draft — unreleased; release preparation only.**
+**Released 2026-09-02.**
 
-The five-slice milestone is accepted. These notes do not assert a published
-release, completed release-candidate CI, or a new release-candidate macOS smoke.
-v0.5.1 remains the latest completed public release. No release date is assigned.
+The five-slice milestone is completed and released in v0.6.0. These final notes
+describe the current public release. v0.5.1 is the previous public release.
 
 ## Release scope
 
 The baseline is public tag `v0.5.1`, commit
-`7141911b867cddd7a1031f4c8a8132df7194351a`. The accepted implementation ends at
-merged main commit `4acd518488d187657c3c652236f06309ed56fdb6` and includes:
+`7141911b867cddd7a1031f4c8a8132df7194351a`. The complete release range includes:
 
 - PR #65: documentation alignment with the completed v0.5.1 release.
 - PR #66: canonical presentation states.
@@ -18,6 +16,8 @@ merged main commit `4acd518488d187657c3c652236f06309ed56fdb6` and includes:
 - PR #68: Explorer navigation, explicit refresh, and stale-state presentation.
 - PR #69: responsive Dashboard and Collection Review.
 - PR #70: terminology, legacy report labels, and realistic-volume auditing.
+- PR #71: version metadata, release documentation, release assertions, and
+  exact-candidate release validation.
 
 Release preparation adds only version metadata, release documentation, and
 corresponding version/release assertions. It introduces no further product
@@ -50,7 +50,7 @@ Their wants, scarcity, movers, rankings, and percentages are not Price Changes
 
 ## Compatibility and limits
 
-- Package/runtime candidate: `0.6.0`; database schema remains 7, with migrations
+- Package/runtime version: `0.6.0`; database schema remains 7, with migrations
   exactly 1–7 and no migration 8.
 - Price Changes and Supply Changes remain version 2.0. Listing Price Changes
   and Marketplace Activity remain version 1.0 without new production activation.
@@ -64,17 +64,19 @@ Their wants, scarcity, movers, rankings, and percentages are not Price Changes
   compatibility validation. Windows is unsupported. Keyboard and layout
   validation is not screen-reader certification.
 
-## Evidence and outstanding gates
+## Validation evidence and publication boundary
 
-The accepted milestone has historical feature-commit Linux/macOS CI and an
-installed-wheel macOS visual smoke. These are not evidence that this new
-`0.6.0` candidate has passed its own release gates.
+The exact PR #71 candidate passed Linux/Xvfb and macOS/Aqua CI, including the
+mandatory production-Tk suite with `run=7 pass=7 skip=0 error=0 failure=0`,
+full discovery, compilation, isolated artifact validation, and whitespace
+validation. Its installed-wheel macOS smoke passed presentation, CSV import,
+controlled Collector Run, backup and replacement, session restoration,
+verified-backup recovery, and safe worker-start error handling using synthetic
+data with real provider/network access blocked.
 
-Before publication, require independent review of the exact preparation diff,
-full automated and artifact validation, mandatory Tk `run=7 pass=7 skip=0
-error=0 failure=0` on Linux/Xvfb and macOS/Aqua for the exact candidate, and
-the required exact-candidate installed-wheel macOS smoke. Record actual results
-separately; do not mark unexecuted gates complete.
+The publication-state alignment changes only release-facing documentation and
+the assertions that protect that wording. It introduces no product behavior.
+Final artifacts are built and validated from the exact tagged tree.
 
 Follow the [release checklist](docs/ReleaseChecklist.md), including fresh and
 genuine released-v0.4.0 upgrade validation. Any personal-data or real-provider
@@ -82,5 +84,6 @@ manual gate requires separate explicit permission and must not run as part of
 this preparation. Preserve existing databases and ignored artifacts; use an
 artifact-clean checkout and disposable synthetic fixtures.
 
-Commit, push, PR creation, merge, tagging, and publication require their next
-explicit authorisation. No release artifact upload is authorised by this draft.
+The release process uses separately authorised, reviewed commit, tag, artifact,
+and GitHub publication steps; no provider or personal-data access is part of
+that process.
