@@ -2,7 +2,7 @@
 
 # Version 0.6.0 — Results Presentation and UX Refinement
 
-Released 2026-09-02. All five presentation slices are complete in v0.6.0.
+Released 2026-09-08. All five presentation slices are complete in v0.6.0.
 v0.5.1 is the previous public release.
 
 ## Presentation and navigation

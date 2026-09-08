@@ -206,7 +206,7 @@ The released target also includes truthful transactional CSV-import feedback.
 
 ## Version 0.6.0 — Results Presentation and UX Refinement
 
-**Status: Released 2026-09-02**
+**Status: Released 2026-09-08**
 
 Version `0.6.0` is the current public personal-use release. The five-slice
 milestone is complete and released; v0.5.1 is the previous public release. See

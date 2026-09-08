@@ -19,7 +19,7 @@ decisions.
 
 **Version 0.6.0 — Results Presentation and UX Refinement**
 
-DIP v0.6.0 is the current public personal-use release, dated 2026-09-02. The
+DIP v0.6.0 is the current public personal-use release, dated 2026-09-08. The
 five-slice Results Presentation and UX Refinement milestone is complete and
 released. See the [v0.6.0 release notes](RELEASE_NOTES.md) and
 [release checklist](docs/ReleaseChecklist.md).

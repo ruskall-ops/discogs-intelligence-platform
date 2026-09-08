@@ -63,7 +63,7 @@ class ReleaseHardeningTestCase(unittest.TestCase):
                         "current public personal-use release",
                         normalized,
                     )
-                    self.assertIn("2026-09-02", normalized)
+                    self.assertIn("2026-09-08", normalized)
                     self.assertIn("is the previous public release", normalized)
                     for stale in (
                         "v0.6.0 presentation candidate",
@@ -94,11 +94,11 @@ class ReleaseHardeningTestCase(unittest.TestCase):
             "Version 0.6.0 — Results Presentation and UX Refinement",
             candidate_changelog,
         )
-        self.assertIn("Released 2026-09-02.", candidate_changelog)
+        self.assertIn("Released 2026-09-08.", candidate_changelog)
         self.assertNotIn("Unreleased.", candidate_changelog)
         self.assertNotIn("publication is not", candidate_changelog)
         notes = (root / "RELEASE_NOTES.md").read_text(encoding="utf-8")
-        self.assertIn("**Released 2026-09-02.**", notes)
+        self.assertIn("**Released 2026-09-08.**", notes)
         self.assertNotIn("Draft — unreleased", notes)
         self.assertIn("7141911b867cddd7a1031f4c8a8132df7194351a", notes)
         self.assertIn(
@@ -128,7 +128,7 @@ class ReleaseHardeningTestCase(unittest.TestCase):
         follow_on_position = roadmap.index("Candidate follow-on slices include:")
         self.assertLess(release_position, milestone_position)
         self.assertLess(milestone_position, follow_on_position)
-        self.assertIn("**Status: Released 2026-09-02**", roadmap)
+        self.assertIn("**Status: Released 2026-09-08**", roadmap)
         self.assertIn(
             "five-slice milestone is complete and released",
             " ".join(roadmap.split()),

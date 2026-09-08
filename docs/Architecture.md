@@ -17,7 +17,7 @@ workflows. Its governing principle is:
 The platform does not automate buying, selling, pricing, or collecting
 decisions.
 
-DIP v0.6.0 is the current public personal-use release, dated 2026-09-02. DIP
+DIP v0.6.0 is the current public personal-use release, dated 2026-09-08. DIP
 v0.5.1 is the previous public release. The public Version 0.5 line applies a
 product-truthfulness rule: a desktop capability requires a real production
 execution and data path, not merely models, builders, renderers, or fixtures.

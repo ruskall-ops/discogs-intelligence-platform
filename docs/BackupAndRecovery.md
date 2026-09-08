@@ -41,7 +41,7 @@ can migrate its schema. Do not open a newer-schema backup with an older DIP
 version. Schema version 7 and released application version 0.6.0 are separate
 version identities. The released v0.6.0 application adds no migration or backup
 format change. DIP v0.6.0 is the current public personal-use release, dated
-2026-09-02. DIP v0.5.1 is the previous public release.
+2026-09-08. DIP v0.5.1 is the previous public release.
 
 ## Manual recovery
 
