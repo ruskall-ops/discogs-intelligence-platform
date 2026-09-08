@@ -1,6 +1,6 @@
 # DIP v0.6.0 — Results Presentation and UX Refinement
 
-**Released 2026-09-02.**
+**Released 2026-09-08.**
 
 The five-slice milestone is completed and released in v0.6.0. These final notes
 describe the current public release. v0.5.1 is the previous public release.

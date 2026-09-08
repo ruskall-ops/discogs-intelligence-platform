@@ -8,7 +8,7 @@ without treating the presence of a model, builder, or renderer as proof of a
 complete desktop feature.
 
 This document records the current released baseline. DIP v0.6.0 is the current
-public personal-use release, dated 2026-09-02. DIP v0.5.1 is the previous public
+public personal-use release, dated 2026-09-08. DIP v0.5.1 is the previous public
 release. The v0.6.0 target includes the
 truthful transactional CSV-import feedback correction. Application version
 0.6.0 is distinct from SQLite schema

@@ -3,7 +3,7 @@
 ## Release status and authority
 
 The current public release is **v0.6.0 — Results Presentation and UX
-Refinement**, dated 2026-09-02. All five slices are complete and released.
+Refinement**, dated 2026-09-08. All five slices are complete and released.
 v0.5.1 is the previous public release.
 
 This checklist records the validated release scope and the controlled
