@@ -106,6 +106,23 @@ builders, and renderers for broader Marketplace, Portfolio, history, and
 research experiences. They remain reusable foundations until a production
 execution and data-supply path is connected.
 
+The Current Collection Portfolio application foundation can now execute the
+existing Distribution module once and pass that exact typed result to
+Concentration once. It validates module/rule-set versions, typed outputs, and
+status/state consistency before publishing a separate immutable pair. Concrete
+version-1 validators in each owning domain reconstruct the typed outputs, and
+an execution envelope plus source-consistency check prevents independently
+calculated results from being paired. The bounded application snapshots retain
+only module metadata, explanatory text, the typed output, evidence, and
+diagnostics—not the source metrics dictionaries. Execution cleanup covers every exit while system-level
+`BaseException` signals continue to propagate.
+Overlap and same-thread re-entry are rejected without starting module work;
+the last complete pair is retained only in memory for that coordinator's
+lifetime. It remains lazy and read-only, identifies only the one database-wide
+Current Collection, and does not make Projects owners of collection data. This is not yet a
+production desktop workflow: Portfolio toolbar, Dashboard, and Project entry
+points remain unavailable until later presentation and UI slices.
+
 ## Deferred
 
 Version 0.5 supports one collector and one practical `Current Collection`.

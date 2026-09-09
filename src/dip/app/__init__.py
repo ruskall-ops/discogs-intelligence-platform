@@ -87,11 +87,23 @@ from .portfolio_distribution import (
 )
 from .portfolio_distribution_presentation import PortfolioDistributionPresentationService
 from .portfolio_concentration import (
+    PortfolioConcentrationExecutionEnvelope,
     PortfolioConcentrationExecutionConsistencyError,
     PortfolioConcentrationExecutionService,
     build_portfolio_concentration_input,
 )
 from .portfolio_concentration_presentation import PortfolioConcentrationPresentationService
+from .current_collection_portfolio import (
+    CURRENT_COLLECTION_SCOPE_ID,
+    PORTFOLIO_EXECUTION_FAILURE_MESSAGE,
+    CurrentCollectionContext,
+    CurrentCollectionPortfolio,
+    CurrentCollectionPortfolioExecutionOutcome,
+    CurrentCollectionPortfolioExecutionService,
+    CurrentCollectionPortfolioFailureStage,
+    PortfolioConcentrationResultSnapshot,
+    PortfolioDistributionResultSnapshot,
+)
 from .portfolio_opportunity_alignment import (
     PortfolioOpportunityAlignmentExecutionConsistencyError,
     PortfolioOpportunityAlignmentExecutionService,
@@ -191,8 +203,18 @@ __all__ = [
     "PortfolioDistributionExecutionService",
     "PortfolioDistributionPresentationService",
     "PortfolioConcentrationExecutionConsistencyError",
+    "PortfolioConcentrationExecutionEnvelope",
     "PortfolioConcentrationExecutionService",
     "PortfolioConcentrationPresentationService",
+    "CURRENT_COLLECTION_SCOPE_ID",
+    "PORTFOLIO_EXECUTION_FAILURE_MESSAGE",
+    "CurrentCollectionContext",
+    "CurrentCollectionPortfolio",
+    "CurrentCollectionPortfolioExecutionOutcome",
+    "CurrentCollectionPortfolioExecutionService",
+    "CurrentCollectionPortfolioFailureStage",
+    "PortfolioConcentrationResultSnapshot",
+    "PortfolioDistributionResultSnapshot",
     "PortfolioOpportunityAlignmentExecutionConsistencyError",
     "PortfolioOpportunityAlignmentExecutionService",
     "PortfolioOpportunityAlignmentPresentationService",

@@ -59,6 +59,10 @@ from dip.app.portfolio_distribution import PortfolioDistributionExecutionService
 from dip.app.portfolio_distribution_presentation import PortfolioDistributionPresentationService
 from dip.app.portfolio_concentration import PortfolioConcentrationExecutionService
 from dip.app.portfolio_concentration_presentation import PortfolioConcentrationPresentationService
+from dip.app.current_collection_portfolio import (
+    CurrentCollectionContext,
+    CurrentCollectionPortfolioExecutionService,
+)
 from dip.app.portfolio_opportunity_alignment import PortfolioOpportunityAlignmentExecutionService
 from dip.app.portfolio_opportunity_alignment_presentation import PortfolioOpportunityAlignmentPresentationService
 from dip.app.portfolio_workspace_presentation import PortfolioWorkspacePresentationService
@@ -241,6 +245,9 @@ class DesktopApplicationDependencies:
     portfolio_controller: DesktopPortfolioController | None = None
     portfolio_workspace_controller: DesktopPortfolioWorkspaceController | None = None
     portfolio_concentration_execution: PortfolioConcentrationExecutionService | None = None
+    current_collection_portfolio_execution: (
+        CurrentCollectionPortfolioExecutionService | None
+    ) = None
     portfolio_concentration_controller: DesktopPortfolioConcentrationController | None = None
     portfolio_opportunity_alignment_execution: PortfolioOpportunityAlignmentExecutionService | None = None
     portfolio_opportunity_alignment_controller: DesktopPortfolioOpportunityAlignmentController | None = None
@@ -349,6 +356,11 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
     portfolio_concentration_execution = PortfolioConcentrationExecutionService(
         portfolio_distribution_execution,
         IntelligenceEngine((PortfolioConcentrationModule(concentration_rules),)),
+    )
+    current_collection_portfolio_execution = CurrentCollectionPortfolioExecutionService(
+        CurrentCollectionContext(scope_id="current_collection"),
+        portfolio_distribution_execution,
+        portfolio_concentration_execution,
     )
     portfolio_opportunity_alignment_execution = PortfolioOpportunityAlignmentExecutionService(
         portfolio_overview_execution,
@@ -569,6 +581,7 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         portfolio_controller=portfolio_controller,
         portfolio_workspace_controller=portfolio_workspace_controller,
         portfolio_concentration_execution=portfolio_concentration_execution,
+        current_collection_portfolio_execution=current_collection_portfolio_execution,
         portfolio_concentration_controller=portfolio_concentration_controller,
         portfolio_opportunity_alignment_execution=portfolio_opportunity_alignment_execution,
         portfolio_opportunity_alignment_controller=portfolio_opportunity_alignment_controller,

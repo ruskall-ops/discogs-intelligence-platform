@@ -329,3 +329,50 @@ aggregation, ratio or concentration calculation, classification, sorting,
 history retrieval, repository access, persistence, forecasting, or
 recommendation. Existing presentation builders and desktop renderers remain
 the authoritative boundaries for their respective Portfolio capabilities.
+
+## Current Collection execution foundation
+
+The application layer composes a narrow, lazy execution boundary for the one
+database-wide Current Collection. Its immutable context accepts only the
+canonical `current_collection` scope and is deliberately unrelated to Project
+ownership or partitioning.
+
+For each request, the coordinator executes Portfolio Distribution exactly once
+and supplies that identical typed `IntelligenceResult` to Portfolio
+Concentration exactly once. Empty, partial, limited, and insufficient results
+remain valid typed outcomes. Only after both boundaries return valid module
+results is a new immutable pair published. If either boundary raises or
+returns an invalid result, the coordinator returns fixed safe failure copy,
+does not expose exception details or a partial pair, and retains the previous
+complete pair when one exists.
+
+Validation requires the authoritative module ID and version, the authoritative
+rule-set version, the exact typed module output, and a non-error status that is
+consistent with the output analysis state. Concrete version-1 validation is
+owned by each domain module and rebuilds its known frozen models through their
+authoritative constructors without adding coordinator-specific Decimal rules.
+The original Distribution result is passed to Concentration by identity. Its
+execution envelope returns that source reference with the Concentration result;
+the coordinator checks identity and the domain verifies source provenance,
+ownership totals, evidence coverage, supported/analysed dimension order, and
+per-dimension membership facts before publication.
+
+Only after both stages validate does the coordinator create bounded immutable
+result snapshots. Each retains module ID/version, status, summary, insights,
+the concrete validated output, evidence, and diagnostics. The arbitrary source
+metrics mapping and unsupported payloads are not retained, and neither source
+result is mutated.
+
+One execution may be active at a time. An overlapping or same-thread re-entrant
+request is rejected immediately, starts no module work, and observes the
+previous complete pair available at that request's start. The retained pair is
+in-process coordinator state only and is neither persisted nor restored.
+The execution guard is cleared on all exits. Ordinary execution and snapshot
+failures return the stable safe outcome, while `KeyboardInterrupt`,
+`SystemExit`, and other `BaseException` signals propagate.
+
+Composition constructs the context and coordinator without executing them.
+This foundation performs no provider call, database write, Intelligence
+History recording, presentation, navigation, freshness tracking, or desktop
+enablement. The production Portfolio entry points therefore remain disabled
+until the later bounded presentation and UI slices.
