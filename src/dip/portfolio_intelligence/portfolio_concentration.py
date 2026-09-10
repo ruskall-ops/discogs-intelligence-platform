@@ -2,17 +2,21 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from decimal import Decimal
 from enum import Enum
 
 from dip.intelligence import IntelligenceContext, IntelligenceResult, IntelligenceStatus
 
 from .portfolio_distribution import (
+    MODULE_ID as DISTRIBUTION_MODULE_ID,
+    MODULE_VERSION as DISTRIBUTION_MODULE_VERSION,
     PortfolioCategoryDistributionEntry,
     PortfolioDimensionDistribution,
     PortfolioDistributionEvidenceCoverage,
+    PortfolioDistributionOutput,
     PortfolioDistributionProvenance,
+    validate_portfolio_distribution_output,
 )
 
 
@@ -374,6 +378,218 @@ class PortfolioConcentrationOutput:
         object.__setattr__(self, "diagnostics", diagnostics)
 
 
+def validate_portfolio_concentration_output(value: object) -> PortfolioConcentrationOutput:
+    """Reconstruct and validate the concrete version-1 Concentration graph."""
+
+    _exact(value, PortfolioConcentrationOutput, "output")
+    _exact(value.analysis_state, PortfolioConcentrationAnalysisState, "analysis_state")
+    _exact(value.rule_configuration, PortfolioConcentrationRuleConfiguration, "rule_configuration")
+    _exact(value.summary, PortfolioConcentrationSummary, "summary")
+    if value.summary.source_evidence_coverage is not None:
+        _exact(
+            value.summary.source_evidence_coverage,
+            PortfolioDistributionEvidenceCoverage,
+            "summary.source_evidence_coverage",
+        )
+    _exact(
+        value.summary.evidence_coverage,
+        PortfolioConcentrationEvidenceCoverage,
+        "summary.evidence_coverage",
+    )
+    _typed_items(value.dimensions, PortfolioDimensionConcentration, "dimensions")
+    _typed_items(value.reason_codes, PortfolioConcentrationReasonCode, "reason_codes")
+    _exact(value.provenance, PortfolioConcentrationProvenance, "provenance")
+    if value.provenance.source_evidence_coverage is not None:
+        _exact(
+            value.provenance.source_evidence_coverage,
+            PortfolioDistributionEvidenceCoverage,
+            "provenance.source_evidence_coverage",
+        )
+    if value.provenance.distribution_provenance is not None:
+        _exact(
+            value.provenance.distribution_provenance,
+            PortfolioDistributionProvenance,
+            "provenance.distribution_provenance",
+        )
+    _typed_items(value.diagnostics, PortfolioConcentrationDiagnostic, "diagnostics")
+    return replace(
+        value,
+        rule_configuration=replace(value.rule_configuration),
+        summary=replace(
+            value.summary,
+            supported_dimensions=tuple(value.summary.supported_dimensions),
+            analysed_dimensions=tuple(value.summary.analysed_dimensions),
+            unusable_dimensions=tuple(value.summary.unusable_dimensions),
+        ),
+        dimensions=tuple(_rebuild_concentration_dimension(item) for item in value.dimensions),
+        reason_codes=tuple(value.reason_codes),
+        provenance=replace(
+            value.provenance,
+            distribution_provenance=(
+                None
+                if value.provenance.distribution_provenance is None
+                else replace(value.provenance.distribution_provenance)
+            ),
+            supported_dimensions=tuple(value.provenance.supported_dimensions),
+            analysed_dimensions=tuple(value.provenance.analysed_dimensions),
+            unusable_dimensions=tuple(value.provenance.unusable_dimensions),
+        ),
+        diagnostics=tuple(_rebuild_concentration_diagnostic(item) for item in value.diagnostics),
+    )
+
+
+def validate_portfolio_concentration_source(
+    distribution: PortfolioDistributionOutput,
+    concentration: PortfolioConcentrationOutput,
+) -> None:
+    """Validate version-1 Concentration linkage to its Distribution source."""
+
+    distribution = validate_portfolio_distribution_output(distribution)
+    concentration = validate_portfolio_concentration_output(concentration)
+    distribution_summary = distribution.summary
+    concentration_summary = concentration.summary
+    supported = tuple(value.value for value in distribution_summary.supported_dimensions)
+    analysed = tuple(value.dimension.value for value in distribution.dimensions if value.entries)
+    unusable = tuple(value.dimension.value for value in distribution.dimensions if not value.entries)
+    expected_coverage, expected_state = _coverage_and_state(
+        source_compatible=True,
+        unique_owned_releases=distribution_summary.ownership.unique_owned_releases,
+        source_dimensions=distribution.dimensions,
+        analysed_dimensions=analysed,
+        has_source_diagnostics=bool(distribution.diagnostics),
+    )
+    expected_provenance = PortfolioConcentrationProvenance(
+        source_module_id=DISTRIBUTION_MODULE_ID,
+        source_module_version=DISTRIBUTION_MODULE_VERSION,
+        source_rule_set_version=distribution.rule_set_version,
+        source_evidence_coverage=distribution_summary.evidence_coverage,
+        distribution_provenance=distribution.provenance,
+        supported_dimensions=supported,
+        analysed_dimensions=analysed,
+        unusable_dimensions=unusable,
+    )
+    if concentration.provenance != expected_provenance:
+        raise PortfolioConcentrationDomainError(
+            "Concentration provenance does not match its Distribution source."
+        )
+    if (
+        concentration_summary.unique_owned_releases,
+        concentration_summary.total_owned_copies,
+        concentration_summary.duplicate_copy_count,
+        concentration_summary.source_evidence_coverage,
+        concentration_summary.evidence_coverage,
+        concentration_summary.supported_dimensions,
+        concentration_summary.analysed_dimensions,
+        concentration_summary.unusable_dimensions,
+    ) != (
+        distribution_summary.ownership.unique_owned_releases,
+        distribution_summary.ownership.total_owned_copies,
+        distribution_summary.ownership.duplicate_copy_count,
+        distribution_summary.evidence_coverage,
+        expected_coverage,
+        supported,
+        analysed,
+        unusable,
+    ):
+        raise PortfolioConcentrationDomainError(
+            "Concentration summary does not match its Distribution source."
+        )
+    if concentration.analysis_state is not expected_state:
+        raise PortfolioConcentrationDomainError(
+            "Concentration analysis state does not match its Distribution source."
+        )
+    source_dimensions = {value.dimension.value: value for value in distribution.dimensions}
+    for dimension in concentration.dimensions:
+        source = source_dimensions.get(dimension.dimension)
+        if source is None or (
+            dimension.represented_category_count,
+            dimension.releases_with_metadata,
+            dimension.releases_missing_metadata,
+            dimension.copies_with_metadata,
+            dimension.copies_missing_metadata,
+            dimension.release_metadata_coverage_ratio,
+            dimension.copy_metadata_coverage_ratio,
+            dimension.missing_release_ids,
+            dimension.source_entries,
+        ) != (
+            source.represented_category_count,
+            source.releases_with_metadata,
+            source.releases_missing_metadata,
+            source.copies_with_metadata,
+            source.copies_missing_metadata,
+            source.release_metadata_coverage_ratio,
+            source.copy_metadata_coverage_ratio,
+            source.missing_release_ids,
+            source.entries,
+        ):
+            raise PortfolioConcentrationDomainError(
+                "Concentration dimension does not match its Distribution source."
+            )
+
+
+def _rebuild_concentration_dimension(value):
+    if type(value.dimension) is not str:
+        raise TypeError("dimension.dimension must be a string.")
+    _typed_items(value.source_entries, PortfolioCategoryDistributionEntry, "dimension.source_entries")
+    _exact(value.release_concentration, PortfolioConcentrationMetricSet, "release_concentration")
+    _exact(value.copy_concentration, PortfolioConcentrationMetricSet, "copy_concentration")
+    _exact(value.difference, PortfolioConcentrationDifference, "difference")
+    return replace(
+        value,
+        missing_release_ids=tuple(value.missing_release_ids),
+        source_entries=tuple(
+            replace(item, release_ids=tuple(item.release_ids)) for item in value.source_entries
+        ),
+        release_concentration=_rebuild_metric_set(value.release_concentration),
+        copy_concentration=_rebuild_metric_set(value.copy_concentration),
+        difference=replace(value.difference),
+        reason_codes=tuple(value.reason_codes),
+    )
+
+
+def _rebuild_metric_set(value):
+    _typed_items(value.largest_categories, PortfolioCategoryContribution, "largest_categories")
+    for name in ("top_three", "top_five"):
+        item = getattr(value, name)
+        if item is not None:
+            _exact(item, PortfolioTopNConcentration, name)
+    return replace(
+        value,
+        largest_categories=tuple(_rebuild_contribution(item) for item in value.largest_categories),
+        top_three=_rebuild_top_n(value.top_three),
+        top_five=_rebuild_top_n(value.top_five),
+    )
+
+
+def _rebuild_top_n(value):
+    if value is None:
+        return None
+    _typed_items(value.contributions, PortfolioCategoryContribution, "contributions")
+    return replace(
+        value,
+        contributions=tuple(_rebuild_contribution(item) for item in value.contributions),
+    )
+
+
+def _rebuild_contribution(value):
+    return replace(value, release_ids=tuple(value.release_ids))
+
+
+def _rebuild_concentration_diagnostic(value):
+    _exact(value.code, PortfolioConcentrationDiagnosticCode, "diagnostic.code")
+    return replace(value)
+
+
+def _typed_items(values, expected, name):
+    if type(values) is not tuple or any(type(item) is not expected for item in values):
+        raise TypeError(f"{name} must be a tuple of {expected.__name__} values.")
+
+
+def _exact(value, expected, name):
+    if type(value) is not expected:
+        raise TypeError(f"{name} must be {expected.__name__}.")
+
+
 class PortfolioConcentrationModule:
     module_id = MODULE_ID
     module_version = MODULE_VERSION
@@ -415,26 +631,21 @@ class PortfolioConcentrationModule:
 
 def _output(supplied, rules):
     if not supplied.source_compatible or supplied.unique_owned_releases == 0:
-        coverage = PortfolioConcentrationEvidenceCoverage.INSUFFICIENT
         dimensions = ()
     else:
         dimensions = tuple(
             _dimension(value, rules) for value in supplied.dimensions if value.entries
         )
-        if not dimensions:
-            coverage = PortfolioConcentrationEvidenceCoverage.INSUFFICIENT
-        elif len(dimensions) < len(supplied.dimensions):
-            coverage = PortfolioConcentrationEvidenceCoverage.LIMITED
-        elif all(
-            value.releases_missing_metadata == 0 and value.copies_missing_metadata == 0
-            for value in supplied.dimensions
-        ):
-            coverage = PortfolioConcentrationEvidenceCoverage.COMPLETE
-        else:
-            coverage = PortfolioConcentrationEvidenceCoverage.PARTIAL
     supported = supplied.source_provenance.supported_dimensions
     analysed = tuple(value.dimension for value in dimensions)
     unusable = tuple(value for value in supported if value not in analysed)
+    coverage, state = _coverage_and_state(
+        source_compatible=supplied.source_compatible,
+        unique_owned_releases=supplied.unique_owned_releases,
+        source_dimensions=supplied.dimensions,
+        analysed_dimensions=analysed,
+        has_source_diagnostics=bool(supplied.diagnostics),
+    )
     provenance = PortfolioConcentrationProvenance(
         supplied.source_provenance.source_module_id,
         supplied.source_provenance.source_module_version,
@@ -457,16 +668,39 @@ def _output(supplied, rules):
                 f"{value.dimension.value} contains no usable categories.",
             ))
     diagnostics = tuple(sorted(diagnostics, key=_diagnostic_order))
+    return PortfolioConcentrationOutput(
+        state, RULE_SET_VERSION, rules, summary, dimensions, reasons, provenance, diagnostics,
+    )
+
+
+def _coverage_and_state(
+    *,
+    source_compatible,
+    unique_owned_releases,
+    source_dimensions,
+    analysed_dimensions,
+    has_source_diagnostics,
+):
+    if not source_compatible or unique_owned_releases == 0 or not analysed_dimensions:
+        coverage = PortfolioConcentrationEvidenceCoverage.INSUFFICIENT
+    elif len(analysed_dimensions) < len(source_dimensions):
+        coverage = PortfolioConcentrationEvidenceCoverage.LIMITED
+    elif all(
+        value.releases_missing_metadata == 0 and value.copies_missing_metadata == 0
+        for value in source_dimensions
+    ):
+        coverage = PortfolioConcentrationEvidenceCoverage.COMPLETE
+    else:
+        coverage = PortfolioConcentrationEvidenceCoverage.PARTIAL
     state = (
         PortfolioConcentrationAnalysisState.INSUFFICIENT_DATA
         if coverage is PortfolioConcentrationEvidenceCoverage.INSUFFICIENT
         else PortfolioConcentrationAnalysisState.COMPLETE
-        if coverage is PortfolioConcentrationEvidenceCoverage.COMPLETE and not supplied.diagnostics
+        if coverage is PortfolioConcentrationEvidenceCoverage.COMPLETE
+        and not has_source_diagnostics
         else PortfolioConcentrationAnalysisState.PARTIAL
     )
-    return PortfolioConcentrationOutput(
-        state, RULE_SET_VERSION, rules, summary, dimensions, reasons, provenance, diagnostics,
-    )
+    return coverage, state
 
 
 def _dimension(source, rules):

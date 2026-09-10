@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import Protocol
 
 from dip.intelligence import IntelligenceContext, IntelligenceExecution, IntelligenceResult, IntelligenceStatus
@@ -28,13 +29,23 @@ class PortfolioConcentrationExecutionConsistencyError(RuntimeError):
     """Raised when the concentration execution boundary is violated."""
 
 
+@dataclass(frozen=True, slots=True)
+class PortfolioConcentrationExecutionEnvelope:
+    source: IntelligenceResult
+    result: IntelligenceResult
+
+
 class PortfolioConcentrationExecutionService:
     def __init__(self, distribution: _DistributionProvider, engine: _Engine):
         self._distribution = distribution
         self._engine = engine
 
     def execute(self) -> IntelligenceResult:
-        source = self._distribution.execute()
+        return self.execute_for_distribution(self._distribution.execute())
+
+    def execute_for_distribution(self, source: IntelligenceResult) -> IntelligenceResult:
+        """Execute once from an already-produced Distribution result."""
+
         prepared = build_portfolio_concentration_input(source)
         execution = self._engine.execute(
             IntelligenceContext(portfolio_concentration_input=prepared)
@@ -49,6 +60,17 @@ class PortfolioConcentrationExecutionService:
                 "Portfolio Concentration engine returned an unexpected result."
             )
         return result
+
+    def execute_for_distribution_with_source(
+        self,
+        source: IntelligenceResult,
+    ) -> PortfolioConcentrationExecutionEnvelope:
+        """Return the result with the exact supplied source for orchestration checks."""
+
+        return PortfolioConcentrationExecutionEnvelope(
+            source=source,
+            result=self.execute_for_distribution(source),
+        )
 
 
 def build_portfolio_concentration_input(source) -> PortfolioConcentrationInput:
@@ -156,6 +178,7 @@ def _diagnostic_order(value):
 
 
 __all__ = [
+    "PortfolioConcentrationExecutionEnvelope",
     "PortfolioConcentrationExecutionConsistencyError",
     "PortfolioConcentrationExecutionService",
     "build_portfolio_concentration_input",

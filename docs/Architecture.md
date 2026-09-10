@@ -383,9 +383,41 @@ boundaries are unchanged.
 
 Portfolio Workspace retains presentation models and renderers for Overview,
 Distribution, Concentration, Opportunity Alignment, History, and Research.
-The production desktop entry points are disabled because no production
-execution and data-supply path currently provides these pages. Collectors
-cannot operate their placeholder navigation in this release.
+The Current Collection Portfolio execution foundation now composes the
+existing Distribution and Concentration application boundaries. One immutable
+`CurrentCollectionContext` accepts only `current_collection`; it identifies the
+database-wide collection scope and does not use Project identity as ownership
+or partitioning. The coordinator executes Distribution once, supplies that
+exact typed result to Concentration once, and publishes only a complete
+immutable pair. Before publication it checks each result's authoritative
+module and rule-set identity/version, typed output, non-error status, and
+status/output-state consistency. Concrete version-1 validators owned by the
+Distribution and Concentration domains rebuild their respective frozen model
+graphs through authoritative constructors. Concentration receives the authoritative
+Distribution result by identity before a separate recursively immutable
+publication snapshot is created. An execution envelope and domain consistency
+check ensure that Concentration corresponds to that exact Distribution source.
+The bounded snapshots retain module identity/version, status, summary,
+insights, typed output, evidence, and diagnostics; they do not retain the
+source result's mutable metrics mapping. A stable failure outcome contains no raw
+exception details and retains any previously published complete pair.
+
+Only one coordinator execution may be active. Overlapping and same-thread
+re-entrant requests are rejected immediately without starting either module
+and receive the pair that was published when they observed the active request,
+if one existed. Retained publication is process-memory state for that composed
+coordinator only; it is not persisted or restored after restart.
+The active-execution guard is cleared on every exit. Ordinary execution and
+snapshot failures use stable safe outcomes; `KeyboardInterrupt`, `SystemExit`,
+and other `BaseException` signals propagate rather than being presented as
+ordinary Portfolio failures.
+
+Construction is lazy: composition performs no Portfolio query or calculation.
+The foundation adds no persistence, history recording, provider dependency,
+schema, migration, session, export, or calculation change. Production desktop
+entry points remain disabled until the separately scoped presentation and UI
+slices connect this execution boundary; collectors still cannot operate the
+placeholder Portfolio navigation in this release.
 
 ### Marketplace Workspace
 

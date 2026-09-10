@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from decimal import Decimal
 from enum import Enum
 
@@ -380,6 +380,71 @@ class PortfolioDistributionOutput:
         object.__setattr__(self, "releases", releases)
         object.__setattr__(self, "reason_codes", reasons)
         object.__setattr__(self, "diagnostics", diagnostics)
+
+
+def validate_portfolio_distribution_output(value: object) -> PortfolioDistributionOutput:
+    """Reconstruct and validate the concrete version-1 Distribution graph."""
+
+    _exact(value, PortfolioDistributionOutput, "output")
+    _exact(value.analysis_state, PortfolioDistributionAnalysisState, "analysis_state")
+    _exact(value.rule_configuration, PortfolioDistributionRuleConfiguration, "rule_configuration")
+    _exact(value.summary, PortfolioDistributionSummary, "summary")
+    _exact(value.summary.ownership, PortfolioDistributionOwnershipSummary, "summary.ownership")
+    _typed_items(value.dimensions, PortfolioDimensionDistribution, "dimensions")
+    _typed_items(value.releases, PortfolioReleaseDistributionDetail, "releases")
+    _typed_items(value.reason_codes, PortfolioDistributionReasonCode, "reason_codes")
+    _exact(value.provenance, PortfolioDistributionProvenance, "provenance")
+    _typed_items(value.diagnostics, PortfolioDistributionDiagnostic, "diagnostics")
+    dimensions = tuple(_rebuild_distribution_dimension(item) for item in value.dimensions)
+    releases = tuple(_rebuild_distribution_release(item) for item in value.releases)
+    diagnostics = tuple(_rebuild_distribution_diagnostic(item) for item in value.diagnostics)
+    return replace(
+        value,
+        rule_configuration=replace(value.rule_configuration),
+        summary=replace(
+            value.summary,
+            ownership=replace(value.summary.ownership),
+            supported_dimensions=tuple(value.summary.supported_dimensions),
+            unavailable_dimensions=tuple(value.summary.unavailable_dimensions),
+        ),
+        dimensions=dimensions,
+        releases=releases,
+        reason_codes=tuple(value.reason_codes),
+        provenance=replace(value.provenance),
+        diagnostics=diagnostics,
+    )
+
+
+def _rebuild_distribution_dimension(value):
+    _typed_items(value.entries, PortfolioCategoryDistributionEntry, "dimension.entries")
+    _exact(value.concentration, PortfolioDistributionConcentration, "dimension.concentration")
+    return replace(
+        value,
+        entries=tuple(replace(item, release_ids=tuple(item.release_ids)) for item in value.entries),
+        missing_release_ids=tuple(value.missing_release_ids),
+        concentration=replace(value.concentration),
+    )
+
+
+def _rebuild_distribution_release(value):
+    return replace(value, missing_dimensions=tuple(value.missing_dimensions))
+
+
+def _rebuild_distribution_diagnostic(value):
+    _exact(value.code, PortfolioDistributionDiagnosticCode, "diagnostic.code")
+    if value.dimension is not None:
+        _exact(value.dimension, PortfolioDistributionDimension, "diagnostic.dimension")
+    return replace(value)
+
+
+def _typed_items(values, expected, name):
+    if type(values) is not tuple or any(type(item) is not expected for item in values):
+        raise TypeError(f"{name} must be a tuple of {expected.__name__} values.")
+
+
+def _exact(value, expected, name):
+    if type(value) is not expected:
+        raise TypeError(f"{name} must be {expected.__name__}.")
 
 
 _DIMENSIONS = tuple(PortfolioDistributionDimension)
