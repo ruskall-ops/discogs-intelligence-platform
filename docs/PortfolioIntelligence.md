@@ -376,3 +376,38 @@ This foundation performs no provider call, database write, Intelligence
 History recording, presentation, navigation, freshness tracking, or desktop
 enablement. The production Portfolio entry points therefore remain disabled
 until the later bounded presentation and UI slices.
+
+## Current Collection presentation foundation
+
+The desktop-neutral presentation builder consumes only the immutable paired
+publication above. It exposes exactly Distribution and Concentration in that
+order, with Distribution selected initially. Overview, Opportunity Alignment,
+History, and Research are not members of this bounded workspace.
+
+Distribution presentation retains the five authoritative dimension and
+category orders, exact counts, integer numerators and denominators, domain
+Decimal ratios, missing release identities, and source provenance. Its shares
+use the full Current Collection denominators, including holdings whose metadata
+is missing. Concentration presentation labels its denominators as represented
+release or copy memberships and keeps the full-collection coverage alongside
+them. Its first-three and first-five groups are explicitly described as the
+first categories in Distribution order; the copy basis is not independently
+ranked.
+
+Secondary percentages are display-only: the unchanged ratio is multiplied by
+100 and quantized to two decimal places with `ROUND_HALF_EVEN`. Independently
+rounded percentages may not total 100%. Missing or non-finite derived values
+are presented as unavailable without changing the domain's accepted values.
+Fixed public copy contains no raw diagnostics or exception details and states
+that concentration is mathematical clustering, not risk, advice, valuation,
+opportunity scoring, a recommendation, or an aggregate score.
+Fixed labels and formatted values are derived rather than independently stored,
+and the concrete immutable models enforce denominator, dimension, basis, and
+first-N relationships. Dynamic evidence labels remain factual data and cannot
+occupy fixed-copy fields.
+
+This slice adds no Tk renderer or window and does not enable toolbar,
+Dashboard, or Project entry points. Refresh, stale/import invalidation,
+navigation lifecycle, focus, and scrolling remain unimplemented. The
+presentation performs no query, calculation, write, provider call, session
+change, or Intelligence History recording.

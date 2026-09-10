@@ -123,6 +123,21 @@ Current Collection, and does not make Projects owners of collection data. This i
 production desktop workflow: Portfolio toolbar, Dashboard, and Project entry
 points remain unavailable until later presentation and UI slices.
 
+The desktop-neutral Current Collection Portfolio presentation foundation now
+projects that complete pair into exactly two fixed destinations: Distribution
+and Concentration. It exposes collection totals, full-denominator metadata
+coverage, represented-membership concentration measures, provenance, and
+truthful missing/unavailable states. Domain Decimal values and ordering remain
+unchanged; secondary percentages use two-decimal `ROUND_HALF_EVEN` display
+rounding. The presentation has no Tk, query, write, provider, history, or
+calculation boundary. Its fixed terminology and formatted text are derived
+from closed identifiers and factual values, and its immutable models reject
+contradictory structural combinations without restricting dynamic evidence.
+Portfolio is still unavailable in the production
+desktop: toolbar, Dashboard, and Project controls are unchanged, and the
+window, refresh, stale/import lifecycle, focus, and scrolling work remain for
+the later desktop slice.
+
 ## Deferred
 
 Version 0.5 supports one collector and one practical `Current Collection`.
