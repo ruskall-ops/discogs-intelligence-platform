@@ -419,6 +419,19 @@ entry points remain disabled until the separately scoped presentation and UI
 slices connect this execution boundary; collectors still cannot operate the
 placeholder Portfolio navigation in this release.
 
+The desktop-neutral presentation boundary projects that immutable pair into a
+closed Current Collection workspace containing Distribution and Concentration
+only. It preserves domain ordering and Decimal values, adds explicit full-
+collection versus represented-membership denominator copy, and formats
+secondary percentages to two decimal places with `ROUND_HALF_EVEN`. The
+projection contains no repository, provider, calculation, persistence, or Tk
+dependency and excludes raw diagnostics from public copy. Fixed terminology
+and formatted text derive from closed identifiers and authoritative values;
+the immutable presentation models enforce their structural relationships while
+keeping dynamic evidence labels separate from fixed copy. This remains a
+presentation foundation: no production entry point, window, refresh/freshness
+lifecycle, scrolling, focus, or import invalidation is enabled yet.
+
 ### Marketplace Workspace
 
 Marketplace Workspace retains reusable presentation foundations for supplied
