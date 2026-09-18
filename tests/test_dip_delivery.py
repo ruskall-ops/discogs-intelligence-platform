@@ -6,6 +6,7 @@ import json
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -26,6 +27,27 @@ SCRIPT = ROOT / "scripts/dip_delivery.py"
 
 class DipDeliveryTestCase(unittest.TestCase):
     def setUp(self) -> None:
+        configuration_home = self.enterContext(tempfile.TemporaryDirectory())
+        # Isolate both fixture Git commands and the helper's subprocesses from
+        # developer configuration, including overrides inherited via GIT_*.
+        environment = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
+        environment.update(HOME=configuration_home, XDG_CONFIG_HOME=configuration_home)
+        real_git = shutil.which("git")
+        self.assertIsNotNone(real_git, "Git is required for the delivery tests")
+        self.real_git = str(Path(real_git).resolve())
+        self.git_launcher = Path(configuration_home) / "bin/git"
+        self.git_launcher.parent.mkdir()
+        # The helper sanitizes GIT_* before spawning Git. Apply isolation at
+        # the executable boundary, using the pre-PATH absolute target to avoid
+        # recursion. POSIX exec preserves arguments, streams and exit status.
+        self.git_launcher.write_text(
+            "#!/bin/sh\nexport GIT_CONFIG_NOSYSTEM=1\n"
+            f"exec {shlex.quote(self.real_git)} \"$@\"\n",
+            encoding="utf-8",
+        )
+        self.git_launcher.chmod(0o755)
+        environment["PATH"] = str(self.git_launcher.parent) + os.pathsep + environment.get("PATH", os.defpath)
+        self.enterContext(patch.dict(os.environ, environment, clear=True))
         self.temporary = tempfile.TemporaryDirectory()
         self.repo = Path(self.temporary.name)
         self.git("init", "-q", "-b", "main")
@@ -401,15 +423,114 @@ class DipDeliveryTestCase(unittest.TestCase):
         self.assertIsNone(data)
         self.assertIn("partial clone configuration", completed.stderr)
 
-    def test_conditional_configuration_cannot_silently_change_identity(self) -> None:
+    def local_configuration_state(self, key: str) -> tuple[int, str, str]:
+        result = self.git("config", "--local", "--includes", "--get", key, check=False)
+        if result.returncode == 1:
+            self.assertEqual((result.stdout, result.stderr), ("", ""))
+        else:
+            result.check_returncode()
+        return result.returncode, result.stdout, result.stderr
+
+    def configure_conditional_include(self, *, active: bool) -> None:
         included = self.repo / ".git/conditional-config"
-        self.git("config", "--file", str(included), "core.autocrlf", "true")
-        self.git("config", f"includeIf.gitdir:{self.repo}/.git.path", str(included))
-        self.assertEqual(self.git("config", "--get", "core.autocrlf").stdout.strip(), "true")
+        included.write_text("[delivery]\n\tconditional = true\n", encoding="utf-8")
+        git_dir = Path(self.git("rev-parse", "--absolute-git-dir").stdout.removesuffix("\n")).resolve()
+        if not active:
+            git_dir = git_dir / "never-matches" / ".git"
+        self.git("config", f"includeIf.gitdir:{git_dir}.path", str(included))
+
+    def invoke_preserving_configuration(self):
+        before = self.git("config", "--null", "--list").stdout
         completed, data = self.invoke("review")
+        self.assertEqual(self.git("config", "--null", "--list").stdout, before)
+        return completed, data
+
+    def test_active_conditional_configuration_cannot_silently_change_identity(self) -> None:
+        self.configure_conditional_include(active=True)
+        # Prove activation independently of autocrlf and filesystem aliases.
+        before = self.local_configuration_state("delivery.conditional")
+        self.assertEqual(before, (0, "true\n", ""))
+        completed, data = self.invoke_preserving_configuration()
+        self.assertEqual(self.local_configuration_state("delivery.conditional"), before)
         self.assertEqual(completed.returncode, 2)
         self.assertIsNone(data)
         self.assertIn("configuration changes under isolated inspection", completed.stderr)
+
+    def test_inactive_conditional_configuration_allows_inspection(self) -> None:
+        self.configure_conditional_include(active=False)
+        before = self.local_configuration_state("delivery.conditional")
+        self.assertEqual(before, (1, "", ""))
+        completed, data = self.invoke_preserving_configuration()
+        self.assertEqual(self.local_configuration_state("delivery.conditional"), before)
+        self.assertEqual(completed.returncode, 0)
+        self.assertTrue(data["ready"])
+
+    def assert_local_autocrlf_preserved(self, expected: tuple[int, str, str]) -> None:
+        before = self.local_configuration_state("core.autocrlf")
+        self.assertEqual(before, expected)
+        completed, data = self.invoke_preserving_configuration()
+        self.assertEqual(self.local_configuration_state("core.autocrlf"), before)
+        self.assertEqual(completed.returncode, 0)
+        self.assertTrue(data["ready"])
+
+    def test_configured_local_autocrlf_is_preserved(self) -> None:
+        self.git("config", "--local", "core.autocrlf", "true")
+        self.assert_local_autocrlf_preserved((0, "true\n", ""))
+
+    def test_unset_local_autocrlf_is_preserved(self) -> None:
+        self.assert_local_autocrlf_preserved((1, "", ""))
+
+    def test_local_autocrlf_query_failure_is_not_absence(self) -> None:
+        # A malformed disposable local config produces a real Git query failure.
+        with (self.repo / ".git/config").open("a", encoding="utf-8") as configuration:
+            configuration.write("\n[broken\n")
+        before = self.repository_snapshot()
+        with self.assertRaises(subprocess.CalledProcessError) as failure:
+            self.local_configuration_state("core.autocrlf")
+        self.assertEqual(failure.exception.returncode, 128)
+        self.assertEqual(failure.exception.stdout, "")
+        self.assertTrue(failure.exception.stderr)
+        completed, data = self.invoke("review")
+        self.assertEqual(completed.returncode, 2)
+        self.assertIsNone(data)
+        with self.assertRaises(subprocess.CalledProcessError) as after:
+            self.local_configuration_state("core.autocrlf")
+        self.assertEqual(
+            (after.exception.returncode, after.exception.stdout, after.exception.stderr),
+            (failure.exception.returncode, failure.exception.stdout, failure.exception.stderr),
+        )
+        self.assertEqual(self.repository_snapshot(), before)
+
+    def test_system_configuration_is_isolated_for_fixture_and_helper_git(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            system = Path(directory) / "system config"
+            included = Path(directory) / "included config"
+            included.write_text("[delivery]\n\tsystemMarker = true\n", encoding="utf-8")
+            git_dir = Path(self.git("rev-parse", "--absolute-git-dir").stdout.removesuffix("\n")).resolve()
+            self.git("config", "--file", str(system), f"includeIf.gitdir:{git_dir}.path", str(included))
+            arguments = ("config", "--includes", "--get", "delivery.systemMarker")
+            before = self.repository_snapshot()
+            unisolated = subprocess.run(
+                (self.real_git, *arguments), cwd=self.repo, text=True,
+                env=dict(os.environ, GIT_CONFIG_SYSTEM=str(system), GIT_CONFIG_NOSYSTEM="0"),
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+            )
+            self.assertEqual((unisolated.returncode, unisolated.stdout, unisolated.stderr), (0, "true\n", ""))
+            # Select the synthetic system config inside the executable boundary
+            # so the helper's environment sanitization cannot hide this probe.
+            launcher = self.git_launcher.read_text(encoding="utf-8")
+            self.git_launcher.write_text(
+                launcher.replace("#!/bin/sh\n", f"#!/bin/sh\nexport GIT_CONFIG_SYSTEM={shlex.quote(str(system))}\n"),
+                encoding="utf-8",
+            )
+            isolated = self.git(*arguments, check=False)
+            self.assertEqual((isolated.returncode, isolated.stdout, isolated.stderr), (1, "", ""))
+            completed, data = self.invoke_preserving_configuration()
+            self.assertEqual(completed.returncode, 0)
+            self.assertTrue(data["ready"])
+            after = self.git(*arguments, check=False)
+            self.assertEqual((after.returncode, after.stdout, after.stderr), (1, "", ""))
+            self.assertEqual(self.repository_snapshot(), before)
 
     def test_ambient_git_overrides_cannot_redirect_storage_or_write_traces(self) -> None:
         completed, data = self.invoke("review", extra_environment={
