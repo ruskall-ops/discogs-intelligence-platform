@@ -331,6 +331,7 @@ class ResultsPresentationRealTkBoundaryTest(unittest.TestCase):
         )
         for name in callbacks:
             setattr(root, name, Mock())
+        root.current_collection_portfolio_execution = None
         toolbar = App._build_main_toolbar(root)
         buttons = {
             child.cget("text"): child
@@ -346,6 +347,15 @@ class ResultsPresentationRealTkBoundaryTest(unittest.TestCase):
             ),
         )
         self.assertEqual(len(toolbar.winfo_children()), 2)
+        self.assertIn("disabled", buttons["Portfolio"].state())
+        root.current_collection_portfolio_execution = Mock()
+        available_toolbar = App._build_main_toolbar(root)
+        available_buttons = {
+            child.cget("text"): child
+            for child in self._descendants(available_toolbar)
+            if isinstance(child, ttk.Button)
+        }
+        self.assertNotIn("disabled", available_buttons["Portfolio"].state())
         root.deiconify()
         for width in (1200, 1050):
             root.geometry(f"{width}x220")

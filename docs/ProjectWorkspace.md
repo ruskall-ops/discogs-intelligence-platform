@@ -2,8 +2,8 @@
 
 The current primary desktop session restores safe Project-compatible
 navigation and geometry. Project Open, Create, Project-scoped Refresh, and
-Portfolio navigation remain visible but disabled as **Not available in this
-release**. Dashboard navigation remains enabled. Project identity still does
+Portfolio navigation remain visible but disabled. Its reason directs users to
+the available main-toolbar or Dashboard entry. Dashboard navigation remains enabled. Project identity still does
 not partition collection or intelligence data.
 
 ## Purpose
@@ -88,8 +88,9 @@ Wider windows expand the same content without horizontal scrolling, and a
 subsequent compact resize recalculates from the final canvas width.
 
 Open Project, Create Project, and Refresh Collection are disabled placeholders.
-Open Dashboard and Open Portfolio Workspace navigate through existing desktop
-methods. No routing framework or controller logic is duplicated.
+Open Dashboard navigates through the existing desktop method. The Project
+Portfolio shortcut remains disabled; the toolbar and Dashboard open the
+read-only Current Collection Portfolio. No routing framework is duplicated.
 
 ## Boundaries
 

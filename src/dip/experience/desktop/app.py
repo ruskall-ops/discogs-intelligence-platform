@@ -50,6 +50,11 @@ from dip.experience.dashboard import (
     DashboardNavigationTarget,
 )
 from dip.experience.portfolio_workspace import PortfolioWorkspaceDestination
+from dip.experience.current_collection_portfolio import (
+    CurrentCollectionPortfolioPresentationBuilder,
+    PortfolioDestination,
+)
+from dip.experience.desktop.current_collection_portfolio_window import CurrentCollectionPortfolioWindow
 from dip.experience.explorer import (
     CollectionExplorerDestination,
     ENABLED_EXPLORER_DESTINATIONS,
@@ -172,6 +177,11 @@ class App(tk.Tk):
         self.portfolio_workspace_controller = getattr(
             dependencies, "portfolio_workspace_controller", None
         )
+        self.current_collection_portfolio_execution = getattr(
+            dependencies, "current_collection_portfolio_execution", None
+        )
+        self.current_collection_portfolio_builder = CurrentCollectionPortfolioPresentationBuilder()
+        self._current_collection_portfolio_window = None
         self.intelligence_change_analysis_controller = getattr(
             dependencies, "intelligence_change_analysis_controller", None
         )
@@ -315,7 +325,8 @@ class App(tk.Tk):
         self.portfolio_button = ttk.Button(
             secondary_toolbar, text="Portfolio", command=self.open_portfolio_overview
         )
-        self.portfolio_button.state(["disabled"])
+        if self.current_collection_portfolio_execution is None:
+            self.portfolio_button.state(["disabled"])
         self.portfolio_button.grid(row=0, column=0, padx=3, sticky="ew")
         self.historical_intelligence_button = ttk.Button(
             secondary_toolbar,
@@ -333,8 +344,7 @@ class App(tk.Tk):
         self.marketplace_workspace_button.grid(row=0, column=2, padx=3, sticky="ew")
         ttk.Label(
             secondary_toolbar,
-            text="Portfolio, Historical Intelligence, and Marketplace Workspace: "
-            "Not available in this release",
+            text="Historical Intelligence and Marketplace Workspace: Not available in this release",
         ).grid(row=1, column=0, columnspan=3, padx=3, pady=(4, 0), sticky="w")
 
         self.progress = ttk.Progressbar(secondary_toolbar, length=220, mode="determinate")
@@ -895,6 +905,7 @@ class App(tk.Tk):
             self.export_excel_button,
             self.export_intelligence_button,
             self.refresh_view_button,
+            self.portfolio_button,
             self.dashboard_canvas,
             self.hot_now_button,
             self.collection_explorer_button,
@@ -949,6 +960,7 @@ class App(tk.Tk):
             self.export_excel_button,
             self.export_intelligence_button,
             self.refresh_view_button,
+            self.portfolio_button,
             self.hot_now_button,
             self.collection_explorer_button,
             self.dashboard_health_button,
@@ -2657,6 +2669,10 @@ class App(tk.Tk):
             )
             return
 
+        # The import has committed. Invalidate before any unrelated display
+        # refresh can fail, while retaining the old immutable figures.
+        self._mark_current_collection_portfolio_outdated()
+
         try:
             self.status_var.set(
                 f"Imported {result.imported_records:,} collection rows "
@@ -2718,6 +2734,7 @@ class App(tk.Tk):
         if not token:
             return
         self._collector_run_active = True
+        self._update_current_collection_portfolio_run_state()
         self._update_marketplace_refresh_availability()
         self.refresh_discogs_button.configure(state="disabled")
         self.import_csv_button.configure(state="disabled")
@@ -2830,6 +2847,7 @@ class App(tk.Tk):
 
     def _restore_refresh_controls(self):
         self._collector_run_active = False
+        self._update_current_collection_portfolio_run_state()
         self._update_marketplace_refresh_availability()
         self.refresh_discogs_button.configure(state="normal")
         self.import_csv_button.configure(state="normal")
@@ -2967,7 +2985,15 @@ class App(tk.Tk):
                 continue
             body, actions = self.dashboard_command_vars[card.title]
             unavailable = presentation_state_copy(PresentationStateKind.UNAVAILABLE)
-            body.set(f"{unavailable.heading}\n{unavailable.body}")
+            portfolio_unavailable = (
+                card.title == "Portfolio Summary"
+                and self.current_collection_portfolio_execution is None
+            )
+            body.set(
+                "Portfolio is unavailable." if portfolio_unavailable else
+                card.summary if any(action.enabled for action in card.actions)
+                else f"{unavailable.heading}\n{unavailable.body}"
+            )
             for child in actions.winfo_children():
                 child.destroy()
             for action in card.actions:
@@ -2976,13 +3002,18 @@ class App(tk.Tk):
                     text=action.label,
                     command=lambda target=action.target: self._open_dashboard_target(target),
                 )
-                if not action.enabled:
+                if not action.enabled or (
+                    action.target is DashboardNavigationTarget.PORTFOLIO
+                    and (self._collector_run_active or portfolio_unavailable)
+                ):
                     button.state(["disabled"])
                 button.pack(side="left", padx=(0, 6))
 
     def _open_dashboard_target(self, target):
         if target is DashboardNavigationTarget.COLLECTION_EXPLORER:
             self.open_intelligence_explorer()
+        elif target is DashboardNavigationTarget.PORTFOLIO:
+            self.open_portfolio_overview()
 
     def open_collection_health(self):
         try:
@@ -3643,76 +3674,77 @@ class App(tk.Tk):
                 handles.pop(window, None)
 
     def open_portfolio_overview(self, destination=None):
-        """Open the separate Portfolio experience from a supplied completed result."""
-        return
-        if self.portfolio_workspace_controller is None:
-            messagebox.showerror("Portfolio unavailable", "Portfolio is not configured.")
+        """Open/focus the Current Collection Portfolio, with no provider work."""
+        if self.__dict__.get("_collector_run_active", False):
             return
-        try:
-            rendered = self.portfolio_workspace_controller.open(
-                self.current_portfolio_overview_result,
-                self.current_portfolio_distribution_result,
-                self.current_portfolio_concentration_result,
-                self.current_portfolio_opportunity_alignment_result,
-            )
-            if destination is not None:
-                rendered = self.portfolio_workspace_controller.navigate(
-                    rendered.state, destination
-                )
-        except Exception:
-            messagebox.showerror(
-                "Portfolio unavailable",
-                "Portfolio could not be displayed.",
-            )
+        existing = self.__dict__.get("_current_collection_portfolio_window")
+        if existing is not None and existing.alive():
+            existing.focus()
             return
-        window = tk.Toplevel(self)
-        window.title(rendered.title)
-        window.geometry("1050x760")
-        window.minsize(760, 540)
-        window.transient(self)
-        workspace = ttk.Frame(window, padding=12)
-        workspace.pack(fill="both", expand=True)
-        navigation = tk.Listbox(workspace, exportselection=False, width=24)
-        navigation.pack(side="left", fill="y", padx=(0, 12))
-        content = ttk.Frame(workspace)
-        content.pack(side="left", fill="both", expand=True)
-        heading = ttk.Label(content, text=rendered.heading, font=("Helvetica", 16, "bold"))
-        heading.pack(anchor="w", pady=(0, 8))
-        text = tk.Text(content, wrap="word", padx=10, pady=10)
-        scrollbar = ttk.Scrollbar(content, orient="vertical", command=text.yview)
-        text.configure(yscrollcommand=scrollbar.set)
-        text.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-        for item in rendered.navigation:
-            navigation.insert("end", item.title)
-
-        current = rendered
-
-        def show(value):
-            nonlocal current
-            current = value
-            heading.configure(text=value.heading)
-            text.configure(state="normal")
-            text.delete("1.0", "end")
-            text.insert("1.0", value.body)
-            text.configure(state="disabled")
-
-        def select_destination(event=None):
-            selection = navigation.curselection()
-            if not selection:
-                return
-            destination = current.navigation[selection[0]].destination
-            show(self.portfolio_workspace_controller.navigate(current.state, destination))
-
-        navigation.bind("<<ListboxSelect>>", select_destination)
-        selected_index = next(
-            index for index, item in enumerate(rendered.navigation)
-            if item.destination is rendered.current_destination
+        if self.__dict__.get("current_collection_portfolio_execution") is None:
+            return
+        window = CurrentCollectionPortfolioWindow(
+            self, self.refresh_current_collection_portfolio,
+            self._close_current_collection_portfolio,
         )
-        navigation.selection_set(selected_index)
-        navigation.activate(selected_index)
-        show(rendered)
-        ttk.Button(window, text="Close", command=window.destroy).pack(pady=(0, 12))
+        self._current_collection_portfolio_window = window
+        self.refresh_current_collection_portfolio()
+        window.focus()
+
+    def _close_current_collection_portfolio(self):
+        self._current_collection_portfolio_window = None
+
+    def _mark_current_collection_portfolio_outdated(self):
+        window = self.__dict__.get("_current_collection_portfolio_window")
+        if window is not None and window.alive() and window._workspace is not None:
+            window.freshness.set("Out of date — collection data changed")
+
+    def _update_current_collection_portfolio_run_state(self):
+        button = self.__dict__.get("portfolio_button")
+        if button is not None and self.__dict__.get("current_collection_portfolio_execution") is not None:
+            button.state(["disabled"] if self._collector_run_active else ["!disabled"])
+        window = self.__dict__.get("_current_collection_portfolio_window")
+        if window is not None and window.alive():
+            window.set_run_active(self._collector_run_active)
+        if self.__dict__.get("dashboard_command_vars") is not None:
+            self._refresh_dashboard_command_center()
+
+    def refresh_current_collection_portfolio(self):
+        window = self.__dict__.get("_current_collection_portfolio_window")
+        if window is None or not window.alive() or self._collector_run_active:
+            return
+        service = self.current_collection_portfolio_execution
+        if service is None:
+            return
+        previous = window._workspace
+        previous_freshness = window.freshness.get()
+        destination = (
+            previous.selected_destination if previous is not None
+            else PortfolioDestination.DISTRIBUTION
+        )
+        focused = window.window.focus_get()
+        try:
+            outcome = service.execute()
+            presentation = self.current_collection_portfolio_builder.build(
+                outcome, selected_destination=destination,
+            )
+            if not outcome.succeeded:
+                raise ValueError("Portfolio execution did not complete.")
+        except Exception:
+            if previous is None:
+                from dip.experience.current_collection_portfolio import (
+                    CurrentCollectionPortfolioPresentation,
+                    PortfolioPresentationAvailability,
+                )
+                previous = CurrentCollectionPortfolioPresentation(
+                    PortfolioPresentationAvailability.UNAVAILABLE, destination, None, None
+                )
+            window.show(previous, freshness=previous_freshness if previous.distribution else "Unavailable",
+                        error="Portfolio could not be calculated. Existing saved data has been preserved.")
+            return
+        window.show(presentation, freshness="Current")
+        if focused is not None and focused.winfo_exists():
+            focused.focus_set()
 
     def open_intelligence_change_analysis(self):
         """Render already-produced Change and Trend Analysis results."""

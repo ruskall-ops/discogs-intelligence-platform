@@ -561,7 +561,7 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             "Project identity and active state are stored in SQLite; primary "
             "desktop session restoration is enabled.",
             "Open Project\nCreate Project\nRefresh Collection\nOpen Dashboard\n"
-            "Open Portfolio Workspace — Not available in this release",
+            "Open Portfolio — use the main toolbar or Dashboard",
         )
         self.assertEqual(
             tuple(label.cget("text") for label in self.root.project_body_labels),
@@ -2102,6 +2102,65 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         self.root.queue_decision_button.event_generate("<space>")
         self.root.update()
         activation.assert_called_once_with()
+
+        # Exercise the new production Tk Portfolio path inside the established
+        # seven-test mandatory suite without a provider or personal database.
+        from dip.experience.dashboard import DashboardNavigationTarget
+        from dip.experience.current_collection_portfolio import PortfolioDestination
+        from tests.test_current_collection_portfolio_presentation import _outcome, _row
+
+        outcome, repository = _outcome((
+            _row(10, quantity=2, artist="A" * 90),
+            _row(11, artist=None),
+        ))
+        execution = Mock()
+        execution.execute.return_value = outcome
+        self.root.current_collection_portfolio_execution = execution
+        self.root.portfolio_button.state(["!disabled"])
+        self.root.portfolio_button.invoke()
+        self.root.update()
+        portfolio = self.root._current_collection_portfolio_window
+        self.assertIsNotNone(portfolio)
+        self.assertEqual(portfolio.window.title(), "Current Collection Portfolio")
+        self.assertEqual(portfolio.window.minsize(), (800, 560))
+        self.assertEqual(portfolio.navigation.cget("values"), ("Distribution", "Concentration"))
+        self.assertEqual(portfolio.freshness.get(), "Current")
+        self.assertIn("Metadata: 1/2 (50.00%) releases", portfolio.text.get("1.0", "end"))
+        self.assertEqual(execution.execute.call_count, 1)
+        self.root._open_dashboard_target(DashboardNavigationTarget.PORTFOLIO)
+        self.assertIs(portfolio, self.root._current_collection_portfolio_window)
+        self.assertEqual(execution.execute.call_count, 1)
+        portfolio.navigation.current(1)
+        portfolio.navigation.event_generate("<<ComboboxSelected>>")
+        self.root.update()
+        self.assertIs(portfolio._workspace.selected_destination, PortfolioDestination.CONCENTRATION)
+        self.assertIn("represented memberships only", portfolio.text.get("1.0", "end"))
+        portfolio.text.yview_scroll(3, "units")
+        self.assertEqual(execution.execute.call_count, 1)
+        portfolio.navigation.focus_force()
+        self.assertEqual(portfolio._traverse(portfolio.navigation, 1), "break")
+        self.assertIs(portfolio.window.focus_get(), portfolio.refresh_button)
+        self.assertEqual(portfolio._traverse(portfolio.refresh_button, -1), "break")
+        self.assertIs(portfolio.window.focus_get(), portfolio.navigation)
+        self.assertEqual(execution.execute.call_count, 1)
+        portfolio.refresh_button.focus_force()
+        portfolio.refresh_button.event_generate("<Return>")
+        self.root.update()
+        self.assertEqual(execution.execute.call_count, 2)
+        self.assertIs(portfolio._workspace.selected_destination, PortfolioDestination.CONCENTRATION)
+        self.root._mark_current_collection_portfolio_outdated()
+        self.assertIn("Out of date", portfolio.freshness.get())
+        self.root._collector_run_active = True
+        self.root._update_current_collection_portfolio_run_state()
+        self.assertIn("disabled", portfolio.refresh_button.state())
+        self.root.open_portfolio_overview()
+        self.assertEqual(execution.execute.call_count, 2)
+        self.root._collector_run_active = False
+        self.root._update_current_collection_portfolio_run_state()
+        portfolio.close_button.invoke()
+        self.root.update()
+        self.assertIsNone(self.root._current_collection_portfolio_window)
+        self.assertEqual(repository.reads, 1)
 
 
 if __name__ == "__main__":

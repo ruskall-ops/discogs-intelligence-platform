@@ -372,10 +372,9 @@ failures return the stable safe outcome, while `KeyboardInterrupt`,
 `SystemExit`, and other `BaseException` signals propagate.
 
 Composition constructs the context and coordinator without executing them.
-This foundation performs no provider call, database write, Intelligence
-History recording, presentation, navigation, freshness tracking, or desktop
-enablement. The production Portfolio entry points therefore remain disabled
-until the later bounded presentation and UI slices.
+The coordinator itself performs no provider call, database write, Intelligence
+History recording, presentation, navigation or freshness tracking. The desktop
+workflow below owns the separately implemented window and freshness state.
 
 ## Current Collection presentation foundation
 
@@ -406,8 +405,27 @@ and the concrete immutable models enforce denominator, dimension, basis, and
 first-N relationships. Dynamic evidence labels remain factual data and cannot
 occupy fixed-copy fields.
 
-This slice adds no Tk renderer or window and does not enable toolbar,
-Dashboard, or Project entry points. Refresh, stale/import invalidation,
-navigation lifecycle, focus, and scrolling remain unimplemented. The
-presentation performs no query, calculation, write, provider call, session
-change, or Intelligence History recording.
+The presentation remains desktop-neutral and performs no query, calculation,
+write, provider call, session change, or Intelligence History recording.
+
+## Current Collection production desktop
+
+The main toolbar and Dashboard Portfolio Summary card both open or focus one
+transient Current Collection Portfolio window. It renders only Distribution
+and Concentration, with explicit Refresh Portfolio and Close controls. The
+older result-supplied Overview/Opportunity workspace is still not a production
+entry point. The Project shortcut remains disabled and explains where the live
+entry points are. Closing discards the visible snapshot; the next opening
+calculates afresh and selects Distribution. Session v1 does not restore this
+secondary window.
+
+The desktop invokes the paired execution once on opening a new window and once
+for explicit refresh. Destination switching, focus and scrolling read only the
+immutable presentation. A successfully committed collection CSV import marks
+an open snapshot out of date before any later Dashboard/table refresh. Its old
+figures remain readable until refresh. Failed/cancelled imports leave freshness
+unchanged. A Collector Run does not change these ownership/catalogue inputs;
+while active it blocks Portfolio opening and refresh without discarding a live
+snapshot. Refresh failure keeps both the last displayed pair and its previous
+Current/Out-of-date state and adds fixed safe error copy. No provider call,
+database write, History result or Portfolio session field is introduced.

@@ -280,8 +280,12 @@ class ReleaseHardeningTestCase(unittest.TestCase):
         self.assertTrue(
             cards[DashboardCommandCardId.PORTFOLIO_HEALTH].actions[0].enabled
         )
+        self.assertTrue(cards[DashboardCommandCardId.PORTFOLIO_SUMMARY].actions[0].enabled)
+        self.assertEqual(
+            cards[DashboardCommandCardId.PORTFOLIO_SUMMARY].actions[0].label,
+            "Open Portfolio",
+        )
         for card_id in (
-            DashboardCommandCardId.PORTFOLIO_SUMMARY,
             DashboardCommandCardId.OPPORTUNITY_HIGHLIGHTS,
             DashboardCommandCardId.HISTORICAL_CHANGES,
             DashboardCommandCardId.MARKETPLACE_HIGHLIGHTS,
@@ -301,7 +305,7 @@ class ReleaseHardeningTestCase(unittest.TestCase):
         for target in DashboardNavigationTarget:
             application._open_dashboard_target(target)
         application.open_intelligence_explorer.assert_called_once_with()
-        application.open_portfolio_overview.assert_not_called()
+        application.open_portfolio_overview.assert_called_once_with()
         application.open_intelligence_change_analysis.assert_not_called()
         application.open_marketplace_workspace.assert_not_called()
         application._open_dashboard_target(object())
@@ -313,7 +317,7 @@ class ReleaseHardeningTestCase(unittest.TestCase):
         application.tabs.select.assert_called_once_with(
             application.dashboard_tab
         )
-        application.open_portfolio_overview.assert_not_called()
+        application.open_portfolio_overview.assert_called_once_with()
         application._open_project_target(object())
 
     def test_direct_workspace_handlers_do_not_open_unavailable_foundations(

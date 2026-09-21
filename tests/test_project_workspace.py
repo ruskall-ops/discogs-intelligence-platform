@@ -92,7 +92,7 @@ class ProjectWorkspaceTestCase(unittest.TestCase):
             "Project identity and active state are stored in SQLite",
             "primary desktop session restoration is enabled",
             "Open Dashboard",
-            "Open Portfolio Workspace",
+            "Open Portfolio — use the main toolbar or Dashboard",
         ):
             self.assertIn(expected, body)
 
