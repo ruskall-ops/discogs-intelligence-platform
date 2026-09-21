@@ -26,7 +26,7 @@ _ACTIONS = (
         "Open Dashboard", ProjectWorkspaceNavigationTarget.DASHBOARD, True
     ),
     ProjectWorkspaceAction(
-        "Open Portfolio Workspace — Not available in this release",
+        "Open Portfolio — use the main toolbar or Dashboard",
         ProjectWorkspaceNavigationTarget.PORTFOLIO,
         False,
     ),

@@ -40,12 +40,11 @@ class DashboardCommandCenterBuilder:
             marketplace.filtered_queue[0] if marketplace.filtered_queue else None
         )
         latest_change = history.changes[-1] if history.changes else None
-        overview = portfolio.overview
         cards = (
             _card(
                 DashboardCommandCardId.PORTFOLIO_SUMMARY, "Portfolio Summary",
-                "Not available in this release", "Open Portfolio Workspace",
-                DashboardNavigationTarget.PORTFOLIO, enabled=False,
+                "Current Collection distribution and concentration", "Open Portfolio",
+                DashboardNavigationTarget.PORTFOLIO,
             ),
             _card(
                 DashboardCommandCardId.PORTFOLIO_HEALTH, "Collection Health",
@@ -90,7 +89,6 @@ class DashboardCommandCenterBuilder:
                 "Quick Actions",
                 "Open an existing workspace without executing intelligence.",
                 (
-                    DashboardNavigationAction("Portfolio", DashboardNavigationTarget.PORTFOLIO, False),
                     DashboardNavigationAction("Portfolio History", DashboardNavigationTarget.PORTFOLIO_HISTORY, False),
                     DashboardNavigationAction("Marketplace", DashboardNavigationTarget.MARKETPLACE_WORKSPACE, False),
                 ),

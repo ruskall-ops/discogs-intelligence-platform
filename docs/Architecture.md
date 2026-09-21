@@ -341,7 +341,8 @@ atomically advances its application-controlled last-opened order and changes
 the active identity through the repository.
 
 Open Project, Create Project, and Refresh Collection remain disabled UI
-placeholders; only navigation to Dashboard and Portfolio Workspace is wired.
+placeholders; Dashboard navigation is wired. The disabled Project Portfolio
+shortcut directs collectors to the toolbar or Dashboard.
 Filesystem selection, collection refresh, and secondary-workspace restoration
 remain future work. The primary desktop session is implemented separately from
 Project persistence and uses active identity only as a compatibility guard.
@@ -362,9 +363,9 @@ completed intelligence, available destinations, and unavailable destinations.
 The command-centre model continues to compose eight deterministic cards:
 Portfolio Summary, Collection Health, Opportunity Highlights, Collection
 Changes, Historical Changes, Marketplace Highlights, Research Summary, and
-Quick Actions. Production-wired Collection actions remain enabled. Portfolio,
-Opportunity, Historical, Marketplace, and Research actions are disabled and
-do not invoke their reusable controllers or open placeholder windows.
+Quick Actions. Production-wired Collection actions and the Current Collection
+Portfolio Summary card are enabled. Opportunity, Historical, Marketplace,
+and Research actions remain disabled.
 
 The earlier Collection Intelligence Dashboard homepage and its dedicated
 Collection Health and Hidden Gems detail views remain active presentation
@@ -414,10 +415,14 @@ ordinary Portfolio failures.
 
 Construction is lazy: composition performs no Portfolio query or calculation.
 The foundation adds no persistence, history recording, provider dependency,
-schema, migration, session, export, or calculation change. Production desktop
-entry points remain disabled until the separately scoped presentation and UI
-slices connect this execution boundary; collectors still cannot operate the
-placeholder Portfolio navigation in this release.
+schema, migration, session, export, or calculation change. The production
+desktop routes the toolbar and Dashboard card to one Current Collection
+Portfolio window with Distribution and Concentration only; the older four-page
+result-supplied workspace stays unavailable. Opening a live window only focuses
+it. Opening after close and explicit refresh execute the pair once. A committed
+CSV import marks a live snapshot out of date before unrelated display refresh;
+refresh failure retains the prior pair and freshness, while an active Collector
+Run blocks open/refresh. Navigation, focus and scrolling perform no execution.
 
 The desktop-neutral presentation boundary projects that immutable pair into a
 closed Current Collection workspace containing Distribution and Concentration
@@ -428,9 +433,10 @@ projection contains no repository, provider, calculation, persistence, or Tk
 dependency and excludes raw diagnostics from public copy. Fixed terminology
 and formatted text derive from closed identifiers and authoritative values;
 the immutable presentation models enforce their structural relationships while
-keeping dynamic evidence labels separate from fixed copy. This remains a
-presentation foundation: no production entry point, window, refresh/freshness
-lifecycle, scrolling, focus, or import invalidation is enabled yet.
+keeping dynamic evidence labels separate from fixed copy. The production
+desktop window uses this presentation for its Distribution and Concentration
+destinations; window, refresh, focus and import invalidation behavior is
+described above.
 
 ### Marketplace Workspace
 

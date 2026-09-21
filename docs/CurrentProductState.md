@@ -89,10 +89,10 @@ required.
 ## Visible but not available in this release
 
 - Project Open, Create, and Project-scoped Refresh;
-- Portfolio Workspace and its destinations;
+- Portfolio Overview, Opportunity Alignment, History and Research destinations;
 - secondary Historical Intelligence workspace;
 - Marketplace Workspace;
-- Dashboard Portfolio, Opportunity, History, Marketplace, and Research cards;
+- Dashboard Opportunity, History, Marketplace, and Research cards;
 - Collection Explorer Weekend Listings, Rare Appearances, Marketplace Activity,
   Listing Lifecycle, Momentum, Stability, Scarcity, and Opportunity.
 
@@ -119,9 +119,7 @@ diagnostics—not the source metrics dictionaries. Execution cleanup covers ever
 Overlap and same-thread re-entry are rejected without starting module work;
 the last complete pair is retained only in memory for that coordinator's
 lifetime. It remains lazy and read-only, identifies only the one database-wide
-Current Collection, and does not make Projects owners of collection data. This is not yet a
-production desktop workflow: Portfolio toolbar, Dashboard, and Project entry
-points remain unavailable until later presentation and UI slices.
+Current Collection, and does not make Projects owners of collection data.
 
 The desktop-neutral Current Collection Portfolio presentation foundation now
 projects that complete pair into exactly two fixed destinations: Distribution
@@ -133,10 +131,14 @@ rounding. The presentation has no Tk, query, write, provider, history, or
 calculation boundary. Its fixed terminology and formatted text are derived
 from closed identifiers and factual values, and its immutable models reject
 contradictory structural combinations without restricting dynamic evidence.
-Portfolio is still unavailable in the production
-desktop: toolbar, Dashboard, and Project controls are unchanged, and the
-window, refresh, stale/import lifecycle, focus, and scrolling work remain for
-the later desktop slice.
+The production desktop now exposes Distribution and Concentration through the
+toolbar and Dashboard Portfolio card. One secondary window retains its immutable
+figures until explicit refresh or close. A committed CSV import marks an open
+snapshot out of date before Dashboard/table refresh; Collector Runs leave its
+ownership/catalogue inputs unchanged and block Portfolio operations while
+active. Refresh failure retains the prior pair and freshness state. The Project
+shortcut stays disabled but directs users to the available entry points.
+Portfolio viewing makes no provider request, history record or database write.
 
 ## Deferred
 
