@@ -11,6 +11,9 @@ from dip.experience.current_collection_portfolio import (
     PortfolioDestination,
 )
 from dip.experience.desktop.app import App
+from dip.experience.desktop.dashboard_command_center_renderer import (
+    DesktopDashboardCommandCard, DesktopDashboardCommandCenterView,
+)
 from dip.experience.desktop.current_collection_portfolio_window import CurrentCollectionPortfolioWindow, portfolio_lines
 from tests.test_current_collection_portfolio_presentation import _outcome, _row
 
@@ -45,6 +48,33 @@ class _Window:
 
 
 class CurrentCollectionPortfolioDesktopTestCase(unittest.TestCase):
+    def test_dashboard_uses_rendered_card_body_on_startup(self):
+        app = App.__new__(App)
+        app.dashboard_command_center_controller = Mock()
+        action = SimpleNamespace(enabled=True, label="Open Portfolio", target=object())
+        app.dashboard_command_center_controller.open.return_value = (
+            DesktopDashboardCommandCenterView(
+                "Dashboard", (DesktopDashboardCommandCard("Portfolio Summary", "Current collection portfolio", (action,)),)
+            )
+        )
+        body = Mock()
+        actions = Mock()
+        actions.winfo_children.return_value = ()
+        app.dashboard_command_vars = {"Portfolio Summary": (body, actions)}
+        app.current_collection_portfolio_execution = object()
+        app._collector_run_active = False
+        for name in (
+            "current_dashboard_homepage", "current_portfolio_overview_result",
+            "current_portfolio_distribution_result", "current_portfolio_concentration_result",
+            "current_portfolio_opportunity_alignment_result", "current_marketplace_workspace_queue",
+            "current_history_snapshot_view_models", "current_history_change_view_models",
+            "current_history_trend_view_models",
+        ):
+            setattr(app, name, None)
+        with patch("dip.experience.desktop.app.ttk.Button"):
+            app._refresh_dashboard_command_center()
+        body.set.assert_called_once_with("Current collection portfolio")
+
     def test_disabled_refresh_keyboard_traversal_in_both_directions(self):
         focused = []
         def control(name, *, disabled=False):

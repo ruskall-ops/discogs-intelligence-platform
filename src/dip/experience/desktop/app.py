@@ -2991,7 +2991,7 @@ class App(tk.Tk):
             )
             body.set(
                 "Portfolio is unavailable." if portfolio_unavailable else
-                card.summary if any(action.enabled for action in card.actions)
+                card.body if any(action.enabled for action in card.actions)
                 else f"{unavailable.heading}\n{unavailable.body}"
             )
             for child in actions.winfo_children():
