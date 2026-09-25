@@ -24,15 +24,21 @@ from dip.app.portfolio_concentration import PortfolioConcentrationExecutionEnvel
 from dip.composition import build_desktop_application_dependencies
 from dip.intelligence import IntelligenceEngine, IntelligenceStatus
 from dip.portfolio_intelligence import (
+    PortfolioConcentrationAnalysisState,
     PortfolioConcentrationEvidenceCoverage,
     PortfolioConcentrationModule,
+    PortfolioDistributionAnalysisState,
+    PortfolioDistributionDimension,
     PortfolioDistributionEvidenceCoverage,
     PortfolioDistributionModule,
 )
 from dip.portfolio_intelligence.portfolio_concentration import (
+    PortfolioConcentrationOutput,
     validate_portfolio_concentration_output,
+    validate_portfolio_concentration_source,
 )
 from dip.portfolio_intelligence.portfolio_distribution import (
+    PortfolioDistributionOutput,
     validate_portfolio_distribution_output,
 )
 from dip.persistence.sqlite import Database
@@ -822,9 +828,22 @@ class CurrentCollectionPortfolioExecutionTestCase(unittest.TestCase):
         self.assertTrue(outcome.succeeded)
 
     def test_real_sqlite_execution_performs_one_read_and_no_writes(self) -> None:
-        with TemporaryDirectory() as directory:
+        with (
+            patch("dip.composition.DiscogsClient") as provider,
+            patch("socket.create_connection") as network,
+            TemporaryDirectory() as directory,
+        ):
             database_path = Path(directory) / "portfolio.sqlite3"
-            database = Database(database_path)
+            with patch(
+                "dip.composition.SETTINGS",
+                SimpleNamespace(
+                    database_path=database_path,
+                    application_version=__version__,
+                    discogs_request_delay_seconds=0,
+                ),
+            ):
+                dependencies = build_desktop_application_dependencies()
+            database = dependencies.database
 
             def manifest(connection):
                 schema = tuple(
@@ -863,32 +882,24 @@ class CurrentCollectionPortfolioExecutionTestCase(unittest.TestCase):
                 return schema, contents
 
             try:
+                first = {
+                    "release_id": "11", "Artist": "Alpha", "Title": "First",
+                    "Label": "Label One", "Format": "Vinyl", "Released": "1969",
+                }
+                second = {
+                    "release_id": "22", "Artist": "Alpha", "Title": "Second",
+                    "Label": "Label Two", "Format": "CD", "Released": "1970",
+                }
+                third = {
+                    "release_id": "33", "Artist": "Beta", "Title": "Third",
+                    "Label": "", "Format": "Vinyl", "Released": "2004",
+                }
                 database.import_releases(
-                    (
-                        {
-                            "release_id": "1",
-                            "Artist": "Artist",
-                            "Title": "Title",
-                            "Label": "Label",
-                            "Format": "Vinyl",
-                            "Released": "2000",
-                        },
-                    ),
+                    (first, first, first, second, second, third),
                     "release_id",
                 )
-                distribution = PortfolioDistributionExecutionService(
-                    database,
-                    IntelligenceEngine((PortfolioDistributionModule(),)),
-                )
-                concentration = PortfolioConcentrationExecutionService(
-                    distribution,
-                    IntelligenceEngine((PortfolioConcentrationModule(),)),
-                )
-                service = CurrentCollectionPortfolioExecutionService(
-                    CurrentCollectionContext(scope_id="current_collection"),
-                    distribution,
-                    concentration,
-                )
+                service = dependencies.current_collection_portfolio_execution
+                self.assertIsInstance(service, CurrentCollectionPortfolioExecutionService)
                 before = manifest(database.conn)
                 table_names = tuple(table for table, _ in before[1])
                 self.assertEqual(
@@ -913,15 +924,128 @@ class CurrentCollectionPortfolioExecutionTestCase(unittest.TestCase):
                 )
                 changes = database.conn.total_changes
                 statements = []
-                with (
-                    patch("dip.composition.DiscogsClient") as provider,
-                    patch("socket.create_connection") as network,
-                ):
-                    database.conn.set_trace_callback(statements.append)
+                database.conn.set_trace_callback(statements.append)
+                try:
                     outcome = service.execute()
+                finally:
                     database.conn.set_trace_callback(None)
                 after = manifest(database.conn)
                 self.assertTrue(outcome.succeeded)
+                self.assertIsNotNone(outcome.portfolio)
+                distribution = outcome.portfolio.distribution
+                concentration = outcome.portfolio.concentration
+                self.assertIs(distribution.status, IntelligenceStatus.COMPLETED)
+                self.assertIs(concentration.status, IntelligenceStatus.COMPLETED)
+                distribution_output = distribution.output
+                concentration_output = concentration.output
+                self.assertIs(type(distribution_output), PortfolioDistributionOutput)
+                self.assertIs(type(concentration_output), PortfolioConcentrationOutput)
+                self.assertIs(distribution_output.analysis_state, PortfolioDistributionAnalysisState.PARTIAL)
+                self.assertIs(concentration_output.analysis_state, PortfolioConcentrationAnalysisState.PARTIAL)
+                self.assertEqual(distribution_output.summary.ownership.unique_owned_releases, 3)
+                self.assertEqual(distribution_output.summary.ownership.total_owned_copies, 6)
+                self.assertEqual(distribution_output.summary.ownership.duplicate_copy_count, 3)
+                self.assertEqual(distribution_output.summary.ownership.valid_owned_releases, 3)
+                self.assertEqual(distribution_output.summary.ownership.malformed_owned_releases, 0)
+                self.assertIs(distribution_output.summary.evidence_coverage, PortfolioDistributionEvidenceCoverage.PARTIAL)
+                self.assertEqual(distribution_output.summary.supported_dimensions, tuple(PortfolioDistributionDimension))
+                self.assertEqual(
+                    tuple((release.release_id, release.quantity) for release in distribution_output.releases),
+                    ((11, 3), (22, 2), (33, 1)),
+                )
+                self.assertNotIn(
+                    "malformed_release_identity",
+                    tuple(value.code.value for value in distribution_output.diagnostics),
+                )
+                expected_categories = {
+                    "artist": (("Alpha", "Alpha", 2, 5, (11, 22)), ("Beta", "Beta", 1, 1, (33,))),
+                    "label": (("Label One", "Label One", 1, 3, (11,)), ("Label Two", "Label Two", 1, 2, (22,))),
+                    "format": (("Vinyl", "Vinyl", 2, 4, (11, 33)), ("CD", "CD", 1, 2, (22,))),
+                    "release_year": (("1969", "1969", 1, 3, (11,)), ("1970", "1970", 1, 2, (22,)), ("2004", "2004", 1, 1, (33,))),
+                    "decade": (("1960", "1960s", 1, 3, (11,)), ("1970", "1970s", 1, 2, (22,)), ("2000", "2000s", 1, 1, (33,))),
+                }
+                self.assertEqual(
+                    tuple(dimension.dimension.value for dimension in distribution_output.dimensions),
+                    tuple(expected_categories),
+                )
+                for dimension in distribution_output.dimensions:
+                    name = dimension.dimension.value
+                    expected = expected_categories[name]
+                    self.assertEqual(dimension.represented_category_count, len(expected))
+                    missing = name == "label"
+                    self.assertEqual(
+                        (dimension.releases_with_metadata, dimension.releases_missing_metadata,
+                         dimension.copies_with_metadata, dimension.copies_missing_metadata,
+                         dimension.release_denominator, dimension.copy_denominator,
+                         dimension.missing_release_ids),
+                        (2, 1, 5, 1, 3, 6, (33,)) if missing else (3, 0, 6, 0, 3, 6, ()),
+                    )
+                    self.assertEqual(dimension.release_metadata_coverage_ratio, Decimal(2) / 3 if missing else Decimal(1))
+                    self.assertEqual(dimension.copy_metadata_coverage_ratio, Decimal(5) / 6 if missing else Decimal(1))
+                    self.assertEqual(
+                        tuple((entry.category_id, entry.display_name, entry.unique_release_count,
+                               entry.owned_copy_count, entry.release_ids) for entry in dimension.entries),
+                        expected,
+                    )
+                    for entry, (_, _, releases, copies, _) in zip(dimension.entries, expected):
+                        self.assertEqual((entry.release_denominator, entry.copy_denominator), (3, 6))
+                        self.assertEqual(entry.release_ratio, Decimal(releases) / 3)
+                        self.assertEqual(entry.copy_ratio, Decimal(copies) / 6)
+                self.assertEqual(
+                    (concentration_output.summary.unique_owned_releases,
+                     concentration_output.summary.total_owned_copies,
+                     concentration_output.summary.duplicate_copy_count),
+                    (3, 6, 3),
+                )
+                self.assertIs(concentration_output.summary.source_evidence_coverage, PortfolioDistributionEvidenceCoverage.PARTIAL)
+                self.assertIs(concentration_output.summary.evidence_coverage, PortfolioConcentrationEvidenceCoverage.PARTIAL)
+                self.assertEqual(concentration_output.summary.supported_dimensions, tuple(expected_categories))
+                self.assertEqual(concentration_output.summary.analysed_dimensions, tuple(expected_categories))
+                self.assertEqual(concentration_output.summary.unusable_dimensions, ())
+                self.assertEqual(concentration_output.provenance.source_module_id, distribution.module_id)
+                self.assertEqual(concentration_output.provenance.source_module_version, distribution.module_version)
+                self.assertEqual(concentration_output.provenance.source_rule_set_version, distribution_output.rule_set_version)
+                self.assertIs(concentration_output.provenance.source_evidence_coverage, PortfolioDistributionEvidenceCoverage.PARTIAL)
+                self.assertEqual(concentration_output.provenance.distribution_provenance, distribution_output.provenance)
+                self.assertEqual(concentration_output.provenance.supported_dimensions, tuple(expected_categories))
+                self.assertEqual(concentration_output.provenance.analysed_dimensions, tuple(expected_categories))
+                self.assertEqual(concentration_output.provenance.unusable_dimensions, ())
+                self.assertEqual(tuple(value.dimension for value in concentration_output.dimensions), tuple(expected_categories))
+                for source, linked in zip(distribution_output.dimensions, concentration_output.dimensions):
+                    expected_releases = source.releases_with_metadata
+                    expected_copies = source.copies_with_metadata
+                    self.assertEqual(linked.represented_category_count, len(source.entries))
+                    self.assertEqual(linked.source_entries, source.entries)
+                    self.assertEqual(linked.missing_release_ids, source.missing_release_ids)
+                    self.assertEqual(linked.release_metadata_coverage_ratio, source.release_metadata_coverage_ratio)
+                    self.assertEqual(linked.copy_metadata_coverage_ratio, source.copy_metadata_coverage_ratio)
+                    self.assertEqual(
+                        (linked.releases_with_metadata, linked.releases_missing_metadata,
+                         linked.copies_with_metadata, linked.copies_missing_metadata),
+                        (source.releases_with_metadata, source.releases_missing_metadata,
+                         source.copies_with_metadata, source.copies_missing_metadata),
+                    )
+                    self.assertEqual(linked.release_concentration.membership_total, expected_releases)
+                    self.assertEqual(linked.copy_concentration.membership_total, expected_copies)
+                    for metric, basis in ((linked.release_concentration, "release"),
+                                          (linked.copy_concentration, "copy")):
+                        represented = expected_releases if basis == "release" else expected_copies
+                        self.assertEqual(metric.represented_category_count, len(source.entries))
+                        self.assertEqual(metric.largest_categories[0].category_id, source.entries[0].category_id)
+                        for top_n, requested in ((metric.top_three, 3), (metric.top_five, 5)):
+                            self.assertEqual(top_n.requested_count, requested)
+                            self.assertEqual(top_n.included_category_count, len(source.entries))
+                            self.assertEqual(top_n.membership_denominator, represented)
+                            self.assertEqual(top_n.membership_numerator, represented)
+                            self.assertEqual(top_n.share, Decimal(1))
+                            self.assertEqual(
+                                tuple((item.category_id, item.release_ids, item.membership_count,
+                                       item.membership_denominator) for item in top_n.contributions),
+                                tuple((entry.category_id, entry.release_ids,
+                                       entry.unique_release_count if basis == "release" else entry.owned_copy_count,
+                                       represented) for entry in source.entries),
+                            )
+                validate_portfolio_concentration_source(distribution_output, concentration_output)
                 self.assertEqual(database.conn.total_changes, changes)
                 self.assertEqual(after, before)
                 provider.assert_not_called()
