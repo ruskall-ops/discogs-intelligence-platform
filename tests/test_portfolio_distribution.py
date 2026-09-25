@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from dataclasses import FrozenInstanceError
 from decimal import Decimal
 import unittest
@@ -87,6 +88,30 @@ class PortfolioDistributionTestCase(unittest.TestCase):
         self.assertIn(PortfolioDistributionDiagnosticCode.CONFLICTING_DUPLICATE_METADATA, codes)
         self.assertIn(PortfolioDistributionDiagnosticCode.MALFORMED_RELEASE_IDENTITY, codes)
         self.assertIn(PortfolioDistributionDiagnosticCode.INVALID_OWNERSHIP_QUANTITY, codes)
+
+    def test_non_mapping_row_remains_malformed(self):
+        class MappingLikeRow:
+            def __init__(self):
+                self.values = row(99, 4, artist="Should Not Be Accepted")
+
+            def keys(self):
+                return self.values.keys()
+
+            def get(self, key, default=None):
+                return self.values.get(key, default)
+
+            def __getitem__(self, key):
+                return self.values[key]
+
+        malformed = MappingLikeRow()
+        self.assertFalse(isinstance(malformed, Mapping))
+        supplied = build_portfolio_distribution_input((malformed, row(1)))
+        self.assertEqual(supplied.malformed_owned_release_count, 1)
+        self.assertEqual(tuple(value.release_id for value in supplied.releases), (1,))
+        self.assertIn(
+            PortfolioDistributionDiagnosticCode.MALFORMED_RELEASE_IDENTITY,
+            tuple(value.code for value in supplied.diagnostics),
+        )
 
     def test_missing_metadata_and_invalid_year_are_visible_without_unknown_categories(self):
         _, output = analyse((

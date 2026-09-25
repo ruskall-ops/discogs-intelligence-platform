@@ -154,7 +154,8 @@ dimensions in this slice.
 ### Ownership and category accounting
 
 The execution service calls the narrow, release-ordered
-`owned_portfolio_metadata_rows` boundary once and converts adapter rows into
+`owned_portfolio_metadata_rows` boundary once. The SQLite adapter detaches
+its rows as plain mappings before application validation converts them into
 immutable facts. Repeated release rows with identical metadata are normalized
 by summing quantity. Conflicting duplicate metadata excludes that identity
 rather than selecting one value silently. Unique releases count once; copy

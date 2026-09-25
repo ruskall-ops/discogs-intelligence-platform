@@ -307,11 +307,11 @@ class Database:
                 """
             ).fetchall()
 
-    def owned_portfolio_metadata_rows(self) -> list[sqlite3.Row]:
-        """Return canonical ownership and release metadata in release order."""
+    def owned_portfolio_metadata_rows(self) -> list[dict[str, object]]:
+        """Return detached ownership and release metadata in release order."""
 
         with self._lock:
-            return self.conn.execute(
+            rows = self.conn.execute(
                 """
                 SELECT
                     co.release_id,
@@ -326,6 +326,7 @@ class Database:
                 ORDER BY co.release_id
                 """
             ).fetchall()
+        return [dict(row) for row in rows]
         
     def start_analysis_run(
         self,
