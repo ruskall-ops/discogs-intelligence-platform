@@ -10,6 +10,7 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
+from time import monotonic
 from unittest.mock import Mock, patch
 
 from dip.config import load_settings
@@ -980,6 +981,23 @@ class SmallWindowSessionTkTestCase(unittest.TestCase):
                 raise RuntimeError("An operational Tk display is required.") from exc
             raise unittest.SkipTest(f"Tk display unavailable: {exc}") from exc
 
+    def _wait_for_geometry(self, app, dimensions, captured_dimensions, callback_error):
+        deadline = monotonic() + 5.0
+        while monotonic() < deadline:
+            app.update()
+            actual = (app.winfo_width(), app.winfo_height())
+            captured = app._last_normal_geometry
+            if actual == dimensions and captured[:2] == captured_dimensions:
+                return
+        self.fail(
+            f"Tk geometry did not settle: expected dimensions={dimensions!r}, "
+            f"expected captured dimensions={captured_dimensions!r}, "
+            f"actual dimensions={(app.winfo_width(), app.winfo_height())!r}, "
+            f"window state={app.state()!r}, "
+            f"captured geometry={app._last_normal_geometry!r}, "
+            f"callback exceptions={callback_error.call_args_list!r}"
+        )
+
     def _exercise_startup_and_close(self, width, height, resize=False):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "small-window.sqlite3"
@@ -1021,11 +1039,15 @@ class SmallWindowSessionTkTestCase(unittest.TestCase):
                     expected = (1050, 650)
                     if resize:
                         app.geometry("1200x700")
-                        app.update()
+                        self._wait_for_geometry(
+                            app, (1200, 700), (1200, 700), callback_error
+                        )
                         retained = app._last_normal_geometry
                         self.assertEqual(retained[:2], (1200, 700))
                         app.geometry("800x560")
-                        app.update()
+                        self._wait_for_geometry(
+                            app, (800, 560), (1200, 700), callback_error
+                        )
                         self.assertEqual(app._last_normal_geometry, retained)
                         expected = (1200, 700)
                     captured = app._capture_session()
