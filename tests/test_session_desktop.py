@@ -994,6 +994,10 @@ class SmallWindowSessionTkTestCase(unittest.TestCase):
             f"expected captured dimensions={captured_dimensions!r}, "
             f"actual dimensions={(app.winfo_width(), app.winfo_height())!r}, "
             f"window state={app.state()!r}, "
+            f"window maximum={app.maxsize()!r}, minimum={app.minsize()!r}, "
+            f"screen dimensions={(app.winfo_screenwidth(), app.winfo_screenheight())!r}, "
+            f"virtual-root bounds={(app.winfo_vrootx(), app.winfo_vrooty(), app.winfo_vrootwidth(), app.winfo_vrootheight())!r}, "
+            f"WM geometry={app.geometry()!r}, "
             f"captured geometry={app._last_normal_geometry!r}, "
             f"callback exceptions={callback_error.call_args_list!r}"
         )
@@ -1038,6 +1042,8 @@ class SmallWindowSessionTkTestCase(unittest.TestCase):
                     self.assertIsNone(app.session_restoration_service.load())
                     expected = (1050, 650)
                     if resize:
+                        # Keep this interaction independent of display-derived Tk limits.
+                        app.maxsize(1200, 700)
                         app.geometry("1200x700")
                         self._wait_for_geometry(
                             app, (1200, 700), (1200, 700), callback_error
