@@ -267,12 +267,10 @@ class App(tk.Tk):
         self._decision_filter_choices = review_filter_choices(
             ReviewFilterField.DECISION, ()
         )
-        self._last_normal_geometry = (
-            SETTINGS.window_width,
-            SETTINGS.window_height,
-            0,
-            0,
+        fallback_width, fallback_height, _, _ = _sanitize_geometry(
+            SETTINGS.window_width, SETTINGS.window_height, 0, 0, None
         )
+        self._last_normal_geometry = (fallback_width, fallback_height, 0, 0)
 
         self.build_ui()
         self.bind("<Configure>", self._record_normal_geometry)

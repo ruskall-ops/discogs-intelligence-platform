@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 import unittest
+import os
+import sqlite3
+from dataclasses import replace
+from contextlib import closing
 import tkinter as tk
 import tempfile
 from datetime import datetime, timezone
@@ -8,6 +12,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+from dip.config import load_settings
 from dip.app.session_restoration import SessionRestorationService
 from dip.app.collector_run import CollectorRunStatus
 from dip.collector_review import (
@@ -937,6 +942,32 @@ class SessionMappingAndCaptureTestCase(unittest.TestCase):
 
 
 class SessionGeometryEdgeTestCase(unittest.TestCase):
+    def test_deterministic_observations_record_valid_then_retain_entire_geometry(self):
+        # Controlled observations exercise production recording, not native events.
+        app = App.__new__(App)
+        app.state = Mock(return_value="normal")
+        app.attributes = Mock(return_value=False)
+        app.update_idletasks = Mock()
+        app.winfo_width = Mock(return_value=1200)
+        app.winfo_height = Mock(return_value=700)
+        app.winfo_x = Mock(return_value=-50)
+        app.winfo_y = Mock(return_value=30)
+        self.assertNotIn("_last_normal_geometry", app.__dict__)
+
+        app._record_normal_geometry(SimpleNamespace(widget=app))
+
+        self.assertEqual(app._last_normal_geometry, (1200, 700, -50, 30))
+        for width, height in ((800, 560), (1049, 700), (1200, 649)):
+            with self.subTest(width=width, height=height):
+                app.winfo_width.return_value = width
+                app.winfo_height.return_value = height
+                app.winfo_x.return_value = 200
+                app.winfo_y.return_value = 100
+
+                app._record_normal_geometry(SimpleNamespace(widget=app))
+
+                self.assertEqual(app._last_normal_geometry, (1200, 700, -50, 30))
+
     def test_root_and_child_configure_events(self):
         app = App.__new__(App)
         app._last_normal_geometry = (1200, 700, 1, 2)
@@ -962,6 +993,140 @@ class SessionGeometryEdgeTestCase(unittest.TestCase):
         )
         self.assertGreaterEqual(width, 1050)
         self.assertGreaterEqual(height, 650)
+
+
+class SmallWindowSessionTkTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        try:
+            root = tk.Tk()
+            root.destroy()
+        except tk.TclError as exc:
+            if os.environ.get("DIP_REQUIRE_TK_TESTS") == "1":
+                raise RuntimeError("An operational Tk display is required.") from exc
+            raise unittest.SkipTest(f"Tk display unavailable: {exc}") from exc
+
+    def _exercise_startup_and_close(self, width, height):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "small-window.sqlite3"
+            with patch.dict(os.environ, {
+                "DIP_WINDOW_WIDTH": str(width),
+                "DIP_WINDOW_HEIGHT": str(height),
+            }, clear=True):
+                settings = replace(load_settings(), database_path=path)
+            app = None
+            with (
+                patch("dip.composition.SETTINGS", settings),
+                patch("dip.experience.desktop.app.SETTINGS", settings),
+                patch(
+                    "dip.composition.DiscogsClient",
+                    side_effect=AssertionError("Unexpected provider construction"),
+                ) as provider,
+                patch(
+                    "socket.socket.connect",
+                    side_effect=AssertionError("Unexpected network access"),
+                ) as network,
+                patch.object(App, "report_callback_exception") as callback_error,
+            ):
+                try:
+                    app = App()
+                    app.update()
+                    self.assertEqual(app.minsize(), (800, 560))
+                    self.assertEqual(
+                        (app.winfo_width(), app.winfo_height()),
+                        (width, max(height, 560)),
+                    )
+                    self.assertEqual(app._last_normal_geometry[:2], (1050, 650))
+                    self.assertEqual(
+                        app._capture_session().window_width, 1050
+                    )
+                    self.assertEqual(
+                        app._capture_session().window_height, 650
+                    )
+                    self.assertIsNone(app.session_restoration_service.load())
+                    expected = (1050, 650)
+                    captured = app._capture_session()
+                    self.assertEqual(
+                        (captured.window_width, captured.window_height), expected
+                    )
+                    schema = tuple(app.db.conn.execute(
+                        "SELECT type, name, tbl_name, sql FROM sqlite_master "
+                        "ORDER BY type, name"
+                    ))
+                    tables = tuple(row[0] for row in app.db.conn.execute(
+                        "SELECT name FROM sqlite_master WHERE type='table' "
+                        "AND name <> 'desktop_session' ORDER BY name"
+                    ))
+
+                    def manifest(connection):
+                        return {
+                            name: tuple(tuple(row) for row in connection.execute(
+                                'SELECT * FROM "' + name.replace('"', '""') + '"'
+                            ))
+                            for name in tables
+                        }
+                    before = manifest(app.db.conn)
+                    with (
+                        patch.object(app, "_confirm_close_without_session") as prompt,
+                        patch.object(app, "destroy", wraps=app.destroy) as destroy,
+                    ):
+                        app.on_close()
+                        prompt.assert_not_called()
+                        destroy.assert_called_once_with()
+                    callback_error.assert_not_called()
+                    with self.assertRaises(sqlite3.ProgrammingError):
+                        app.db.conn.execute("SELECT 1")
+                    with closing(sqlite3.connect(
+                        path.as_uri() + "?mode=ro", uri=True
+                    )) as reopened:
+                        row = reopened.execute(
+                            "SELECT window_width, window_height, format_version "
+                            "FROM desktop_session"
+                        ).fetchone()
+                        self.assertEqual(row, (*expected, 1))
+                        self.assertEqual(manifest(reopened), before)
+                        self.assertEqual(tuple(tuple(row) for row in schema), tuple(
+                            reopened.execute(
+                                "SELECT type, name, tbl_name, sql FROM sqlite_master "
+                                "ORDER BY type, name"
+                            )
+                        ))
+                        self.assertEqual(
+                            reopened.execute("PRAGMA integrity_check").fetchone(),
+                            ("ok",),
+                        )
+                        self.assertEqual(
+                            reopened.execute("PRAGMA quick_check").fetchone(),
+                            ("ok",),
+                        )
+                        self.assertEqual(
+                            reopened.execute("PRAGMA foreign_key_check").fetchall(),
+                            [],
+                        )
+                        self.assertEqual(
+                            reopened.execute(
+                                "SELECT version FROM schema_migrations ORDER BY version"
+                            ).fetchall(),
+                            [(version,) for version in range(1, 8)],
+                        )
+                    provider.assert_not_called()
+                    network.assert_not_called()
+                    self.assertEqual(tuple(Path(directory).iterdir()), (path,))
+                finally:
+                    if app is not None:
+                        try:
+                            app.db.close()
+                        finally:
+                            try:
+                                app.destroy()
+                            except tk.TclError:
+                                pass
+
+    def test_fresh_800_by_560_startup_saves_valid_session_on_normal_close(self):
+        self._exercise_startup_and_close(800, 560)
+
+    def test_lowest_accepted_configuration_saves_valid_session(self):
+        self._exercise_startup_and_close(800, 500)
 
 
 if __name__ == "__main__":
