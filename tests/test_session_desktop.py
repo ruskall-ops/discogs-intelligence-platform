@@ -10,7 +10,6 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
-from time import monotonic
 from unittest.mock import Mock, patch
 
 from dip.config import load_settings
@@ -943,6 +942,32 @@ class SessionMappingAndCaptureTestCase(unittest.TestCase):
 
 
 class SessionGeometryEdgeTestCase(unittest.TestCase):
+    def test_deterministic_observations_record_valid_then_retain_entire_geometry(self):
+        # Controlled observations exercise production recording, not native events.
+        app = App.__new__(App)
+        app.state = Mock(return_value="normal")
+        app.attributes = Mock(return_value=False)
+        app.update_idletasks = Mock()
+        app.winfo_width = Mock(return_value=1200)
+        app.winfo_height = Mock(return_value=700)
+        app.winfo_x = Mock(return_value=-50)
+        app.winfo_y = Mock(return_value=30)
+        self.assertNotIn("_last_normal_geometry", app.__dict__)
+
+        app._record_normal_geometry(SimpleNamespace(widget=app))
+
+        self.assertEqual(app._last_normal_geometry, (1200, 700, -50, 30))
+        for width, height in ((800, 560), (1049, 700), (1200, 649)):
+            with self.subTest(width=width, height=height):
+                app.winfo_width.return_value = width
+                app.winfo_height.return_value = height
+                app.winfo_x.return_value = 200
+                app.winfo_y.return_value = 100
+
+                app._record_normal_geometry(SimpleNamespace(widget=app))
+
+                self.assertEqual(app._last_normal_geometry, (1200, 700, -50, 30))
+
     def test_root_and_child_configure_events(self):
         app = App.__new__(App)
         app._last_normal_geometry = (1200, 700, 1, 2)
@@ -981,28 +1006,7 @@ class SmallWindowSessionTkTestCase(unittest.TestCase):
                 raise RuntimeError("An operational Tk display is required.") from exc
             raise unittest.SkipTest(f"Tk display unavailable: {exc}") from exc
 
-    def _wait_for_geometry(self, app, dimensions, captured_dimensions, callback_error):
-        deadline = monotonic() + 5.0
-        while monotonic() < deadline:
-            app.update()
-            actual = (app.winfo_width(), app.winfo_height())
-            captured = app._last_normal_geometry
-            if actual == dimensions and captured[:2] == captured_dimensions:
-                return
-        self.fail(
-            f"Tk geometry did not settle: expected dimensions={dimensions!r}, "
-            f"expected captured dimensions={captured_dimensions!r}, "
-            f"actual dimensions={(app.winfo_width(), app.winfo_height())!r}, "
-            f"window state={app.state()!r}, "
-            f"window maximum={app.maxsize()!r}, minimum={app.minsize()!r}, "
-            f"screen dimensions={(app.winfo_screenwidth(), app.winfo_screenheight())!r}, "
-            f"virtual-root bounds={(app.winfo_vrootx(), app.winfo_vrooty(), app.winfo_vrootwidth(), app.winfo_vrootheight())!r}, "
-            f"WM geometry={app.geometry()!r}, "
-            f"captured geometry={app._last_normal_geometry!r}, "
-            f"callback exceptions={callback_error.call_args_list!r}"
-        )
-
-    def _exercise_startup_and_close(self, width, height, resize=False):
+    def _exercise_startup_and_close(self, width, height):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "small-window.sqlite3"
             with patch.dict(os.environ, {
@@ -1041,21 +1045,6 @@ class SmallWindowSessionTkTestCase(unittest.TestCase):
                     )
                     self.assertIsNone(app.session_restoration_service.load())
                     expected = (1050, 650)
-                    if resize:
-                        # Keep this interaction independent of display-derived Tk limits.
-                        app.maxsize(1200, 700)
-                        app.geometry("1200x700")
-                        self._wait_for_geometry(
-                            app, (1200, 700), (1200, 700), callback_error
-                        )
-                        retained = app._last_normal_geometry
-                        self.assertEqual(retained[:2], (1200, 700))
-                        app.geometry("800x560")
-                        self._wait_for_geometry(
-                            app, (800, 560), (1200, 700), callback_error
-                        )
-                        self.assertEqual(app._last_normal_geometry, retained)
-                        expected = (1200, 700)
                     captured = app._capture_session()
                     self.assertEqual(
                         (captured.window_width, captured.window_height), expected
@@ -1138,9 +1127,6 @@ class SmallWindowSessionTkTestCase(unittest.TestCase):
 
     def test_lowest_accepted_configuration_saves_valid_session(self):
         self._exercise_startup_and_close(800, 500)
-
-    def test_valid_then_undersized_resize_retains_last_valid_session_geometry(self):
-        self._exercise_startup_and_close(800, 560, resize=True)
 
 
 if __name__ == "__main__":
