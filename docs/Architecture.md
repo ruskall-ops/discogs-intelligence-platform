@@ -33,9 +33,17 @@ The immutable result is cached by the Explorer controller; no provider or write
 is involved.
 
 The five Results Presentation slices are complete and released in v0.6.0.
-Package/runtime metadata is `0.6.0`; this does not change
+The published package/runtime metadata is `0.6.0`; this does not change
 schema, module versions, providers, calculations, or session ownership.
-See the [v0.6.0 release notes](../RELEASE_NOTES.md) for the bounded scope.
+See the [v0.6.0 release notes](../RELEASE_NOTES.md#v060-release-notes) for the bounded scope.
+
+## v0.7.0 preparation — unreleased
+
+Source/runtime and distribution metadata target `0.7.0` for DIP v0.7.0 —
+Current Collection Portfolio. v0.6.0 remains the published release; no new
+release date, tag or publication is claimed. The accepted implementation
+includes the production Portfolio window and session fallback. Preparation
+changes no product functionality, schema, migrations or dependency contracts.
 
 ## Implemented architecture
 
@@ -297,7 +305,14 @@ Normal desktop composition uses `SQLiteProjectRepository`.
 adapter. Project content, insertion and last-opened order, and the active
 Project identity persist across database reopen. The limited desktop session
 defined in [Session Restoration](SessionRestoration.md) persists normal
-geometry, primary navigation, filters, source, and stable selections. It does
+geometry, primary navigation, filters, source, and stable selections.
+The root remains usable at 800×560, while session format 1 requires at least
+1050×650. Startup seeds a session-valid fallback using existing geometry
+sanitization; only valid normal geometry replaces it. Undersized resizing keeps
+the entire previous tuple. Normal close and restore use that valid state without
+repairing stored records or changing the schema. Portfolio child geometry is
+separate and is not persisted. Deterministic recording tests do not establish
+native Configure-event delivery. It does
 not persist calculated workspace models, drafts, processes, or secrets.
 
 ### External providers

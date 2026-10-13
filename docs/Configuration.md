@@ -71,7 +71,7 @@ Current defaults include:
 
 ```text
 Application name: Discogs Intelligence Platform
-Application version: 0.6.0
+Application version: 0.7.0 (source preparation; unreleased)
 Database filename: discogs_intelligence.db
 Discogs request delay: 1.08 seconds
 Window width: 1380
@@ -121,6 +121,14 @@ Examples include:
 - Discogs request delay must not be negative.
 - Window width must be at least 800.
 - Window height must be at least 500.
+
+These are accepted configuration limits, not saved-session dimensions. The
+visible root minimum remains 800×560; a configured height of 500 is raised by
+Tk to that visible minimum. The Portfolio child independently retains 800×560.
+Session format 1 requires at least 1050×650. Startup seeds a valid fallback
+through existing session geometry rules; only later valid normal dimensions
+replace it. Closing a smaller root saves that fallback or last valid geometry,
+so restart may reopen larger. Stored-record validation is unchanged.
 
 Invalid configuration raises a clear error during application startup rather than causing unpredictable behaviour later.
 
@@ -194,8 +202,8 @@ Potential future settings include:
 
 Persistent user preferences and a graphical settings screen are not
 implemented. The default `application_version` is the canonical runtime
-`dip.__version__`, which is 0.6.0 for the released Results Presentation and UX
-Refinement version. DIP v0.6.0 is the current public personal-use release,
+`dip.__version__`, which is 0.7.0 for v0.7.0 preparation — unreleased.
+DIP v0.6.0 is the current public personal-use release,
 dated 2026-09-08. DIP v0.5.1 is the previous public release.
 The `DIP_APPLICATION_VERSION` environment variable may override it for a specific
 runtime without changing package metadata. The Discogs client uses the

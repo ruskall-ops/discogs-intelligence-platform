@@ -1,5 +1,38 @@
 # Changelog
 
+# Version 0.7.0 — Current Collection Portfolio
+
+Draft — unreleased. v0.6.0 remains the current public personal-use release.
+No release date or publication is claimed.
+
+## Accepted implementation
+
+- Added lazy, read-only Current Collection Distribution execution with linked
+  Concentration, and a shared toolbar/Dashboard desktop window with those two
+  destinations only. Overview, Opportunity Alignment, History and Research
+  remain deferred.
+- Preserve immutable figures until explicit refresh or close. Successful CSV
+  import marks an existing result out of date; failed/cancelled imports do not.
+  Failed refresh retains the displayed pair and freshness; active Collector Run
+  blocks opening and refreshing Portfolio.
+- Corrected Dashboard command-card body access and normalized SQLite query rows
+  into ordinary mappings at the adapter boundary, retaining strict input validation.
+- Initialized session-valid fallback geometry for small-window startup without
+  changing root/Portfolio minimums, configuration limits or stored-record rules.
+
+## Preparation and evidence limits
+
+- Source/runtime and distribution metadata target `0.7.0`. Migrations remain
+  exactly 1–7, schema 7 and session format 1; no dependency, module-version,
+  calculation, ownership, provider, export or persistence-contract change.
+- Accepted deterministic geometry recording does not establish native
+  Configure-event delivery. Failure retention used a launcher-only one-shot
+  exception. Earlier inconclusive and incomplete attempts retain their classifications.
+- Exact release-candidate CI, wheel/sdist validation and installed macOS gates
+  remain pending; prior v0.6.0 installed evidence is not v0.7.0 artifact validation.
+
+See the [draft v0.7.0 release notes](RELEASE_NOTES.md).
+
 # Version 0.6.0 — Results Presentation and UX Refinement
 
 Released 2026-09-08. All five presentation slices are complete in v0.6.0.
@@ -43,7 +76,7 @@ v0.5.1 is the previous public release.
 - Providers, persistence, dependencies, and analytical calculations are unchanged
   by release preparation; the canonical application version becomes `0.6.0`.
 
-See the [v0.6.0 release notes](RELEASE_NOTES.md) for scope and limitations.
+See the [v0.6.0 release notes](RELEASE_NOTES.md#v060-release-notes) for scope and limitations.
 
 # Version 0.5.1 — Marketplace Change Explorer
 

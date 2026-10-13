@@ -27,7 +27,7 @@ from tests.test_portfolio_workspace import presentation as portfolio_presentatio
 
 
 class ReleaseHardeningTestCase(unittest.TestCase):
-    def test_current_documents_describe_the_completed_public_release(self) -> None:
+    def test_current_documents_distinguish_preparation_from_published_release(self) -> None:
         root = Path(__file__).resolve().parents[1]
         names = (
             "README.md",
@@ -54,6 +54,7 @@ class ReleaseHardeningTestCase(unittest.TestCase):
             "docs/CurrentProductState.md",
             "docs/Configuration.md",
         }
+        preparation_names = current_state_names - {"docs/BackupAndRecovery.md"}
         for name, document in documents:
             with self.subTest(document=name):
                 normalized = " ".join(document.lower().split())
@@ -65,6 +66,12 @@ class ReleaseHardeningTestCase(unittest.TestCase):
                     )
                     self.assertIn("2026-09-08", normalized)
                     self.assertIn("is the previous public release", normalized)
+                    if name in preparation_names:
+                        self.assertIn("v0.7.0", normalized)
+                        self.assertIn("preparation", normalized)
+                        self.assertIn("unreleased", normalized)
+                        self.assertNotIn("v0.7.0 is the current public", normalized)
+                        self.assertNotIn("v0.7.0 is released", normalized)
                     for stale in (
                         "v0.6.0 presentation candidate",
                         "v0.6.0 candidate",
@@ -89,22 +96,36 @@ class ReleaseHardeningTestCase(unittest.TestCase):
             changelog,
         )
         self.assertIn("Released 2 August 2026.", changelog)
-        candidate_changelog = changelog.split("# Version 0.5.1", 1)[0]
+        candidate_changelog, historical_changelog = changelog.split(
+            "# Version 0.6.0", 1
+        )
+        self.assertIn("Version 0.7.0 — Current Collection Portfolio", candidate_changelog)
+        self.assertIn("Draft — unreleased.", candidate_changelog)
+        historical_changelog = "# Version 0.6.0" + historical_changelog.split(
+            "# Version 0.5.1", 1
+        )[0]
         self.assertIn(
             "Version 0.6.0 — Results Presentation and UX Refinement",
-            candidate_changelog,
+            historical_changelog,
         )
-        self.assertIn("Released 2026-09-08.", candidate_changelog)
-        self.assertNotIn("Unreleased.", candidate_changelog)
-        self.assertNotIn("publication is not", candidate_changelog)
+        self.assertIn("Released 2026-09-08.", historical_changelog)
+        self.assertNotIn("Unreleased.", historical_changelog)
+        self.assertNotIn("publication is not", historical_changelog)
         notes = (root / "RELEASE_NOTES.md").read_text(encoding="utf-8")
-        self.assertIn("**Released 2026-09-08.**", notes)
-        self.assertNotIn("Draft — unreleased", notes)
-        self.assertIn("7141911b867cddd7a1031f4c8a8132df7194351a", notes)
-        self.assertIn(
-            "migrations exactly 1–7 and no migration 8", " ".join(notes.split())
+        candidate_notes, historical_notes = notes.split(
+            "## DIP v0.6.0 — Results Presentation and UX Refinement", 1
         )
-        self.assertIn("Legacy Collector Run review analysis", notes)
+        self.assertTrue(notes.startswith("# DIP v0.7.0 — Current Collection Portfolio\n"))
+        self.assertIn("**Draft — unreleased.**", candidate_notes)
+        self.assertNotIn("**Released", candidate_notes)
+        self.assertIn("**Released 2026-09-08.**", historical_notes)
+        self.assertNotIn("Draft — unreleased", historical_notes)
+        self.assertIn("7141911b867cddd7a1031f4c8a8132df7194351a", historical_notes)
+        self.assertIn(
+            "migrations exactly 1–7 and no migration 8",
+            " ".join(historical_notes.split()),
+        )
+        self.assertIn("Legacy Collector Run review analysis", historical_notes)
 
         database_document = dict(documents)["docs/Database.md"]
         database_contract = " ".join(database_document.lower().split())
@@ -127,7 +148,12 @@ class ReleaseHardeningTestCase(unittest.TestCase):
         )
         follow_on_position = roadmap.index("Candidate follow-on slices include:")
         self.assertLess(release_position, milestone_position)
-        self.assertLess(milestone_position, follow_on_position)
+        preparation_position = roadmap.index(
+            "## Version 0.7.0 — Current Collection Portfolio"
+        )
+        self.assertLess(milestone_position, preparation_position)
+        self.assertLess(preparation_position, follow_on_position)
+        self.assertIn("Accepted implementation; release preparation — unreleased", roadmap)
         self.assertIn("**Status: Released 2026-09-08**", roadmap)
         self.assertIn(
             "five-slice milestone is complete and released",
@@ -145,23 +171,23 @@ class ReleaseHardeningTestCase(unittest.TestCase):
         self.assertIn("provider calls during tab switching", roadmap)
         self.assertIn("commercial-distribution work", roadmap)
 
-    def test_release_checklist_targets_v0_6_0_in_required_order(self) -> None:
+    def test_release_checklist_targets_v0_7_0_in_required_order(self) -> None:
         root = Path(__file__).resolve().parents[1]
         checklist = (root / "docs/ReleaseChecklist.md").read_text(
             encoding="utf-8"
         )
 
-        self.assertIn("| `RELEASE_VERSION` | `0.6.0` |", checklist)
-        self.assertIn("| `RELEASE_TAG` | `v0.6.0` |", checklist)
+        self.assertIn("| `RELEASE_VERSION` | `0.7.0` |", checklist)
+        self.assertIn("| `RELEASE_TAG` | `v0.7.0` |", checklist)
         self.assertIn(
-            "| `RELEASE_BRANCH` | `release/v0.6.0-publication-state` |",
+            "| `RELEASE_BRANCH` | `chore/v0.7.0-release-preparation` |",
             checklist,
         )
         self.assertIn(
-            "| `RELEASE_TITLE` | `DIP v0.6.0 — Results Presentation and UX Refinement` |",
+            "| `RELEASE_TITLE` | `DIP v0.7.0 — Current Collection Portfolio` |",
             checklist,
         )
-        self.assertIn("| `PREVIOUS_TAG` | `v0.5.1` |", checklist)
+        self.assertIn("| `PREVIOUS_TAG` | `v0.6.0` |", checklist)
 
         self.assertNotIn("git tag -a v0.5.0", checklist)
         self.assertNotIn("git push origin v0.5.0", checklist)
@@ -169,18 +195,25 @@ class ReleaseHardeningTestCase(unittest.TestCase):
         self.assertNotIn("git tag -a v0.5.1", checklist)
         self.assertNotIn("git push origin v0.5.1", checklist)
         self.assertNotIn("gh release create v0.5.1", checklist)
-        self.assertIn("git tag -a v0.6.0", checklist)
-        self.assertIn("git push origin v0.6.0", checklist)
-        self.assertIn("gh release create v0.6.0", checklist)
+        for previous in ("v0.5.0", "v0.5.1", "v0.6.0"):
+            for command in ("git tag -a", "git push origin", "gh release create"):
+                self.assertNotIn(f"{command} {previous}", checklist)
+        self.assertIn("v0.7.0 preparation — unreleased", checklist)
+        self.assertIn("Broader GUI/checklist applicability remains pending", checklist)
+        self.assertIn("no gate below is waived", checklist)
+        self.assertIn("No exception is approved for personal-data or provider testing", checklist)
+        self.assertIn("git tag -a v0.7.0", checklist)
+        self.assertIn("git push origin v0.7.0", checklist)
+        self.assertIn("gh release create v0.7.0", checklist)
         self.assertIn("run=7 pass=7 skip=0 error=0 failure=0", checklist)
         self.assertIn("each remain subject to explicit authorisation", checklist)
 
         ordered_gates = (
-            "1. Prepare the final publication-state wording",
+            "1. Prepare the draft, unreleased candidate wording",
             "2. Validate the complete candidate",
             "3. Obtain independent read-only approval",
-            "4. Commit the approved publication-state alignment",
-            "5. Push only the `release/v0.6.0-publication-state` branch",
+            "4. Commit the approved release preparation",
+            "5. Push only the `chore/v0.7.0-release-preparation` branch",
             "6. Open a pull request",
             "7. Require Linux and macOS CI to pass",
             "8. Review and merge the pull request",
@@ -188,9 +221,9 @@ class ReleaseHardeningTestCase(unittest.TestCase):
             "10. Verify that local `main` equals `origin/main`",
             "11. Rebuild and install the wheel and source distribution",
             "12. Perform the final installed macOS verification",
-            "13. Create the annotated `v0.6.0` tag",
-            "14. Verify locally that `v0.6.0^{commit}`",
-            "15. Push only the `v0.6.0` tag",
+            "13. Create the annotated `v0.7.0` tag",
+            "14. Verify locally that `v0.7.0^{commit}`",
+            "15. Push only the `v0.7.0` tag",
             "16. Create the GitHub release titled",
             "17. Verify the GitHub release title",
             "18. Complete post-release documentation housekeeping",
@@ -200,16 +233,24 @@ class ReleaseHardeningTestCase(unittest.TestCase):
 
         self.assertIn("## Manual GitHub website path", checklist)
         self.assertIn("Draft a new release", checklist)
-        self.assertIn("Select the existing verified tag `v0.6.0`", checklist)
+        self.assertIn("Select the existing verified tag `v0.7.0`", checklist)
         self.assertIn("## Optional GitHub CLI path", checklist)
 
-    def test_runtime_packaging_entry_point_and_schema_contract(self) -> None:
-        self.assertEqual(dip.__version__, "0.6.0")
+    def test_source_runtime_and_schema_resource_contract(self) -> None:
+        self.assertEqual(dip.__version__, "0.7.0")
         root = Path(__file__).resolve().parents[1]
         project = tomllib.loads(
             (root / "pyproject.toml").read_text(encoding="utf-8")
         )
         self.assertEqual(project["project"]["version"], dip.__version__)
+        schema = importlib.resources.files("dip.persistence.sqlite").joinpath(
+            "schema.sql"
+        )
+        self.assertTrue(schema.is_file())
+
+    def test_installed_distribution_entry_point_contract(self) -> None:
+        # This gate requires a separately authorized 0.7.0 installation.
+        self.assertEqual(dip.__version__, "0.7.0")
         distribution = importlib.metadata.distribution(
             "discogs-intelligence-platform"
         )
@@ -218,10 +259,28 @@ class ReleaseHardeningTestCase(unittest.TestCase):
             value.name: value.value for value in distribution.entry_points
         }
         self.assertEqual(entry_points["dip"], "dip.app:main")
-        schema = importlib.resources.files("dip.persistence.sqlite").joinpath(
-            "schema.sql"
-        )
-        self.assertTrue(schema.is_file())
+
+    def test_preparation_preserves_evidence_limits_and_session_contract(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        notes = (root / "RELEASE_NOTES.md").read_text(encoding="utf-8")
+        candidate = " ".join(notes.split("## DIP v0.6.0", 1)[0].split())
+        for fact in (
+            "one shared window", "Distribution and Concentration only",
+            "failed or cancelled import does not", "previous freshness",
+            "does not establish native Configure-event delivery",
+            "launcher-only one-shot repository exception",
+            "SQLite-lock attempts remain inconclusive",
+            "evidence-loss attempt remains incomplete",
+            "final database state unverifiable",
+            "Exact preparation-head CI pending",
+            "No exception is approved for personal-data or provider testing",
+        ):
+            with self.subTest(fact=fact):
+                self.assertIn(fact, candidate)
+        session = " ".join((root / "docs/SessionRestoration.md").read_text().split())
+        for fact in ("800×560", "1050×650", "No startup session write",
+                     "retains the complete last-valid tuple", "never silently repaired"):
+            self.assertIn(fact, session)
 
     def test_fresh_database_has_current_migrations_and_no_session(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

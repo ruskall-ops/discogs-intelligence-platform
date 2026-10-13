@@ -202,8 +202,28 @@ class PresentationTerminologyTestCase(unittest.TestCase):
             self.assertIn(label, combined)
         self.assertIn("unchanged", documents["docs/ReportingEngine.md"])
         self.assertIn("extend the previous v0.5.1 scope", documents["docs/Roadmap.md"])
-        self.assertIn("current public personal-use release", documents["README.md"])
-        self.assertNotIn("unreleased", documents["README.md"].lower())
+        readme = " ".join(documents["README.md"].lower().split())
+        preparation, published = readme.split(
+            "**version 0.6.0 — results presentation and ux refinement**", 1
+        )
+        published = published.split("**previous public release:", 1)[0]
+        self.assertIn(
+            "v0.6.0 is the current public personal-use release, dated 2026-09-08",
+            published,
+        )
+        self.assertIn("complete and released", published)
+        self.assertNotIn("unreleased", published)
+        self.assertIn("v0.7.0 preparation — unreleased", preparation)
+        self.assertIn("no release date, tag or publication is claimed", preparation)
+        self.assertIn("v0.6.0 remains the published release", preparation)
+        for premature in (
+            "v0.7.0 is published", "v0.7.0 is released",
+            "v0.7.0 is the current public", "v0.7.0 is the latest public",
+            "v0.7.0 has been published", "v0.7.0 has been released",
+            "published v0.7.0", "released v0.7.0",
+        ):
+            with self.subTest(premature=premature):
+                self.assertNotIn(premature, readme)
         self.assertNotIn("VoiceOver certified", combined)
 
 
