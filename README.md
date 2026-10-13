@@ -16,11 +16,18 @@ for every buying, selling, pricing, and collection decision.
 
 ## Current release and development state
 
+**v0.7.0 preparation — unreleased:** DIP v0.7.0 — Current Collection
+Portfolio targets the accepted implementation on main. Source/runtime and
+package metadata target `0.7.0`; no release date, tag or publication is claimed.
+v0.6.0 remains the published release. Current Collection Portfolio exposes
+Distribution and Concentration through the toolbar and Dashboard in one shared
+secondary window. Broader Portfolio destinations remain deferred.
+
 **Version 0.6.0 — Results Presentation and UX Refinement**
 
 DIP v0.6.0 is the current public personal-use release, dated 2026-09-08. The
 five-slice Results Presentation and UX Refinement milestone is complete and
-released. See the [v0.6.0 release notes](RELEASE_NOTES.md) and
+released. See the [v0.6.0 release notes](RELEASE_NOTES.md#v060-release-notes) and
 [release checklist](docs/ReleaseChecklist.md) for its bounded scope and
 publication procedure.
 
@@ -122,10 +129,17 @@ recalculate the original modules or predict a future state.
   destinations.
 - **Collection Explorer** provides production-wired Overview, Collection
   Health, Hidden Gems, Collection Trends, Price Changes, and Supply Changes.
-- Portfolio, secondary Historical Intelligence, Marketplace Workspace, and
-  the remaining Marketplace-oriented Explorer destinations retain architectural
-  foundations but are visibly disabled as **Not available in this release**
-  until a real production data path supplies them.
+- **Current Collection Portfolio**, accepted for v0.7.0 preparation, provides
+  Distribution and Concentration from the toolbar and Dashboard. Opening uses
+  one execution; focus, navigation and scrolling do not recalculate. Explicit
+  refresh replaces the retained pair only on success. Committed CSV import
+  marks it out of date; failed or cancelled imports do not. Collector Run blocks
+  Portfolio open/refresh while active. Viewing makes no provider request,
+  history record or database write.
+- Portfolio Overview, Opportunity Alignment, History and Research, secondary
+  Historical Intelligence, Marketplace Workspace, and the remaining
+  Marketplace-oriented Explorer destinations remain disabled as
+  **Not available in this release**. Project partitioning remains deferred.
 
 Workspace builders compose immutable presentation models. They do not execute
 intelligence, query persistence, or duplicate application and presentation

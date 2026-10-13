@@ -17,11 +17,18 @@ decisions.
 
 ## Current release and development state
 
+**v0.7.0 preparation — unreleased:** DIP v0.7.0 — Current Collection
+Portfolio targets the accepted implementation on main. Source/runtime and
+package metadata target `0.7.0`; no release date, tag or publication is claimed.
+v0.6.0 remains the published release. Current Collection Portfolio exposes
+Distribution and Concentration through the toolbar and Dashboard in one shared
+secondary window. Broader Portfolio destinations remain deferred.
+
 **Version 0.6.0 — Results Presentation and UX Refinement**
 
 DIP v0.6.0 is the current public personal-use release, dated 2026-09-08. The
 five-slice Results Presentation and UX Refinement milestone is complete and
-released. See the [v0.6.0 release notes](RELEASE_NOTES.md) and
+released. See the [v0.6.0 release notes](RELEASE_NOTES.md#v060-release-notes) and
 [release checklist](docs/ReleaseChecklist.md).
 
 **Previous public release: Version 0.5.1 — Marketplace Change Explorer**

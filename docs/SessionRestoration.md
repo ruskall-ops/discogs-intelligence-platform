@@ -80,6 +80,18 @@ Project-scoped.
 
 ## Geometry safety
 
+The accepted main implementation for v0.7.0 preparation — unreleased corrects
+small-window startup fallback; it does not change session format 1 or migration 7.
+Root and Portfolio child minimums remain separate 800×560 limits. Configuration
+still accepts width 800 and height 500; the root's visible minimum raises height
+to 560. Session models and SQLite retain a 1050×650 minimum. Startup initializes
+fallback dimensions through the existing sanitizer, with valid default coordinates.
+No startup session write is added. Only a later valid normal geometry replaces
+the fallback. Undersized resizing retains the complete last-valid tuple, including
+coordinates. Graceful close saves that valid state; restart can reopen larger
+than the previously visible undersized root. Stored rows are never silently repaired.
+Deterministic recording coverage does not establish native Configure-event delivery.
+
 Only the last valid normal geometry is captured. Minimized, maximized, zoomed,
 full-screen, and secondary-window state are neither saved nor restored.
 Collection Explorer destination selection, scroll position, stale banners, and

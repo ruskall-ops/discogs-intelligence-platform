@@ -7,7 +7,7 @@ foundations. It complements the product evolution in the [Roadmap](Roadmap.md)
 without treating the presence of a model, builder, or renderer as proof of a
 complete desktop feature.
 
-This document records the current released baseline. DIP v0.6.0 is the current
+This document distinguishes the published baseline from accepted implementation and release preparation. DIP v0.6.0 is the current
 public personal-use release, dated 2026-09-08. DIP v0.5.1 is the previous public
 release. The v0.6.0 target includes the
 truthful transactional CSV-import feedback correction. Application version
@@ -15,6 +15,14 @@ truthful transactional CSV-import feedback correction. Application version
 version 7 (migrations 1–7). macOS is the primary personal-use platform; Linux
 receives automated headless compatibility validation, and Windows is not
 supported.
+
+## v0.7.0 preparation — unreleased
+
+DIP v0.7.0 — Current Collection Portfolio is the preparation target. Source/runtime
+and distribution metadata target `0.7.0`; v0.6.0 remains the published release.
+The accepted main baseline includes Portfolio and the small-window session
+fallback. No release date, tag or publication is claimed. Exact-candidate
+artifact/installed validation and broader GUI gate applicability remain pending.
 
 ## Production-wired and usable
 
@@ -73,9 +81,55 @@ output **Legacy Collector Run review analysis**, without changing any stored
 or exported calculation value. This
 work extends the previous v0.5.1 capability boundary.
 
-The [v0.6.0 release notes](../RELEASE_NOTES.md) and
+The [v0.6.0 release notes](../RELEASE_NOTES.md#v060-release-notes) and
 [release checklist](ReleaseChecklist.md) record the released scope and
 publication procedure.
+
+## Accepted Current Collection Portfolio implementation
+
+This is accepted functionality on main for v0.7.0 preparation, not a claim about
+the published v0.6.0 artifact.
+
+The Current Collection Portfolio application path executes the
+existing Distribution module once and pass that exact typed result to
+Concentration once. It validates module/rule-set versions, typed outputs, and
+status/state consistency before publishing a separate immutable pair. Concrete
+version-1 validators in each owning domain reconstruct the typed outputs, and
+an execution envelope plus source-consistency check prevents independently
+calculated results from being paired. The bounded application snapshots retain
+only module metadata, explanatory text, the typed output, evidence, and
+diagnostics—not the source metrics dictionaries. Execution cleanup covers every exit while system-level
+`BaseException` signals continue to propagate.
+Overlap and same-thread re-entry are rejected without starting module work;
+the last complete pair is retained only in memory for that coordinator's
+lifetime. It remains lazy and read-only, identifies only the one database-wide
+Current Collection, and does not make Projects owners of collection data.
+
+The desktop-neutral Current Collection Portfolio presentation
+projects that complete pair into exactly two fixed destinations: Distribution
+and Concentration. It exposes collection totals, full-denominator metadata
+coverage, represented-membership concentration measures, provenance, and
+truthful missing/unavailable states. Domain Decimal values and ordering remain
+unchanged; secondary percentages use two-decimal `ROUND_HALF_EVEN` display
+rounding. The presentation has no Tk, query, write, provider, history, or
+calculation boundary. Its fixed terminology and formatted text are derived
+from closed identifiers and factual values, and its immutable models reject
+contradictory structural combinations without restricting dynamic evidence.
+The production desktop now exposes Distribution and Concentration through the
+toolbar and Dashboard Portfolio card. One secondary window retains its immutable
+figures until explicit refresh or close. A committed CSV import marks an open
+snapshot out of date before Dashboard/table refresh; Collector Runs leave its
+ownership/catalogue inputs unchanged and block Portfolio operations while
+active. Refresh failure retains the prior pair and freshness state. The Project
+shortcut stays disabled but directs users to the available entry points.
+Portfolio viewing makes no provider request, history record or database write.
+
+Small-window startup now uses session-valid fallback geometry. Root and Portfolio
+child minimums remain 800×560; session format 1 retains its 1050×650 minimum.
+Normal close saves the fallback or last valid normal geometry, and restart may
+therefore reopen larger than the small visible window. Schema and session
+contracts remain unchanged. Deterministic retention coverage is not native
+Configure-event verification; installed v0.7.0 smoke remains pending.
 
 ## Available after sufficient history
 
@@ -105,40 +159,6 @@ DIP contains immutable models, intelligence modules, presentation services,
 builders, and renderers for broader Marketplace, Portfolio, history, and
 research experiences. They remain reusable foundations until a production
 execution and data-supply path is connected.
-
-The Current Collection Portfolio application foundation can now execute the
-existing Distribution module once and pass that exact typed result to
-Concentration once. It validates module/rule-set versions, typed outputs, and
-status/state consistency before publishing a separate immutable pair. Concrete
-version-1 validators in each owning domain reconstruct the typed outputs, and
-an execution envelope plus source-consistency check prevents independently
-calculated results from being paired. The bounded application snapshots retain
-only module metadata, explanatory text, the typed output, evidence, and
-diagnostics—not the source metrics dictionaries. Execution cleanup covers every exit while system-level
-`BaseException` signals continue to propagate.
-Overlap and same-thread re-entry are rejected without starting module work;
-the last complete pair is retained only in memory for that coordinator's
-lifetime. It remains lazy and read-only, identifies only the one database-wide
-Current Collection, and does not make Projects owners of collection data.
-
-The desktop-neutral Current Collection Portfolio presentation foundation now
-projects that complete pair into exactly two fixed destinations: Distribution
-and Concentration. It exposes collection totals, full-denominator metadata
-coverage, represented-membership concentration measures, provenance, and
-truthful missing/unavailable states. Domain Decimal values and ordering remain
-unchanged; secondary percentages use two-decimal `ROUND_HALF_EVEN` display
-rounding. The presentation has no Tk, query, write, provider, history, or
-calculation boundary. Its fixed terminology and formatted text are derived
-from closed identifiers and factual values, and its immutable models reject
-contradictory structural combinations without restricting dynamic evidence.
-The production desktop now exposes Distribution and Concentration through the
-toolbar and Dashboard Portfolio card. One secondary window retains its immutable
-figures until explicit refresh or close. A committed CSV import marks an open
-snapshot out of date before Dashboard/table refresh; Collector Runs leave its
-ownership/catalogue inputs unchanged and block Portfolio operations while
-active. Refresh failure retains the prior pair and freshness state. The Project
-shortcut stays disabled but directs users to the available entry points.
-Portfolio viewing makes no provider request, history record or database write.
 
 ## Deferred
 

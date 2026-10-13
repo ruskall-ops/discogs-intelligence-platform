@@ -210,7 +210,7 @@ The released target also includes truthful transactional CSV-import feedback.
 
 Version `0.6.0` is the current public personal-use release. The five-slice
 milestone is complete and released; v0.5.1 is the previous public release. See
-the [v0.6.0 release notes](../RELEASE_NOTES.md) and
+the [v0.6.0 release notes](../RELEASE_NOTES.md#v060-release-notes) and
 [release checklist](ReleaseChecklist.md).
 
 This milestone makes existing factual results easier to understand, navigate,
@@ -310,6 +310,33 @@ conclusions. It also excludes presentation-driven schema changes, persisted
 presentation caches, provider calls during tab switching, automatic refresh or
 Collector Run, Project partitioning, Dashboard Marketplace activation without
 separate approval, and web, cloud, account, or commercial-distribution work.
+
+## Version 0.7.0 — Current Collection Portfolio
+
+**Status: Accepted implementation; release preparation — unreleased**
+
+v0.6.0 remains the current public personal-use release. The three bounded
+Current Collection Portfolio slices are accepted: lazy read-only Distribution
+execution linked to Concentration; immutable desktop-neutral presentation;
+and a shared toolbar/Dashboard window for those two destinations only.
+Dashboard startup, SQLite-row adapter and small-window session fallback fixes
+are merged. Preparation adds version metadata and truthful documentation only.
+No release date, tag, publication or additional development slice is approved.
+
+Execution occurs only on new open or explicit refresh. Committed CSV import
+marks an open result stale; failed/cancelled import does not. Failed refresh
+retains the pair and freshness; active Collector Run blocks open/refresh.
+Providers, calculations, ownership, persistence contracts, schema 7, migrations
+1–7 and session format 1 remain protected. Overview, Opportunity Alignment,
+History, Research and Project partitioning remain deferred.
+
+Existing acceptance remains valid. Exact v0.7.0 candidate CI, artifacts and
+installed macOS checks are pending. Deterministic geometry recording is not
+native Configure-event coverage; one-shot launcher failure injection does not
+validate SQLite-lock failure. Earlier inconclusive/incomplete attempts retain
+those classifications. See [draft release notes](../RELEASE_NOTES.md).
+
+### Directional follow-ons, not approved implementation slices
 
 Candidate follow-on slices include:
 
