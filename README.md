@@ -16,24 +16,27 @@ for every buying, selling, pricing, and collection decision.
 
 ## Current release and development state
 
-**v0.7.0 preparation — unreleased:** DIP v0.7.0 — Current Collection
-Portfolio targets the accepted implementation on main. Source/runtime and
-package metadata target `0.7.0`; no release date, tag or publication is claimed.
-v0.6.0 remains the published release. Current Collection Portfolio exposes
+**DIP v0.7.0 — Current Collection Portfolio: Released 2026-10-16.**
+
+DIP v0.7.0 is the current public personal-use release, released 2026-10-16.
+DIP v0.6.0, released 2026-09-08, is the previous public release.
+Runtime and package version are `0.7.0`. Current Collection Portfolio exposes
 Distribution and Concentration through the toolbar and Dashboard in one shared
 secondary window. Broader Portfolio destinations remain deferred.
+See the [published v0.7.0 release](https://github.com/ruskall-ops/discogs-intelligence-platform/releases/tag/v0.7.0) and
+[release notes](RELEASE_NOTES.md) for compatibility and evidence limitations.
 
 **Version 0.6.0 — Results Presentation and UX Refinement**
 
-DIP v0.6.0 is the current public personal-use release, dated 2026-09-08. The
+DIP v0.6.0 was released on 2026-09-08. The
 five-slice Results Presentation and UX Refinement milestone is complete and
 released. See the [v0.6.0 release notes](RELEASE_NOTES.md#v060-release-notes) and
 [release checklist](docs/ReleaseChecklist.md) for its bounded scope and
 publication procedure.
 
-**Previous public release: Version 0.5.1 — Marketplace Change Explorer**
+**Earlier public release: Version 0.5.1 — Marketplace Change Explorer**
 
-DIP v0.5.1 was released on 2 August 2026 and is the previous public release.
+DIP v0.5.1 was released on 2 August 2026 and preceded v0.6.0.
 Version 0.5 connects the single-collection
 Collector Run to canonical Marketplace History, Collection Intelligence,
 immutable Intelligence History, Dashboard and Collector Review workflows, the
@@ -129,7 +132,7 @@ recalculate the original modules or predict a future state.
   destinations.
 - **Collection Explorer** provides production-wired Overview, Collection
   Health, Hidden Gems, Collection Trends, Price Changes, and Supply Changes.
-- **Current Collection Portfolio**, accepted for v0.7.0 preparation, provides
+- **Current Collection Portfolio**, released in v0.7.0, provides
   Distribution and Concentration from the toolbar and Dashboard. Opening uses
   one execution; focus, navigation and scrolling do not recalculate. Explicit
   refresh replaces the retained pair only on success. Committed CSV import
@@ -242,11 +245,13 @@ src/dip/
 - **0.3 — Marketplace Intelligence and Decision Support:** released.
 - **0.4 — SQLite Project Persistence:** released.
 - **0.5.0 — Collector Workflow Foundation:** released on 31 July 2026.
-- **0.5.1 — Marketplace Change Explorer:** released on 2 August 2026; previous
+- **0.5.1 — Marketplace Change Explorer:** released on 2 August 2026; an earlier
   public release. Its package/runtime version is 0.5.1. The released target
   includes truthful transactional CSV-import feedback.
-- **0.6.0 — Results Presentation and UX Refinement:** current public release,
+- **0.6.0 — Results Presentation and UX Refinement:** previous public release,
   dated 2026-09-08; all five slices completed and released.
+- **0.7.0 — Current Collection Portfolio:** current public release,
+  released 2026-10-16; Distribution, Concentration and the small-window session fix.
 
 See the [Roadmap](docs/Roadmap.md) for release scope and future direction.
 

@@ -203,27 +203,33 @@ class PresentationTerminologyTestCase(unittest.TestCase):
         self.assertIn("unchanged", documents["docs/ReportingEngine.md"])
         self.assertIn("extend the previous v0.5.1 scope", documents["docs/Roadmap.md"])
         readme = " ".join(documents["README.md"].lower().split())
-        preparation, published = readme.split(
+        current, historical = readme.split(
             "**version 0.6.0 — results presentation and ux refinement**", 1
         )
-        published = published.split("**previous public release:", 1)[0]
+        historical = historical.split("**earlier public release:", 1)[0]
         self.assertIn(
-            "v0.6.0 is the current public personal-use release, dated 2026-09-08",
-            published,
+            "v0.7.0 is the current public personal-use release, released 2026-10-16",
+            current,
         )
-        self.assertIn("complete and released", published)
-        self.assertNotIn("unreleased", published)
-        self.assertIn("v0.7.0 preparation — unreleased", preparation)
-        self.assertIn("no release date, tag or publication is claimed", preparation)
-        self.assertIn("v0.6.0 remains the published release", preparation)
-        for premature in (
-            "v0.7.0 is published", "v0.7.0 is released",
-            "v0.7.0 is the current public", "v0.7.0 is the latest public",
-            "v0.7.0 has been published", "v0.7.0 has been released",
-            "published v0.7.0", "released v0.7.0",
+        self.assertIn(
+            "v0.6.0, released 2026-09-08, is the previous public release",
+            current,
+        )
+        self.assertIn("/releases/tag/v0.7.0", current)
+        self.assertIn("v0.6.0 was released on 2026-09-08", historical)
+        self.assertIn("complete and released", historical)
+        self.assertNotIn("v0.6.0 is unreleased", historical)
+        self.assertNotIn("v0.6.0 remains unreleased", historical)
+        # Reject stale present-tense status without banning historical
+        # preparation/unreleased wording elsewhere in the documentation.
+        for stale in (
+            "v0.7.0 preparation — unreleased",
+            "no release date, tag or publication is claimed",
+            "v0.6.0 remains the published release",
+            "v0.6.0 is the current public",
         ):
-            with self.subTest(premature=premature):
-                self.assertNotIn(premature, readme)
+            with self.subTest(stale=stale):
+                self.assertNotIn(stale, current)
         self.assertNotIn("VoiceOver certified", combined)
 
 

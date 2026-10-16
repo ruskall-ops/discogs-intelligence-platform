@@ -208,8 +208,8 @@ The released target also includes truthful transactional CSV-import feedback.
 
 **Status: Released 2026-09-08**
 
-Version `0.6.0` is the current public personal-use release. The five-slice
-milestone is complete and released; v0.5.1 is the previous public release. See
+Version `0.6.0` was the public personal-use release before v0.7.0. The five-slice
+milestone is complete and released; v0.5.1 preceded it. See
 the [v0.6.0 release notes](../RELEASE_NOTES.md#v060-release-notes) and
 [release checklist](ReleaseChecklist.md).
 
@@ -313,15 +313,18 @@ separate approval, and web, cloud, account, or commercial-distribution work.
 
 ## Version 0.7.0 — Current Collection Portfolio
 
-**Status: Accepted implementation; release preparation — unreleased**
+**Status: Released 2026-10-16**
 
-v0.6.0 remains the current public personal-use release. The three bounded
+DIP v0.7.0 is the current public personal-use release, released 2026-10-16.
+DIP v0.6.0, released 2026-09-08, is the previous public release.
+The three bounded
 Current Collection Portfolio slices are accepted: lazy read-only Distribution
 execution linked to Concentration; immutable desktop-neutral presentation;
 and a shared toolbar/Dashboard window for those two destinations only.
 Dashboard startup, SQLite-row adapter and small-window session fallback fixes
-are merged. Preparation adds version metadata and truthful documentation only.
-No release date, tag, publication or additional development slice is approved.
+are delivered. Release preparation added version metadata and truthful
+documentation only. [v0.7.0 was published](https://github.com/ruskall-ops/discogs-intelligence-platform/releases/tag/v0.7.0)
+at `2026-10-16T10:45:33Z`. No additional development slice is approved.
 
 Execution occurs only on new open or explicit refresh. Committed CSV import
 marks an open result stale; failed/cancelled import does not. Failed refresh
@@ -330,11 +333,14 @@ Providers, calculations, ownership, persistence contracts, schema 7, migrations
 1–7 and session format 1 remain protected. Overview, Opportunity Alignment,
 History, Research and Project partitioning remain deferred.
 
-Existing acceptance remains valid. Exact v0.7.0 candidate CI, artifacts and
-installed macOS checks are pending. Deterministic geometry recording is not
-native Configure-event coverage; one-shot launcher failure injection does not
-validate SQLite-lock failure. Earlier inconclusive/incomplete attempts retain
-those classifications. See [draft release notes](../RELEASE_NOTES.md).
+Existing acceptance remains valid. Exact v0.7.0 candidate CI, final-main artifacts
+and installed macOS gates are complete. Agent-operated synthetic GUI checks were
+accepted as such, not as human execution. The bounded live-provider check had a
+partial snapshot and a single-run Historical Intelligence skip; neither is a
+complete-data or historical-comparison pass. Deterministic geometry recording
+is not native Configure-event coverage; one-shot launcher failure injection
+does not validate SQLite-lock failure. Earlier inconclusive/incomplete attempts
+retain those classifications. See [release notes](../RELEASE_NOTES.md).
 
 ### Directional follow-ons, not approved implementation slices
 

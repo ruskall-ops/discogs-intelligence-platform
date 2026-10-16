@@ -17,8 +17,8 @@ workflows. Its governing principle is:
 The platform does not automate buying, selling, pricing, or collecting
 decisions.
 
-DIP v0.6.0 is the current public personal-use release, dated 2026-09-08. DIP
-v0.5.1 is the previous public release. The public Version 0.5 line applies a
+DIP v0.7.0 is the current public personal-use release, released 2026-10-16.
+DIP v0.6.0, released 2026-09-08, is the previous public release. The public Version 0.5 line applies a
 product-truthfulness rule: a desktop capability requires a real production
 execution and data path, not merely models, builders, renderers, or fixtures.
 Foundation-only destinations remain visible but disabled with **Not available
@@ -33,17 +33,18 @@ The immutable result is cached by the Explorer controller; no provider or write
 is involved.
 
 The five Results Presentation slices are complete and released in v0.6.0.
-The published package/runtime metadata is `0.6.0`; this does not change
+The historical v0.6.0 package/runtime metadata is `0.6.0`; the current
+package/runtime version is `0.7.0`. These application versions do not change
 schema, module versions, providers, calculations, or session ownership.
 See the [v0.6.0 release notes](../RELEASE_NOTES.md#v060-release-notes) for the bounded scope.
 
-## v0.7.0 preparation — unreleased
+## v0.7.0 — published
 
-Source/runtime and distribution metadata target `0.7.0` for DIP v0.7.0 —
-Current Collection Portfolio. v0.6.0 remains the published release; no new
-release date, tag or publication is claimed. The accepted implementation
-includes the production Portfolio window and session fallback. Preparation
-changes no product functionality, schema, migrations or dependency contracts.
+[DIP v0.7.0 — Current Collection Portfolio](https://github.com/ruskall-ops/discogs-intelligence-platform/releases/tag/v0.7.0)
+was released on 2026-10-16. Source/runtime and distribution version are `0.7.0`.
+It includes the production Portfolio window and session fallback. Release
+preparation changed version metadata and documentation, not product behavior,
+schema, migrations or dependency contracts.
 
 ## Implemented architecture
 

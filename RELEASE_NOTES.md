@@ -1,9 +1,17 @@
 # DIP v0.7.0 — Current Collection Portfolio
 
-**Draft — unreleased.** v0.6.0 remains the current public personal-use release,
-released 2026-09-08. No v0.7.0 release date, tag or publication is claimed.
+**Released 2026-10-16.** [Published GitHub release](https://github.com/ruskall-ops/discogs-intelligence-platform/releases/tag/v0.7.0),
+publication timestamp `2026-10-16T10:45:33Z`; release ID `414846081`.
+v0.6.0, released 2026-09-08, is the previous public release.
 
-## Proposed release scope
+The immutable release source is commit
+`5f525c3bb48b3dccc2015700441ff127fc3df22d`, tree
+`365359357988b15d20d0d3763d498cb24ad97722`, annotated tag `v0.7.0`
+(`a33eb465541d99c48344f5f537f61cb307d68f89`). This later documentation-status
+housekeeping does not move the tag, change published assets, or identify a new
+release artifact. Its eventual commit/tree are distinct from that release source.
+
+## Release scope
 
 The accepted implementation baseline is merged main
 `3fb66b5b08027f0f89eb10094341a2ad5da94097`, tree
@@ -12,8 +20,9 @@ v0.6.0, commit `69e84b7a2b0eed56a5729dd77ccc4cc96d00b729`.
 The accepted changes include PRs #74–#75 and #77–#80 for Portfolio execution,
 presentation, desktop activation, Dashboard startup, SQLite-row integration
 and session fallback; PR #76 provides engineering delivery automation.
-This preparation adds only version metadata, release documentation and their
-validation expectations. It adds no new product functionality.
+The release preparation added only version metadata, release documentation and
+their validation expectations. This post-publication housekeeping changes only
+documentation status and corresponding assertions, not product functionality.
 
 ## Current Collection Portfolio
 
@@ -43,7 +52,7 @@ not necessarily the smaller visible size. Stored-record validation is unchanged.
 
 ## Compatibility and deferred scope
 
-Runtime/distribution target `0.7.0`; schema remains 7, migrations exactly 1–7
+Runtime/distribution version is `0.7.0`; schema remains 7, migrations exactly 1–7
 and no migration 8, session format 1. Dependencies, calculation/Decimal values,
 module versions, ordering, ownership, history, exports and provider/persistence
 contracts are unchanged. Existing User-Agent construction follows the canonical
@@ -55,20 +64,27 @@ and Windows remains unsupported. No screen-reader certification is claimed.
 
 ## Release evidence matrix
 
-| Gate | Reusable evidence | v0.7.0 release status |
+| Gate | Evidence and acceptance classification | v0.7.0 release status |
 |---|---|---|
-| Portfolio behavior | Accepted Slice 3 reviews and bounded human/scripted smoke | Acceptance retained; installed candidate check pending |
-| Session geometry | PR #80 review; two real-Tk lifecycle cases and deterministic recording | Accepted behavior; new candidate validation required |
-| CI | PR #80 run [38264318729](https://github.com/ruskall-ops/discogs-intelligence-platform/actions/runs/38264318729), Linux/macOS passed | Exact preparation-head CI pending |
-| Source checks | Matching prior tests/compilation/whitespace | New candidate source validation required; measured results belong in external evidence |
-| Wheel and sdist | Prior v0.6.0 checks | New isolated builds, hashes, installs and provenance validation pending |
-| Compatibility | Fresh schema and genuine v0.4 upgrade coverage | Exact candidate checks required; migrations 1–7 unchanged |
-| Installed GUI | Accepted synthetic Portfolio/import/close evidence | Exact v0.7.0 installed macOS gates and applicability review pending |
-| Publication | Published v0.6.0 history | Review, commit/push/merge, final artifacts, tag and publication separately authorized |
+| Portfolio behavior | Accepted Slice 3 human observations and scripted real-Tk verification; exact final-wheel synthetic campaign operated by the agent and accepted by the user | Complete within the agreed bounded plan; agent operations are not human execution |
+| Session geometry | PR #80 real-Tk small-window lifecycle cases and deterministic complete-tuple recording; final-wheel close/restart and non-default restoration | Complete with the native-event limitation below |
+| Exact-candidate CI | PR #81 head `1afd5767581119ebcc43da68a8502992f6ef22e8`, same tree as the immutable release source; [run 38369409742](https://github.com/ruskall-ops/discogs-intelligence-platform/actions/runs/38369409742) | Linux/macOS passed; this is PR-head CI, not a claimed merge-SHA CI run |
+| Source validation | 1,212 discovered; 1,211 source tests executed and passed, zero skips/errors/failures; installed-distribution test excluded at that stage | Separate from the four later installed tests; not one combined local full-suite run |
+| Final-main wheel and sdist | Isolated builds, unmodified artifact validator, installed-only origins, runtime/distribution 0.7.0, entry point, packaged schema and both User-Agent paths; four installed tests passed separately | Complete; final published hashes below |
+| Compatibility | Fresh databases and genuine released-v0.4.0 upgrades; integrity/quick checks, foreign keys, migrations exactly 1–7 and session format 1 | Complete; no migration 8 or format change |
+| Installed macOS | Exact-wheel navigation/sizing, CSV stale/refresh bridge, synthetic Collector Run/close blocking, exports, backup/approved overwrite, separate-copy recovery and session restoration | Agent-operated, including documented programmatic Tk controls; accepted by the user, distinct from earlier human observations |
+| Safe diagnostics | Launcher-only one-shot repository failure retention and backup-validation exception; subsequent normal operations and unchanged-data audits | Accepted injected-error coverage, not naturally occurring database/provider faults |
+| Bounded real provider | One user-owned release, one authorized GUI run, one provider construction/GET, HTTP 200; user-only masked token entry, agent operation, normal close and expected writes | Accepted partial live snapshot; Historical Intelligence skipped with only one run, not a historical-comparison pass |
+| Publication | Published release ID 414846081; Latest, not draft/prerelease; approved body matches after newline normalization; exactly two uploaded assets freshly downloaded and hashed | Verified 2026-10-16; generated GitHub source archives are not uploaded assets |
 
-The PR #80 CI evidence has mandatory Tk 7/7 with zero skips on both platforms;
-full discovery passed 1,210 on macOS and 1,208 with two case-insensitive-filesystem
-skips on Linux. It is supporting evidence, not exact v0.7.0 preparation CI.
+Exact-candidate CI mandatory Tk was `run=7 pass=7 skip=0 error=0 failure=0`
+on both platforms. Linux full discovery ran 1,212: 1,210 passed and two
+case-insensitive-filesystem tests skipped. macOS ran and passed 1,212 with zero
+skips; neither platform had errors or failures. Compilation, artifact validation
+and changed-content whitespace passed on both. PR #80 and historical v0.6.0
+validation remain supporting evidence, not substitutes for these exact-tree and
+final-artifact checks. Detailed private evidence remains outside the repository.
+
 Deterministic geometry recording does not establish native Configure-event
 delivery. Earlier successful local native resizing remains supporting evidence;
 earlier hosted failures remain failures. Failure retention was induced through
@@ -76,10 +92,31 @@ a launcher-only one-shot repository exception. SQLite-lock attempts remain
 inconclusive; the evidence-loss attempt remains incomplete with final database
 state unverifiable. Agent-operated real-Tk traversal is not labelled a human pass.
 
-Broader GUI/checklist applicability remains pending. No exception is approved
-for personal-data or provider testing. See the [release checklist](docs/ReleaseChecklist.md).
-Builds, installed GUI smoke, commit, push, PR, merge, tags and publication each
-require separate authorization. Do not reuse old artifacts as v0.7.0 proof.
+The bounded live snapshot was partial because lowest-price currency was missing;
+currency was not inferred. Historical Intelligence skipped because only one run
+was available. These outcomes are not complete-data or historical-comparison
+passes. The one-request check does not establish full-collection integration,
+retry/backoff or provider-fault recovery. Synthetic orchestration remains
+distinct from this authorized live-provider execution.
+
+The user accepted the bounded synthetic and live evidence with these limitations;
+no checklist gate was silently waived. Additional personal-data/provider work
+still requires explicit authorization. See the
+[release checklist](docs/ReleaseChecklist.md) for the completed procedure and
+continuing safeguards.
+
+## Verified published assets
+
+| Uploaded asset | Bytes | SHA-256 |
+|---|---:|---|
+| `discogs_intelligence_platform-0.7.0-py3-none-any.whl` | 535420 | `5a35d7485ffb6bb34f0b7e5048f4344fdc3ac313591cc4a5f89827d048f1c5ba` |
+| `discogs_intelligence_platform-0.7.0.tar.gz` | 667159 | `685dcef2b796dd9f83276179aadf6c073fc82ed365fe7fe2c05cf7d1e7685256` |
+
+## Historical release notes
+
+The following v0.6.0 notes retain their publication-time wording and facts.
+References to the current/previous release within that historical section refer
+to its 2026-09-08 publication, not the current v0.7.0 status.
 
 <a id="v060-release-notes"></a>
 
