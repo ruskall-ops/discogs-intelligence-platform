@@ -71,7 +71,7 @@ Current defaults include:
 
 ```text
 Application name: Discogs Intelligence Platform
-Application version: 0.7.0 (source preparation; unreleased)
+Application version: 0.7.0 (released 2026-10-16)
 Database filename: discogs_intelligence.db
 Discogs request delay: 1.08 seconds
 Window width: 1380
@@ -202,9 +202,9 @@ Potential future settings include:
 
 Persistent user preferences and a graphical settings screen are not
 implemented. The default `application_version` is the canonical runtime
-`dip.__version__`, which is 0.7.0 for v0.7.0 preparation — unreleased.
-DIP v0.6.0 is the current public personal-use release,
-dated 2026-09-08. DIP v0.5.1 is the previous public release.
+`dip.__version__`, which is 0.7.0.
+DIP v0.7.0 is the current public personal-use release, released 2026-10-16.
+DIP v0.6.0, released 2026-09-08, is the previous public release.
 The `DIP_APPLICATION_VERSION` environment variable may override it for a specific
 runtime without changing package metadata. The Discogs client uses the
 canonical runtime version in its User-Agent.

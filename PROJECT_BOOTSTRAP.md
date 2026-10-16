@@ -17,23 +17,26 @@ decisions.
 
 ## Current release and development state
 
-**v0.7.0 preparation — unreleased:** DIP v0.7.0 — Current Collection
-Portfolio targets the accepted implementation on main. Source/runtime and
-package metadata target `0.7.0`; no release date, tag or publication is claimed.
-v0.6.0 remains the published release. Current Collection Portfolio exposes
+**DIP v0.7.0 — Current Collection Portfolio: Released 2026-10-16.**
+
+DIP v0.7.0 is the current public personal-use release, released 2026-10-16.
+DIP v0.6.0, released 2026-09-08, is the previous public release.
+Runtime and package version are `0.7.0`. Current Collection Portfolio exposes
 Distribution and Concentration through the toolbar and Dashboard in one shared
 secondary window. Broader Portfolio destinations remain deferred.
+See the [published v0.7.0 release](https://github.com/ruskall-ops/discogs-intelligence-platform/releases/tag/v0.7.0) and
+[release notes](RELEASE_NOTES.md) for compatibility and evidence limitations.
 
 **Version 0.6.0 — Results Presentation and UX Refinement**
 
-DIP v0.6.0 is the current public personal-use release, dated 2026-09-08. The
+DIP v0.6.0 was released on 2026-09-08. The
 five-slice Results Presentation and UX Refinement milestone is complete and
 released. See the [v0.6.0 release notes](RELEASE_NOTES.md#v060-release-notes) and
 [release checklist](docs/ReleaseChecklist.md).
 
-**Previous public release: Version 0.5.1 — Marketplace Change Explorer**
+**Earlier public release: Version 0.5.1 — Marketplace Change Explorer**
 
-DIP v0.5.1 was released on 2 August 2026 and is the previous public release.
+DIP v0.5.1 was released on 2 August 2026 and preceded v0.6.0.
 Version 0.5 adds the single-collection
 Collector Run, canonical Marketplace and Intelligence History integration,
 Collector Review, primary desktop session restoration, explicit verified

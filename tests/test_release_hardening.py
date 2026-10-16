@@ -27,7 +27,7 @@ from tests.test_portfolio_workspace import presentation as portfolio_presentatio
 
 
 class ReleaseHardeningTestCase(unittest.TestCase):
-    def test_current_documents_distinguish_preparation_from_published_release(self) -> None:
+    def test_current_documents_distinguish_published_release_from_history(self) -> None:
         root = Path(__file__).resolve().parents[1]
         names = (
             "README.md",
@@ -54,24 +54,39 @@ class ReleaseHardeningTestCase(unittest.TestCase):
             "docs/CurrentProductState.md",
             "docs/Configuration.md",
         }
-        preparation_names = current_state_names - {"docs/BackupAndRecovery.md"}
+        current_sections = {
+            "README.md": (None, "**Version 0.6.0"),
+            "PROJECT_BOOTSTRAP.md": (None, "**Version 0.6.0"),
+            "docs/Roadmap.md": ("## Version 0.7.0", "### Directional follow-ons"),
+            "docs/Architecture.md": (None, "## Implemented architecture"),
+            "docs/CurrentProductState.md": (None, "## Production-wired and usable"),
+            "docs/BackupAndRecovery.md": ("## Compatibility", "## Manual recovery"),
+            "docs/Configuration.md": ("Persistent user preferences", "---"),
+        }
         for name, document in documents:
             with self.subTest(document=name):
                 normalized = " ".join(document.lower().split())
                 if name in current_state_names:
-                    self.assertIn("v0.6.0", normalized)
+                    start, end = current_sections[name]
+                    current = document.split(start, 1)[1] if start else document
+                    current = " ".join(current.split(end, 1)[0].lower().split())
                     self.assertIn(
-                        "current public personal-use release",
-                        normalized,
+                        "v0.7.0 is the current public personal-use release, "
+                        "released 2026-10-16", current,
                     )
-                    self.assertIn("2026-09-08", normalized)
-                    self.assertIn("is the previous public release", normalized)
-                    if name in preparation_names:
-                        self.assertIn("v0.7.0", normalized)
-                        self.assertIn("preparation", normalized)
-                        self.assertIn("unreleased", normalized)
-                        self.assertNotIn("v0.7.0 is the current public", normalized)
-                        self.assertNotIn("v0.7.0 is released", normalized)
+                    self.assertIn(
+                        "v0.6.0, released 2026-09-08, is the previous public release",
+                        current,
+                    )
+                    # Scope current-status rejection; historical preparation
+                    # wording elsewhere is legitimate and must remain allowed.
+                    for stale_status in (
+                        "v0.6.0 is the current public",
+                        "v0.6.0 remains the published release",
+                        "v0.7.0 preparation — unreleased",
+                        "no release date, tag or publication is claimed",
+                    ):
+                        self.assertNotIn(stale_status, current)
                     for stale in (
                         "v0.6.0 presentation candidate",
                         "v0.6.0 candidate",
@@ -85,7 +100,7 @@ class ReleaseHardeningTestCase(unittest.TestCase):
                         "v0.5.1 is unreleased",
                         "v0.5.0 remains the latest",
                     ):
-                        self.assertNotIn(stale, normalized)
+                        self.assertNotIn(stale, current)
         combined = "\n".join(document for _, document in documents).lower()
         self.assertIn("0.5.1", combined)
         self.assertNotIn("v0.5.0 remains the latest completed", combined)
@@ -100,7 +115,9 @@ class ReleaseHardeningTestCase(unittest.TestCase):
             "# Version 0.6.0", 1
         )
         self.assertIn("Version 0.7.0 — Current Collection Portfolio", candidate_changelog)
-        self.assertIn("Draft — unreleased.", candidate_changelog)
+        self.assertIn("Released 2026-10-16.", candidate_changelog)
+        self.assertIn("2026-10-16T10:45:33Z", candidate_changelog)
+        self.assertNotIn("Draft — unreleased.", candidate_changelog)
         historical_changelog = "# Version 0.6.0" + historical_changelog.split(
             "# Version 0.5.1", 1
         )[0]
@@ -116,8 +133,17 @@ class ReleaseHardeningTestCase(unittest.TestCase):
             "## DIP v0.6.0 — Results Presentation and UX Refinement", 1
         )
         self.assertTrue(notes.startswith("# DIP v0.7.0 — Current Collection Portfolio\n"))
-        self.assertIn("**Draft — unreleased.**", candidate_notes)
-        self.assertNotIn("**Released", candidate_notes)
+        self.assertIn("**Released 2026-10-16.**", candidate_notes)
+        self.assertIn("2026-10-16T10:45:33Z", candidate_notes)
+        self.assertIn(
+            "https://github.com/ruskall-ops/discogs-intelligence-platform/releases/tag/v0.7.0",
+            candidate_notes,
+        )
+        self.assertIn("5f525c3bb48b3dccc2015700441ff127fc3df22d", candidate_notes)
+        self.assertIn("365359357988b15d20d0d3763d498cb24ad97722", candidate_notes)
+        self.assertIn("distinct from that release source", candidate_notes)
+        self.assertNotIn("**Draft — unreleased.**", candidate_notes)
+        self.assertNotIn("/Users/", candidate_notes)
         self.assertIn("**Released 2026-09-08.**", historical_notes)
         self.assertNotIn("Draft — unreleased", historical_notes)
         self.assertIn("7141911b867cddd7a1031f4c8a8132df7194351a", historical_notes)
@@ -153,13 +179,16 @@ class ReleaseHardeningTestCase(unittest.TestCase):
         )
         self.assertLess(milestone_position, preparation_position)
         self.assertLess(preparation_position, follow_on_position)
-        self.assertIn("Accepted implementation; release preparation — unreleased", roadmap)
+        self.assertIn("**Status: Released 2026-10-16**", roadmap)
+        self.assertIn("2026-10-16T10:45:33Z", roadmap)
+        self.assertNotIn("Accepted implementation; release preparation — unreleased", roadmap)
         self.assertIn("**Status: Released 2026-09-08**", roadmap)
         self.assertIn(
             "five-slice milestone is complete and released",
             " ".join(roadmap.split()),
         )
-        self.assertNotIn("release preparation; unreleased", roadmap)
+        current_milestone = roadmap[preparation_position:follow_on_position]
+        self.assertNotIn("release preparation; unreleased", current_milestone)
         self.assertNotIn("no public version assigned", roadmap)
         self.assertNotIn(
             "Version 0.5.2 — Results Presentation and UX Refinement",
@@ -198,10 +227,17 @@ class ReleaseHardeningTestCase(unittest.TestCase):
         for previous in ("v0.5.0", "v0.5.1", "v0.6.0"):
             for command in ("git tag -a", "git push origin", "gh release create"):
                 self.assertNotIn(f"{command} {previous}", checklist)
-        self.assertIn("v0.7.0 preparation — unreleased", checklist)
-        self.assertIn("Broader GUI/checklist applicability remains pending", checklist)
-        self.assertIn("no gate below is waived", checklist)
-        self.assertIn("No exception is approved for personal-data or provider testing", checklist)
+        current_status = checklist.split("## Automated gates", 1)[0]
+        self.assertIn("## v0.7.0 — publication verified", current_status)
+        self.assertIn("2026-10-16T10:45:33Z", current_status)
+        self.assertIn("release ID `414846081`", current_status)
+        self.assertIn("no gate below is waived", current_status)
+        self.assertIn("No blanket exception is approved for personal-data or provider testing", current_status)
+        self.assertNotIn("v0.7.0 preparation — unreleased", current_status)
+        self.assertNotIn("Broader GUI/checklist applicability remains pending", current_status)
+        self.assertIn("completed v0.7.0 publication", checklist)
+        self.assertIn("not instructions to tag, push, rebuild or publish v0.7.0 again", checklist)
+        self.assertIn("Do not reuse them for an unapproved future release", checklist)
         self.assertIn("git tag -a v0.7.0", checklist)
         self.assertIn("git push origin v0.7.0", checklist)
         self.assertIn("gh release create v0.7.0", checklist)
@@ -260,7 +296,7 @@ class ReleaseHardeningTestCase(unittest.TestCase):
         }
         self.assertEqual(entry_points["dip"], "dip.app:main")
 
-    def test_preparation_preserves_evidence_limits_and_session_contract(self) -> None:
+    def test_published_release_preserves_evidence_limits_and_session_contract(self) -> None:
         root = Path(__file__).resolve().parents[1]
         notes = (root / "RELEASE_NOTES.md").read_text(encoding="utf-8")
         candidate = " ".join(notes.split("## DIP v0.6.0", 1)[0].split())
@@ -272,11 +308,24 @@ class ReleaseHardeningTestCase(unittest.TestCase):
             "SQLite-lock attempts remain inconclusive",
             "evidence-loss attempt remains incomplete",
             "final database state unverifiable",
-            "Exact preparation-head CI pending",
-            "No exception is approved for personal-data or provider testing",
+            "run 38369409742",
+            "not a claimed merge-SHA CI run",
+            "four installed tests passed separately",
+            "not one combined local full-suite run",
+            "Historical Intelligence skipped because only one run",
+            "not complete-data or historical-comparison passes",
+            "Agent-operated real-Tk traversal is not labelled a human pass",
+            "still requires explicit authorization",
         ):
             with self.subTest(fact=fact):
                 self.assertIn(fact, candidate)
+        self.assertNotIn("Exact preparation-head CI pending", candidate)
+        self.assertNotIn("Broader GUI/checklist applicability remains pending", candidate)
+        for artifact_hash in (
+            "5a35d7485ffb6bb34f0b7e5048f4344fdc3ac313591cc4a5f89827d048f1c5ba",
+            "685dcef2b796dd9f83276179aadf6c073fc82ed365fe7fe2c05cf7d1e7685256",
+        ):
+            self.assertIn(artifact_hash, candidate)
         session = " ".join((root / "docs/SessionRestoration.md").read_text().split())
         for fact in ("800×560", "1050×650", "No startup session write",
                      "retains the complete last-valid tuple", "never silently repaired"):

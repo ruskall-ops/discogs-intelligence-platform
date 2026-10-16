@@ -2,39 +2,52 @@
 
 ## Release status and authority
 
-The current public release is **v0.6.0 — Results Presentation and UX
-Refinement**, dated 2026-09-08. All five slices are complete and released.
-v0.5.1 is the previous public release.
+DIP v0.7.0 is the current public personal-use release, released 2026-10-16.
+DIP v0.6.0, released 2026-09-08, is the previous public release.
+The historical v0.6.0 five-slice milestone remains complete and released.
 
-This checklist distinguishes reusable accepted evidence from pending release
-gates and the controlled
-publication procedure. Use a fresh artifact-clean checkout; do not remove
+This checklist records completed v0.7.0 gates, reusable accepted evidence and
+the controlled publication procedure. Use a fresh artifact-clean checkout; do not remove
 existing ignored builds, caches, or personal databases.
 
 The procedure below does not authorise executing a repository or publication
 operation. Commit, push, PR creation, merge, tag creation, artifact upload, and
 GitHub release each remain subject to explicit authorisation. See the
-[v0.6.0 release notes](../RELEASE_NOTES.md#v060-release-notes).
+[v0.7.0 release notes](../RELEASE_NOTES.md); the
+[historical v0.6.0 notes](../RELEASE_NOTES.md#v060-release-notes) remain intact.
 
-## v0.7.0 preparation — unreleased
+## v0.7.0 — publication verified
 
-Target: **DIP v0.7.0 — Current Collection Portfolio**. The version choice is
-approved, but no release date, tag or publication is claimed. Source/runtime
-and distribution target 0.7.0. v0.6.0 remains the published release; its history
-and tag must not be rewritten. See [draft release notes](../RELEASE_NOTES.md).
+**Released 2026-10-16:** [DIP v0.7.0 — Current Collection Portfolio](https://github.com/ruskall-ops/discogs-intelligence-platform/releases/tag/v0.7.0).
+Publication timestamp: `2026-10-16T10:45:33Z`; release ID `414846081`.
+Source/runtime and distribution version are 0.7.0. The immutable release commit
+is `5f525c3bb48b3dccc2015700441ff127fc3df22d`, tree
+`365359357988b15d20d0d3763d498cb24ad97722`. This later housekeeping is a separate
+change, not a replacement release source. Neither v0.7.0 nor historical tags or
+assets may be moved or replaced by this documentation change.
 
 The [release evidence matrix](../RELEASE_NOTES.md#release-evidence-matrix) separates
-accepted Slice 3/PR #80 evidence from exact v0.7.0 candidate checks. Prior CI,
-installed wheels and smoke are supporting evidence only. Deterministic geometry
+accepted Slice 3/PR #80 evidence from completed exact v0.7.0 candidate and
+final-artifact checks. Prior CI, installed wheels and smoke remain supporting
+evidence only, not substitutes for the final wheel/sdist validation. Deterministic geometry
 recording does not establish native Configure-event delivery. Failure retention
 used a launcher-only one-shot exception. Inconclusive lock attempts, incomplete
 evidence-loss attempts and failed hosted native-resize checks retain their
 original classifications.
 
-Broader GUI/checklist applicability remains pending; no gate below is waived.
-No exception is approved for personal-data or provider testing. This source-only
-preparation does not authorize artifact builds, installed GUI smoke, commit,
-push, PR creation, merge, tags or publication.
+Installed macOS gates and their applicability were resolved in the accepted
+bounded campaign; no gate below is waived. Agent-operated synthetic verification
+was accepted by the user without being relabelled human execution. The separate
+authorized live-provider check was accepted with partial metadata and a one-run
+Historical Intelligence skip, not complete-data or historical-comparison passes.
+No blanket exception is approved for personal-data or provider testing.
+
+Publication verification confirmed Latest, not draft/prerelease, the exact title
+and approved body (newline normalization only), the annotated tag target and
+exactly two uploaded assets with matching freshly downloaded hashes. The
+remaining post-release work is this separately reviewed documentation-status
+housekeeping; all prior evidence is preserved. No new build, test, provider,
+repository or publication action is authorized merely by this checklist.
 
 ## Automated gates
 
@@ -75,12 +88,16 @@ pending, not passed.
   Changes, and Supply Changes at `800×560`;
 - legacy Markdown and Excel labels and unchanged analytical payloads.
 
-## Release procedure
+## Release procedure — completed v0.7.0 record
 
-The active release identifiers are declared as documentation values, not shell
-variables:
+The procedure and commands below document the completed v0.7.0 publication;
+they are not instructions to tag, push, rebuild or publish v0.7.0 again.
+Do not reuse them for an unapproved future release. The published source,
+tag and assets remain immutable; this housekeeping is step 18.
 
-| Identifier | Active value |
+The recorded release identifiers are documentation values, not shell variables:
+
+| Identifier | Recorded v0.7.0 value |
 |---|---|
 | `RELEASE_VERSION` | `0.7.0` |
 | `RELEASE_TAG` | `v0.7.0` |
@@ -93,10 +110,10 @@ variables:
 and must never be used by the active tag-creation, tag-push, or GitHub release
 commands.
 
-Only after each required authorisation, follow this exact release order.
-Preparation documentation remains draft/unreleased until publication is actually
-verified. Post-release housekeeping records that fact separately; never invent
-a publication date during preparation:
+The completed publication followed this order, with separate authorisation for
+each phase. Historically, preparation documentation remained draft/unreleased
+until publication was verified. This post-release housekeeping records the
+actual publication rather than inventing a date during preparation:
 
 1. Prepare the draft, unreleased candidate wording on
    `chore/v0.7.0-release-preparation`.

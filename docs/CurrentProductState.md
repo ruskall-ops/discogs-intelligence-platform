@@ -7,22 +7,22 @@ foundations. It complements the product evolution in the [Roadmap](Roadmap.md)
 without treating the presence of a model, builder, or renderer as proof of a
 complete desktop feature.
 
-This document distinguishes the published baseline from accepted implementation and release preparation. DIP v0.6.0 is the current
-public personal-use release, dated 2026-09-08. DIP v0.5.1 is the previous public
-release. The v0.6.0 target includes the
-truthful transactional CSV-import feedback correction. Application version
-0.6.0 is distinct from SQLite schema
-version 7 (migrations 1–7). macOS is the primary personal-use platform; Linux
-receives automated headless compatibility validation, and Windows is not
-supported.
+DIP v0.7.0 is the current public personal-use release, released 2026-10-16.
+DIP v0.6.0, released 2026-09-08, is the previous public release.
+The earlier v0.5.1 release and v0.6.0 include the truthful transactional
+CSV-import feedback correction. Application version 0.7.0 is distinct from
+SQLite schema version 7 (migrations 1–7). macOS is the primary personal-use
+platform; Linux receives automated headless compatibility validation, and
+Windows is not supported.
 
-## v0.7.0 preparation — unreleased
+## v0.7.0 — published
 
-DIP v0.7.0 — Current Collection Portfolio is the preparation target. Source/runtime
-and distribution metadata target `0.7.0`; v0.6.0 remains the published release.
-The accepted main baseline includes Portfolio and the small-window session
-fallback. No release date, tag or publication is claimed. Exact-candidate
-artifact/installed validation and broader GUI gate applicability remain pending.
+[DIP v0.7.0 — Current Collection Portfolio](https://github.com/ruskall-ops/discogs-intelligence-platform/releases/tag/v0.7.0)
+was published at `2026-10-16T10:45:33Z`. Runtime and distribution version are
+`0.7.0`; the release includes Portfolio and the small-window session fallback.
+Exact-candidate CI, final-main artifacts and installed macOS acceptance are
+complete with the classifications and limitations in the
+[release evidence matrix](../RELEASE_NOTES.md#release-evidence-matrix).
 
 ## Production-wired and usable
 
@@ -37,7 +37,8 @@ artifact/installed validation and broader GUI gate applicability remain pending.
 - Collection Decisions and personal notes;
 - canonical Marketplace and Intelligence History recording;
 - primary desktop session restoration;
-- explicit, verified database backup.
+- explicit, verified database backup;
+- Current Collection Portfolio Distribution and Concentration.
 
 Empty queues, zero observations, and empty candidate lists remain truthful
 usable states.
@@ -85,10 +86,10 @@ The [v0.6.0 release notes](../RELEASE_NOTES.md#v060-release-notes) and
 [release checklist](ReleaseChecklist.md) record the released scope and
 publication procedure.
 
-## Accepted Current Collection Portfolio implementation
+## Released Current Collection Portfolio implementation
 
-This is accepted functionality on main for v0.7.0 preparation, not a claim about
-the published v0.6.0 artifact.
+This functionality is delivered in v0.7.0; it is not part of the historical
+v0.6.0 artifact.
 
 The Current Collection Portfolio application path executes the
 existing Distribution module once and pass that exact typed result to
@@ -129,7 +130,9 @@ child minimums remain 800×560; session format 1 retains its 1050×650 minimum.
 Normal close saves the fallback or last valid normal geometry, and restart may
 therefore reopen larger than the small visible window. Schema and session
 contracts remain unchanged. Deterministic retention coverage is not native
-Configure-event verification; installed v0.7.0 smoke remains pending.
+Configure-event verification. Installed v0.7.0 verification was agent-operated
+and accepted by the user, including disclosed programmatic Tk control and
+injected-error limitations; it is not a human-execution claim.
 
 ## Available after sufficient history
 

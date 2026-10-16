@@ -2,10 +2,10 @@
 
 # Version 0.7.0 — Current Collection Portfolio
 
-Draft — unreleased. v0.6.0 remains the current public personal-use release.
-No release date or publication is claimed.
+Released 2026-10-16. Published at `2026-10-16T10:45:33Z`.
+See the [published release](https://github.com/ruskall-ops/discogs-intelligence-platform/releases/tag/v0.7.0). v0.6.0 is the previous public release.
 
-## Accepted implementation
+## Delivered functionality and fixes
 
 - Added lazy, read-only Current Collection Distribution execution with linked
   Concentration, and a shared toolbar/Dashboard desktop window with those two
@@ -20,18 +20,21 @@ No release date or publication is claimed.
 - Initialized session-valid fallback geometry for small-window startup without
   changing root/Portfolio minimums, configuration limits or stored-record rules.
 
-## Preparation and evidence limits
+## Compatibility and evidence limits
 
-- Source/runtime and distribution metadata target `0.7.0`. Migrations remain
+- Source/runtime and distribution version are `0.7.0`. Migrations remain
   exactly 1–7, schema 7 and session format 1; no dependency, module-version,
   calculation, ownership, provider, export or persistence-contract change.
 - Accepted deterministic geometry recording does not establish native
   Configure-event delivery. Failure retention used a launcher-only one-shot
   exception. Earlier inconclusive and incomplete attempts retain their classifications.
-- Exact release-candidate CI, wheel/sdist validation and installed macOS gates
-  remain pending; prior v0.6.0 installed evidence is not v0.7.0 artifact validation.
+- Exact release-candidate CI, final-main wheel/sdist validation and installed
+  macOS gates completed. The agent-operated synthetic campaign was accepted by
+  the user; it is not human execution. The bounded live-provider check returned
+  partial metadata; Historical Intelligence skipped with one run. Neither is a
+  complete-data or historical-comparison pass.
 
-See the [draft v0.7.0 release notes](RELEASE_NOTES.md).
+See the [v0.7.0 release notes](RELEASE_NOTES.md).
 
 # Version 0.6.0 — Results Presentation and UX Refinement
 

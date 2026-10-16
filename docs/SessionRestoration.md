@@ -80,8 +80,8 @@ Project-scoped.
 
 ## Geometry safety
 
-The accepted main implementation for v0.7.0 preparation — unreleased corrects
-small-window startup fallback; it does not change session format 1 or migration 7.
+The v0.7.0 implementation, released 2026-10-16, corrects small-window startup
+fallback; it does not change session format 1 or migration 7.
 Root and Portfolio child minimums remain separate 800×560 limits. Configuration
 still accepts width 800 and height 500; the root's visible minimum raises height
 to 560. Session models and SQLite retain a 1050×650 minimum. Startup initializes
