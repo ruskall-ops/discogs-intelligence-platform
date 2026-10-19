@@ -607,3 +607,23 @@ capability.
 
 > **Collect once, preserve history, analyse transparently, explain clearly, and
 > leave the decision to the collector.**
+
+## Current Collection Artist inspection boundary
+
+Artist inspection is an explicit read-only application workflow over the exact
+retained Current Collection Portfolio pair. The application service selects an
+existing Artist category and release details without recalculation, then uses
+the existing typed current-metadata repository for supplementary labels. Missing
+records remain explicit members; malformed/failed label results invalidate all
+current labels for that inspection without changing retained facts.
+
+The composition root injects inspection and exact-ID Collection Decision
+services. A narrow SQLite read loads only the editor fields for one release,
+without review filters, ranking, Marketplace joins or row caps. The desktop
+renders immutable application-facing records and shares the existing decision
+form across table, Queue and Portfolio entry points. Explicit Save delegates to
+the established decision write; inspection and cancellation never write business
+data. The new workflow introduces no domain calculation, schema/migration,
+provider, dependency, version, export or session-format change. Window/source
+identity, refresh failure retention, import invalidation and editor/parent close
+rules are specified in [Portfolio Intelligence](PortfolioIntelligence.md#artist-category-inspection).

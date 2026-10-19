@@ -237,3 +237,25 @@ source, filter, and exact visible observation or queue identity after fresh
 queries. It never persists Review-note drafts or changes the existing
 Save/Discard/Cancel lifecycle. See
 [Session Restoration](SessionRestoration.md).
+
+## Individual decision handoff from Artist inspection
+
+Current Collection Portfolio can explicitly open the existing individual
+Collection Decision editor from a retained Artist member. The editor record is
+loaded by exact positive release ID through an application service, independently
+of Collection Decisions filters and table row caps. Portfolio handoff does not
+change those filters or their selected table row. Existing table and Queue entry
+points share that editor and retain their navigation behavior; a hidden table
+row does not cause another release to be selected or prevent exact-ID loading.
+Current catalogue labels and stored score explanation remain separate from the
+retained Portfolio membership and quantities.
+
+The editor retains its existing canonical choices, compatibility handling and
+save transaction. Reading/opening/cancelling does not create or normalize a
+Decision. Save delegates to existing persistence for only the selected release;
+a missing record or failed save leaves the draft open with safe copy. Cancel,
+Escape and editor close discard the editor buffer, release the modal grab and
+return control. Parent closure/replacement, CSV import and Collector Run launch
+require finishing the open editor first. Existing unsaved Queue-note safeguards
+and session format are unchanged. A Decision save does not invalidate or
+recalculate Portfolio, whose inputs exclude decision and personal-note fields.

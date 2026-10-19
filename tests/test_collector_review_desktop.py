@@ -307,7 +307,7 @@ class CollectorReviewDesktopTestCase(unittest.TestCase):
         app.load_table = Mock()
         app.tree = Mock()
         app.tree.exists.return_value = True
-        app.edit_selected = Mock()
+        app._edit_collection_decision = Mock()
 
         app.open_collection_decision(42)
 
@@ -317,7 +317,21 @@ class CollectorReviewDesktopTestCase(unittest.TestCase):
         )
         app.tree.selection_set.assert_called_once_with("42")
         app.tree.see.assert_called_once_with("42")
-        app.edit_selected.assert_called_once_with()
+        app._edit_collection_decision.assert_called_once_with(42)
+
+    def test_queue_decision_handoff_is_not_blocked_by_hidden_table_row(self):
+        app = App.__new__(App)
+        app.tabs = Mock()
+        app.review_tab = object()
+        app.collection_review_tabs = Mock()
+        app.decisions_tab = object()
+        app.load_table = Mock()
+        app.tree = Mock()
+        app.tree.exists.return_value = False
+        app._edit_collection_decision = Mock()
+        app.open_collection_decision(5002)
+        app.tree.selection_set.assert_not_called()
+        app._edit_collection_decision.assert_called_once_with(5002)
 
     def test_collector_run_terminal_refresh_does_not_reload_queue(self) -> None:
         app = App.__new__(App)

@@ -97,13 +97,16 @@ def portfolio_lines(workspace: CurrentCollectionPortfolioPresentation) -> tuple[
 class CurrentCollectionPortfolioWindow:
     """One transient window; all scroll bindings live on its own text widget."""
 
-    def __init__(self, parent, on_refresh, on_close):
+    def __init__(self, parent, on_refresh, on_close, on_inspect=None, before_close=None):
         self.window = tk.Toplevel(parent)
         self.window.title("Current Collection Portfolio")
         self.window.geometry("880x650")
         self.window.minsize(800, 560)
         self.window.transient(parent)
         self._on_close = on_close
+        self._on_inspect = on_inspect
+        self._before_close = before_close
+        self._run_active = False
         self._closed = False
         self._workspace = None
         shell = ttk.Frame(self.window, padding=10)
@@ -124,6 +127,15 @@ class CurrentCollectionPortfolioWindow:
         self.refresh_button.pack(side="left")
         self.close_button = ttk.Button(controls, text="Close", command=self.close)
         self.close_button.pack(side="right")
+        self.artist_controls = ttk.Frame(shell)
+        ttk.Label(self.artist_controls, text="Artist category:").grid(row=0, column=0, sticky="w")
+        self.artist_category = ttk.Combobox(self.artist_controls, state="readonly", width=30)
+        self.artist_category.grid(row=0, column=1, sticky="ew", padx=5)
+        self.inspect_button = ttk.Button(self.artist_controls, text="Inspect releases", command=self._inspect)
+        self.inspect_button.grid(row=0, column=2)
+        self.artist_controls.columnconfigure(1, weight=1)
+        self.artist_reason = tk.StringVar(value="")
+        ttk.Label(self.artist_controls, textvariable=self.artist_reason, wraplength=760).grid(row=1, column=0, columnspan=3, sticky="w")
         body = ttk.Frame(shell)
         body.pack(fill="both", expand=True)
         self.text = tk.Text(body, wrap="word", state="disabled", padx=10, pady=10, takefocus=True)
@@ -131,13 +143,14 @@ class CurrentCollectionPortfolioWindow:
         self.text.configure(yscrollcommand=scroll.set)
         self.text.pack(side="left", fill="both", expand=True)
         scroll.pack(side="right", fill="y")
-        self._focus_order = (self.navigation, self.refresh_button, self.text, self.close_button)
+        self._body = body
+        self._focus_order = (self.navigation, self.refresh_button, self.artist_category, self.inspect_button, self.text, self.close_button)
         for widget in self._focus_order:
             widget.configure(takefocus=1)
             widget.bind("<Tab>", lambda _event, current=widget: self._traverse(current, 1))
             widget.bind("<Shift-Tab>", lambda _event, current=widget: self._traverse(current, -1))
             widget.bind("<ISO_Left_Tab>", lambda _event, current=widget: self._traverse(current, -1))
-        for button in (self.refresh_button, self.close_button):
+        for button in (self.refresh_button, self.inspect_button, self.close_button):
             for key in ("<Return>", "<space>"):
                 button.bind(key, lambda _event, control=button: self._activate(control))
         self.window.protocol("WM_DELETE_WINDOW", self.close)
@@ -161,6 +174,19 @@ class CurrentCollectionPortfolioWindow:
         self.text.insert("1.0", "\n".join(portfolio_lines(workspace)))
         self.text.configure(state="disabled")
         self.text.yview_moveto(0)
+        self._artist_categories = tuple(
+            category for dimension in (workspace.distribution.dimensions if workspace.distribution else ())
+            if dimension.dimension_id == "artist" for category in dimension.categories
+        )
+        self.artist_category.configure(values=tuple(f"{value.label} [{value.category_id}]" for value in self._artist_categories))
+        self.artist_category.set("")
+        if self._artist_categories:
+            self.artist_category.current(0)
+        if workspace.selected_destination is PortfolioDestination.DISTRIBUTION:
+            self.artist_controls.pack(before=self._body, fill="x", pady=(0, 5))
+        else:
+            self.artist_controls.pack_forget()
+        self.set_run_active(self._run_active)
 
     def _select(self, _event=None) -> None:
         if self._workspace is None:
@@ -170,7 +196,23 @@ class CurrentCollectionPortfolioWindow:
         self.show(replace(self._workspace, selected_destination=destination), freshness=self.freshness.get(), error=self.error.get())
 
     def set_run_active(self, active: bool) -> None:
+        self._run_active = active
         self.refresh_button.state(["disabled"] if active else ["!disabled"])
+        enabled = not active and bool(getattr(self, "_artist_categories", ())) and self._on_inspect is not None
+        self.artist_category.configure(state="readonly" if enabled else "disabled")
+        self.inspect_button.state(["!disabled"] if enabled else ["disabled"])
+        self.artist_reason.set(
+            "Artist inspection is unavailable while Collector Run is active." if active
+            else "Artist inspection is unavailable." if self._on_inspect is None
+            else "No represented Artist categories in this result." if not self._artist_categories
+            else ""
+        )
+
+    def _inspect(self):
+        if "disabled" not in self.inspect_button.state() and self._workspace.selected_destination is PortfolioDestination.DISTRIBUTION:
+            position = self.artist_category.current()
+            if 0 <= position < len(self._artist_categories):
+                self._on_inspect(self._artist_categories[position].category_id)
 
     def _traverse(self, current, step: int) -> str:
         if not self.alive():
@@ -181,7 +223,7 @@ class CurrentCollectionPortfolioWindow:
             return "break"
         for offset in range(1, len(self._focus_order) + 1):
             widget = self._focus_order[(position + step * offset) % len(self._focus_order)]
-            if "disabled" not in getattr(widget, "state", lambda: ())():
+            if getattr(widget, "winfo_ismapped", lambda: True)() and "disabled" not in getattr(widget, "state", lambda: ())():
                 widget.focus_set()
                 break
         return "break"
@@ -193,7 +235,7 @@ class CurrentCollectionPortfolioWindow:
         return "break"
 
     def close(self) -> None:
-        if not self._closed:
+        if not self._closed and (self._before_close is None or self._before_close() is not False):
             self.window.destroy()
 
     def _destroyed(self, event) -> None:
