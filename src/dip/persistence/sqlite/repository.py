@@ -782,6 +782,27 @@ class Database:
             tuple(sorted({row["decision"] for row in rows})),
         )
 
+    def collection_decision_for_release(self, release_id: int) -> dict[str, Any] | None:
+        """Read exactly one editor record, independently of review filters/caps."""
+        if type(release_id) is not int or release_id <= 0:
+            raise ValueError("release_id must be a positive integer.")
+        with self._lock:
+            row = self.conn.execute(
+                """
+                SELECT r.release_id, r.artist, r.title,
+                       COALESCE(s.explanation, '') AS explanation,
+                       COALESCE(d.decision, 'Review') AS decision,
+                       COALESCE(d.miss_rating, 'Unsure') AS miss_rating,
+                       COALESCE(d.personal_notes, '') AS personal_notes,
+                       COALESCE(d.protected, 0) AS protected
+                FROM releases r
+                LEFT JOIN scores s ON s.release_id = r.release_id
+                LEFT JOIN decisions d ON d.release_id = r.release_id
+                WHERE r.release_id = ?
+                """, (release_id,),
+            ).fetchone()
+        return dict(row) if row is not None else None
+
     def save_decision(
         self,
         release_id: int,

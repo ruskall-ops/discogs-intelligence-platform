@@ -331,7 +331,9 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
             return_value=dependencies,
         ), patch.object(App, "_restore_session_and_load"):
             self.root = App()
-        self.root.geometry("800x560")
+        # Keep native hit testing independent of macOS's implicit placement
+        # after earlier tests have opened and closed transient windows.
+        self.root.geometry("800x560+0+0")
         self.root.update()
         for dependency in (
             dependencies.dashboard_homepage,
@@ -2116,6 +2118,9 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         execution = Mock()
         execution.execute.return_value = outcome
         self.root.current_collection_portfolio_execution = execution
+        from dip.app.portfolio_artist_inspection import PortfolioArtistInspectionService
+        from dip.persistence.sqlite import SQLiteCurrentReleaseMetadataRepository
+        self.root.portfolio_artist_inspection_service = PortfolioArtistInspectionService(SQLiteCurrentReleaseMetadataRepository(self.database))
         self.root.portfolio_button.state(["!disabled"])
         self.root.portfolio_button.invoke()
         self.root.update()
@@ -2126,6 +2131,21 @@ class Slice4ProductionTkTestCase(unittest.TestCase):
         self.assertEqual(portfolio.navigation.cget("values"), ("Distribution", "Concentration"))
         self.assertEqual(portfolio.freshness.get(), "Current")
         self.assertIn("Metadata: 1/2 (50.00%) releases", portfolio.text.get("1.0", "end"))
+        self.assertEqual(execution.execute.call_count, 1)
+        # Exercise the new read-only Artist entry through production services.
+        self.database.conn.execute("INSERT INTO releases(release_id,artist,title) VALUES (10,'Current label','Synthetic title')")
+        self.database.conn.commit()
+        changes = self.database.conn.total_changes
+        portfolio.inspect_button.invoke()
+        self.root.update()
+        inspection = self.root._portfolio_artist_window
+        self.assertIs(inspection.inspection.source, outcome.portfolio)
+        self.assertEqual(inspection.tree.get_children(), ("10",))
+        self.assertEqual(inspection.tree.item("10", "values"), ("10", "2", "Current label", "Synthetic title"))
+        self.assertEqual(self.database.conn.total_changes, changes)
+        inspection.close()
+        self.root.update()
+        self.assertIsNone(self.root._portfolio_artist_window)
         self.assertEqual(execution.execute.call_count, 1)
         self.root._open_dashboard_target(DashboardNavigationTarget.PORTFOLIO)
         self.assertIs(portfolio, self.root._current_collection_portfolio_window)

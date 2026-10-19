@@ -19,7 +19,7 @@ from tests.test_current_collection_portfolio_presentation import _outcome, _row
 
 
 class _Window:
-    def __init__(self, *_args):
+    def __init__(self, *_args, **_kwargs):
         self._workspace = None
         self.freshness = SimpleNamespace(get=lambda: self.fresh, set=self._set_fresh)
         self.fresh = "Loading…"

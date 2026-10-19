@@ -53,6 +53,8 @@ from dip.app.marketplace_scarcity import MarketplaceScarcityExecutionService
 from dip.app.marketplace_scarcity_presentation import MarketplaceScarcityPresentationService
 from dip.app.marketplace_opportunity import MarketplaceOpportunityExecutionService
 from dip.app.marketplace_opportunity_presentation import MarketplaceOpportunityPresentationService
+from dip.app.collection_decision import CollectionDecisionService
+from dip.app.portfolio_artist_inspection import PortfolioArtistInspectionService
 from dip.app.portfolio_overview import PortfolioOverviewExecutionService
 from dip.app.portfolio_overview_presentation import PortfolioOverviewPresentationService
 from dip.app.portfolio_distribution import PortfolioDistributionExecutionService
@@ -266,6 +268,8 @@ class DesktopApplicationDependencies:
     collector_review: WeekendReviewService | None = None
     session_restoration: SessionRestorationService | None = None
     database_backup: DatabaseBackupService | None = None
+    portfolio_artist_inspection: PortfolioArtistInspectionService | None = None
+    collection_decision: CollectionDecisionService | None = None
 
 
 def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
@@ -600,6 +604,8 @@ def build_desktop_application_dependencies() -> DesktopApplicationDependencies:
         collector_review=collector_review,
         session_restoration=session_restoration,
         database_backup=database_backup,
+        portfolio_artist_inspection=PortfolioArtistInspectionService(SQLiteCurrentReleaseMetadataRepository(database)),
+        collection_decision=CollectionDecisionService(database),
         dashboard_homepage=DashboardHomepageService(
             history_queries,
             comparison_presentation,

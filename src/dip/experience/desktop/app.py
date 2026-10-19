@@ -13,6 +13,7 @@ from dip.app.collector_run import (
     CollectorRunStatus,
     CollectorRunUnavailableError,
 )
+from dip.experience.desktop.portfolio_artist_inspection_window import PortfolioArtistInspectionWindow
 from dip.app.database_backup import DatabaseBackupValidationError
 from dip.collection.services import ImportService
 from dip.collector_review import (
@@ -182,6 +183,11 @@ class App(tk.Tk):
         )
         self.current_collection_portfolio_builder = CurrentCollectionPortfolioPresentationBuilder()
         self._current_collection_portfolio_window = None
+        self._current_collection_portfolio_source = None
+        self._portfolio_artist_window = None
+        self._decision_editor = None
+        self.portfolio_artist_inspection_service = getattr(dependencies, "portfolio_artist_inspection", None)
+        self.collection_decision_service = getattr(dependencies, "collection_decision", None)
         self.intelligence_change_analysis_controller = getattr(
             dependencies, "intelligence_change_analysis_controller", None
         )
@@ -2360,19 +2366,16 @@ class App(tk.Tk):
         self._render_observations()
 
     def open_collection_decision(self, release_id):
+        if not self._finish_decision_editor_first():
+            return
         self.tabs.select(self.review_tab)
         self.collection_review_tabs.select(self.decisions_tab)
         self.load_table()
         iid = str(release_id)
-        if not self.tree.exists(iid):
-            messagebox.showwarning(
-                "Collection Decision unavailable",
-                "The release is not available in Collection Decisions.",
-            )
-            return
-        self.tree.selection_set(iid)
-        self.tree.see(iid)
-        self.edit_selected()
+        if self.tree.exists(iid):
+            self.tree.selection_set(iid)
+            self.tree.see(iid)
+        self._edit_collection_decision(release_id)
 
     def _confirm_unsaved_queue_note(self):
         if not self._queue_note_dirty:
@@ -2635,6 +2638,8 @@ class App(tk.Tk):
             pass
 
     def import_csv(self):
+        if not self._finish_decision_editor_first():
+            return
         if self._collector_run_active:
             messagebox.showwarning(
                 "Import unavailable",
@@ -2713,6 +2718,8 @@ class App(tk.Tk):
             pass
 
     def start_refresh(self):
+        if not self._finish_decision_editor_first():
+            return
         if self._collector_run_active:
             return
         if self.collector_run_service is None:
@@ -3673,6 +3680,8 @@ class App(tk.Tk):
 
     def open_portfolio_overview(self, destination=None):
         """Open/focus the Current Collection Portfolio, with no provider work."""
+        if not self._finish_decision_editor_first():
+            return
         if self.__dict__.get("_collector_run_active", False):
             return
         existing = self.__dict__.get("_current_collection_portfolio_window")
@@ -3684,6 +3693,8 @@ class App(tk.Tk):
         window = CurrentCollectionPortfolioWindow(
             self, self.refresh_current_collection_portfolio,
             self._close_current_collection_portfolio,
+            on_inspect=(self.inspect_portfolio_artist if self.__dict__.get("portfolio_artist_inspection_service") is not None else None),
+            before_close=self._before_portfolio_close,
         )
         self._current_collection_portfolio_window = window
         self.refresh_current_collection_portfolio()
@@ -3691,11 +3702,71 @@ class App(tk.Tk):
 
     def _close_current_collection_portfolio(self):
         self._current_collection_portfolio_window = None
+        self._current_collection_portfolio_source = None
+        self._close_artist_inspection()
+
+    def _finish_decision_editor_first(self):
+        editor = self.__dict__.get("_decision_editor")
+        if editor is None or not editor.winfo_exists():
+            return True
+        editor.lift()
+        editor.focus_set()
+        _show_message_safely(messagebox.showinfo, "Collection Decision open",
+                             "Save or cancel the open Collection Decision first.")
+        return False
+
+    def _close_artist_inspection(self):
+        if not self._finish_decision_editor_first():
+            return False
+        inspection = self.__dict__.get("_portfolio_artist_window")
+        if inspection is not None and inspection.alive():
+            inspection.window.destroy()
+        self._portfolio_artist_window = None
+        return True
+
+    def _before_portfolio_close(self):
+        return self._close_artist_inspection()
+
+    def inspect_portfolio_artist(self, category_id):
+        if self._collector_run_active or not self._finish_decision_editor_first():
+            return
+        source = self.__dict__.get("_current_collection_portfolio_source")
+        portfolio = self.__dict__.get("_current_collection_portfolio_window")
+        service = self.__dict__.get("portfolio_artist_inspection_service")
+        if source is None or portfolio is None or not portfolio.alive() or service is None:
+            return
+        try:
+            inspection = service.inspect(source, category_id)
+        except Exception:
+            _show_message_safely(messagebox.showerror, "Artist inspection unavailable",
+                                 "The retained Artist category could not be inspected.")
+            return
+        self._close_artist_inspection()
+        try:
+            self._portfolio_artist_window = PortfolioArtistInspectionWindow(
+                portfolio.window, inspection, portfolio.freshness.get(),
+                self._open_artist_collection_decision, self._close_artist_inspection,
+            )
+        except Exception:
+            _show_message_safely(messagebox.showerror, "Artist inspection unavailable",
+                                 "The Artist inspection window could not be opened.")
+
+    def _open_artist_collection_decision(self, release_id):
+        inspection = self.__dict__.get("_portfolio_artist_window")
+        if self._collector_run_active or inspection is None or not inspection.alive():
+            return
+        member = next((value for value in inspection.inspection.members if value.release_id == release_id), None)
+        if member is None or member.current_metadata is None or inspection.inspection.label_error:
+            return
+        self._edit_collection_decision(release_id, parent=inspection.window, from_portfolio=True)
 
     def _mark_current_collection_portfolio_outdated(self):
         window = self.__dict__.get("_current_collection_portfolio_window")
         if window is not None and window.alive() and window._workspace is not None:
             window.freshness.set("Out of date — collection data changed")
+        inspection = self.__dict__.get("_portfolio_artist_window")
+        if inspection is not None and inspection.alive():
+            inspection.freshness.set("Out of date — collection data changed")
 
     def _update_current_collection_portfolio_run_state(self):
         button = self.__dict__.get("portfolio_button")
@@ -3704,10 +3775,15 @@ class App(tk.Tk):
         window = self.__dict__.get("_current_collection_portfolio_window")
         if window is not None and window.alive():
             window.set_run_active(self._collector_run_active)
+        inspection = self.__dict__.get("_portfolio_artist_window")
+        if inspection is not None and inspection.alive():
+            inspection.set_run_active(self._collector_run_active)
         if self.__dict__.get("dashboard_command_vars") is not None:
             self._refresh_dashboard_command_center()
 
     def refresh_current_collection_portfolio(self):
+        if not self._finish_decision_editor_first():
+            return
         window = self.__dict__.get("_current_collection_portfolio_window")
         if window is None or not window.alive() or self._collector_run_active:
             return
@@ -3728,6 +3804,7 @@ class App(tk.Tk):
             )
             if not outcome.succeeded:
                 raise ValueError("Portfolio execution did not complete.")
+            window.show(presentation, freshness="Current")
         except Exception:
             if previous is None:
                 from dip.experience.current_collection_portfolio import (
@@ -3740,7 +3817,8 @@ class App(tk.Tk):
             window.show(previous, freshness=previous_freshness if previous.distribution else "Unavailable",
                         error="Portfolio could not be calculated. Existing saved data has been preserved.")
             return
-        window.show(presentation, freshness="Current")
+        self._current_collection_portfolio_source = outcome.portfolio
+        self._close_artist_inspection()
         if focused is not None and focused.winfo_exists():
             focused.focus_set()
 
@@ -3957,78 +4035,139 @@ class App(tk.Tk):
 
     def edit_selected(self, event=None):
         selection = self.tree.selection()
-        if not selection:
+        if selection:
+            self._edit_collection_decision(int(selection[0]))
+
+    def _edit_collection_decision(self, release_id, *, parent=None, from_portfolio=False):
+        if not self._finish_decision_editor_first():
             return
-        rid = int(selection[0])
+        service = self.__dict__.get("collection_decision_service")
         try:
-            row = self.db.review_rows(limit=5000)
+            if service is None:
+                raise ValueError("Collection Decision service unavailable.")
+            record = service.load(release_id)
         except Exception:
-            messagebox.showerror(
-                "Collection Decisions unavailable",
-                "Collection Decisions could not be loaded.",
-            )
+            _show_message_safely(messagebox.showerror, "Collection Decisions unavailable",
+                                 "Collection Decisions could not be loaded.")
             return
-        record = next((x for x in row if x["release_id"] == rid), None)
-        if not record:
+        if record is None:
+            _show_message_safely(messagebox.showwarning, "Collection Decision unavailable",
+                                 "The release is no longer available in Collection Decisions.")
             return
 
-        window = tk.Toplevel(self)
-        window.title(f"{record['artist']} — {record['title']}")
-        window.geometry("650x560")
-        window.transient(self)
-        window.grab_set()
+        window = tk.Toplevel(parent or self)
+        try:
+            window.title(f"{record.artist} — {record.title}")
+            window.geometry("650x560")
+            window.transient(parent or self)
+            self._decision_editor = window
 
-        ttk.Label(window, text=f"{record['artist']} — {record['title']}",
-                  font=("Helvetica", 16, "bold"), wraplength=610).pack(anchor="w", padx=18, pady=(18,6))
-        ttk.Label(window, text=record["explanation"], wraplength=610,
-                  justify="left").pack(anchor="w", padx=18, pady=(0,14))
+            def cancel():
+                if not window.winfo_exists():
+                    return
+                try:
+                    if window.grab_current() is window:
+                        window.grab_release()
+                finally:
+                    window.destroy()
+                    if self.__dict__.get("_decision_editor") is window:
+                        self._decision_editor = None
+                    if parent is not None and parent.winfo_exists():
+                        parent.lift()
+                        parent.focus_set()
 
-        form = ttk.Frame(window, padding=18)
-        form.pack(fill="both", expand=True)
+            window.protocol("WM_DELETE_WINDOW", cancel)
+            window.bind("<Escape>", lambda _event: cancel())
+            window.bind("<Destroy>", lambda event: self._decision_editor_destroyed(event, window), add="+")
 
-        decision = tk.StringVar(value=record["decision"])
-        miss = tk.StringVar(value=record["miss_rating"])
-        protected = tk.BooleanVar(value=bool(record["protected"]))
+            ttk.Label(window, text=f"{record.artist} — {record.title}",
+                      font=("Helvetica", 16, "bold"), wraplength=610).pack(anchor="w", padx=18, pady=(18,6))
+            ttk.Label(window, text=record.explanation, wraplength=610,
+                      justify="left").pack(anchor="w", padx=18, pady=(0,14))
 
-        ttk.Label(form, text="Decision").grid(row=0,column=0,sticky="w",pady=6)
-        ttk.Combobox(form, textvariable=decision, state="readonly",
-                     values=CANONICAL_DECISIONS).grid(row=0,column=1,sticky="ew",pady=6)
+            form = ttk.Frame(window, padding=18)
+            form.pack(fill="both", expand=True)
 
-        ttk.Label(form, text="Would I miss it?").grid(row=1,column=0,sticky="w",pady=6)
-        ttk.Combobox(form, textvariable=miss, state="readonly",
-                     values=["Never sell","Would miss it","Unsure","Would not miss it"]).grid(row=1,column=1,sticky="ew",pady=6)
+            decision = tk.StringVar(value=record.decision)
+            miss = tk.StringVar(value=record.miss_rating)
+            protected = tk.BooleanVar(value=bool(record.protected))
 
-        ttk.Checkbutton(form, text="Protect from sale shortlists",
-                        variable=protected).grid(row=2,column=1,sticky="w",pady=6)
+            ttk.Label(form, text="Decision").grid(row=0,column=0,sticky="w",pady=6)
+            ttk.Combobox(form, textvariable=decision, state="readonly",
+                         values=CANONICAL_DECISIONS).grid(row=0,column=1,sticky="ew",pady=6)
 
-        ttk.Label(form, text="Personal notes").grid(row=3,column=0,sticky="nw",pady=6)
-        notes = tk.Text(form, height=10, wrap="word")
-        notes.grid(row=3,column=1,sticky="nsew",pady=6)
-        notes.insert("1.0", record["personal_notes"])
-        form.columnconfigure(1, weight=1)
-        form.rowconfigure(3, weight=1)
+            ttk.Label(form, text="Would I miss it?").grid(row=1,column=0,sticky="w",pady=6)
+            ttk.Combobox(form, textvariable=miss, state="readonly",
+                         values=["Never sell","Would miss it","Unsure","Would not miss it"]).grid(row=1,column=1,sticky="ew",pady=6)
 
-        def save():
+            ttk.Checkbutton(form, text="Protect from sale shortlists",
+                            variable=protected).grid(row=2,column=1,sticky="w",pady=6)
+
+            ttk.Label(form, text="Personal notes").grid(row=3,column=0,sticky="nw",pady=6)
+            notes = tk.Text(form, height=10, wrap="word")
+            notes.grid(row=3,column=1,sticky="nsew",pady=6)
+            notes.insert("1.0", record.personal_notes)
+            form.columnconfigure(1, weight=1)
+            form.rowconfigure(3, weight=1)
+
+            def save():
+                if from_portfolio and self._collector_run_active:
+                    _show_message_safely(messagebox.showinfo, "Collector Run active",
+                                         "Collection Decision saving is unavailable while Collector Run is active.")
+                    return
+                try:
+                    service.save(
+                        record,
+                        decision.get(),
+                        miss.get(),
+                        notes.get("1.0", "end").strip(),
+                        protected.get(),
+                    )
+                except Exception:
+                    _show_message_safely(messagebox.showerror,
+                        "Collection Decision unavailable",
+                        "The Collection Decision could not be saved. Your editor "
+                        "remains open.",
+                    )
+                    return
+                cancel()
+                try:
+                    self.refresh_dashboard()
+                    self.load_table()
+                except Exception:
+                    _show_message_safely(messagebox.showerror, "Collection Decision saved",
+                                         "The decision was saved, but displayed data could not be refreshed.")
+
+            buttons = ttk.Frame(window)
+            buttons.pack(pady=12)
+            save_button = ttk.Button(buttons, text="Save", command=save)
+            save_button.pack(side="left", padx=5)
+            cancel_button = ttk.Button(buttons, text="Cancel", command=cancel)
+            cancel_button.pack(side="left", padx=5)
+            for button in (save_button, cancel_button):
+                for key in ("<Return>", "<space>"):
+                    button.bind(key, lambda _event, control=button: CurrentCollectionPortfolioWindow._activate(control))
+            window._decision_controls = (decision, miss, protected, notes, save_button, cancel_button)
             try:
-                self.db.save_decision(
-                    rid,
-                    decision.get(),
-                    miss.get(),
-                    notes.get("1.0", "end").strip(),
-                    protected.get(),
-                )
+                window.grab_set()
             except Exception:
-                messagebox.showerror(
-                    "Collection Decision unavailable",
-                    "The Collection Decision could not be saved. Your editor "
-                    "remains open.",
-                )
-                return
-            window.destroy()
-            self.refresh_dashboard()
-            self.load_table()
+                cancel()
+                _show_message_safely(messagebox.showerror, "Collection Decision unavailable",
+                                     "The Collection Decision editor could not be opened.")
 
-        ttk.Button(window, text="Save", command=save).pack(pady=12)
+        except Exception:
+            if window.winfo_exists():
+                window.destroy()
+            if self.__dict__.get("_decision_editor") is window:
+                self._decision_editor = None
+            _show_message_safely(messagebox.showerror, "Collection Decision unavailable",
+                                 "The Collection Decision editor could not be opened.")
+
+    def _decision_editor_destroyed(self, event, window):
+        if event.widget is window and self.__dict__.get("_decision_editor") is window:
+            self._decision_editor = None
+
+
     def export_intelligence_report(self):
         path = filedialog.asksaveasfilename(
             title=f"Save {_LEGACY_REPORT_LABEL}",
@@ -4428,6 +4567,8 @@ class App(tk.Tk):
             self.createcommand("::tk::mac::Quit", self.on_close)
 
     def on_close(self):
+        if not self._finish_decision_editor_first():
+            return
         if self.__dict__.get("_collector_run_active", False):
             messagebox.showinfo(
                 "Collector Run active",

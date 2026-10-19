@@ -430,3 +430,39 @@ while active it blocks Portfolio opening and refresh without discarding a live
 snapshot. Refresh failure keeps both the last displayed pair and its previous
 Current/Out-of-date state and adds fixed safe error copy. No provider call,
 database write, History result or Portfolio session field is introduced.
+
+## Artist category inspection
+
+Distribution offers an Artist-category selector in authoritative Distribution
+order and an explicit **Inspect releases** action. Selection alone performs no
+lookup or Portfolio execution. This capability is limited to Artist categories;
+other dimensions, missing-metadata workflows, Overview and Opportunity Alignment
+remain outside this workflow.
+
+The member window consumes the exact immutable Portfolio source that produced
+the displayed result. Category membership, ascending release IDs, quantities,
+shares, denominators and provenance remain retained facts. Current artist/title
+labels are supplementary and explicitly labelled as current catalogue data,
+read only when inspection opens. They cannot regroup members or change totals.
+Every retained member stays visible when its current catalogue record is absent.
+Malformed or failed label lookups produce one safe unavailable-label state for
+the complete membership, never a successful partial result.
+
+The member window has explicit single-release Collection Decision opening.
+Loading uses an exact-ID application boundary independent of review-table
+filters, ordering and row caps. Inspection, editor opening and Cancel write no
+business data. Only explicit Save delegates to existing decision persistence.
+Decisions and personal notes are not Distribution/Concentration inputs, so Save
+neither executes Portfolio nor changes its Current/Out-of-date state.
+
+A committed CSV import marks both retained windows out of date without replacing
+membership or automatically reloading labels. Failed/cancelled imports do not.
+A successful Portfolio replacement closes inspection; failed refresh preserves
+it and the prior displayed source. Active Collector Run leaves inspection
+readable but blocks new inspection, editor opening and Portfolio refresh.
+An open decision editor must be saved or cancelled before replacement or parent
+closure; Cancel, Escape and editor-window close discard only its unsaved buffer.
+Portfolio close also closes inspection. Neither secondary window is restored by
+session v1. Both Portfolio and member inspection support 800×560 content size,
+keyboard navigation and overflow scrolling. No provider, schema, module version,
+calculation, ownership write or History capture is introduced.
