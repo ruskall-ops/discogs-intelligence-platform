@@ -268,6 +268,7 @@ class DesktopApplicationDependencies:
     collector_review: WeekendReviewService | None = None
     session_restoration: SessionRestorationService | None = None
     database_backup: DatabaseBackupService | None = None
+    # One dimension-aware service; retain the established dependency field name.
     portfolio_artist_inspection: PortfolioArtistInspectionService | None = None
     collection_decision: CollectionDecisionService | None = None
 

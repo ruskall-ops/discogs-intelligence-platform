@@ -1,4 +1,4 @@
-"""Thin Tk view over retained Artist membership and supplementary labels."""
+"""Thin shared Tk view over retained category membership and supplementary labels."""
 
 import tkinter as tk
 from tkinter import ttk, font
@@ -17,7 +17,9 @@ class PortfolioArtistInspectionWindow:
         self._closed = False
         self.window = tk.Toplevel(parent)
         try:
-            self.window.title("Artist category — contributing releases")
+            dimension_title = {"artist": "Artist", "label": "Label", "format": "Format",
+                               "release_year": "Release year", "decade": "Decade"}[inspection.dimension.value]
+            self.window.title(f"{dimension_title} category — contributing releases")
             self.window.geometry("800x560")
             self.window.minsize(800, 560)
             self.window.transient(parent)
@@ -38,7 +40,7 @@ class PortfolioArtistInspectionWindow:
             self.heading.configure(yscrollcommand=heading_scroll.set)
             self.heading.pack(side="left", fill="x", expand=True)
             heading_scroll.pack(side="right", fill="y")
-            self.heading.insert("1.0", f"Artist category: {category.display_name}")
+            self.heading.insert("1.0", f"{dimension_title} category: {category.display_name}")
             self.heading.configure(state="disabled")
             ttk.Label(shell, text=(
                 "Retained releases: " + _ratio(PresentedRatio(category.unique_release_count, category.release_denominator, category.release_ratio))

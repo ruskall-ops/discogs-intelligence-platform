@@ -608,14 +608,20 @@ capability.
 > **Collect once, preserve history, analyse transparently, explain clearly, and
 > leave the decision to the collector.**
 
-## Current Collection Artist inspection boundary
+## Current Collection category inspection boundary
 
-Artist inspection is an explicit read-only application workflow over the exact
+Category inspection is one shared read-only application workflow over the exact
 retained Current Collection Portfolio pair. The application service selects an
-existing Artist category and release details without recalculation, then uses
-the existing typed current-metadata repository for supplementary labels. Missing
+existing category within a typed Artist/Label/Format/Release-year/Decade dimension
+and release details without recalculation, then uses the existing typed
+current-metadata repository for supplementary labels. Missing
 records remain explicit members; malformed/failed label results invalidate all
 current labels for that inspection without changing retained facts.
+The established Artist-named files and dependency field host the shared
+dimension-aware implementation; no parallel services or windows are introduced.
+Selectors preserve authoritative ordering and cause no queries or writes.
+Dimension/category identity is scoped to the retained source, including when
+category IDs collide between dimensions.
 
 The composition root injects inspection and exact-ID Collection Decision
 services. A narrow SQLite read loads only the editor fields for one release,

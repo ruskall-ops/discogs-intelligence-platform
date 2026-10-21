@@ -95,6 +95,24 @@ class CurrentCollectionPortfolioDesktopTestCase(unittest.TestCase):
         self.assertEqual(window._traverse(refresh, -1), "break")
         self.assertEqual(focused, ["text", "navigation"])
 
+    def test_inspection_callback_is_dimension_scoped_and_rejects_stale_selector(self):
+        from dip.app.portfolio_artist_inspection import PortfolioDistributionDimension as Dimension
+        window = CurrentCollectionPortfolioWindow.__new__(CurrentCollectionPortfolioWindow)
+        window._workspace = SimpleNamespace(selected_destination=PortfolioDestination.DISTRIBUTION)
+        window.inspect_button = SimpleNamespace(state=lambda: ())
+        window.inspection_dimension = SimpleNamespace(current=lambda: 1)
+        window.artist_category = SimpleNamespace(current=lambda: 0)
+        window._inspection_dimensions = (SimpleNamespace(dimension_id="artist"), SimpleNamespace(dimension_id="label"))
+        window._category_dimension_id = "label"
+        window._artist_categories = (SimpleNamespace(category_id="Shared"),)
+        window._on_inspect = Mock()
+        window._inspect()
+        window._on_inspect.assert_called_once_with("Shared", dimension=Dimension.LABEL)
+        window._on_inspect.reset_mock()
+        window._category_dimension_id = "artist"
+        window._inspect()
+        window._on_inspect.assert_not_called()
+
     def setUp(self):
         self.app = App.__new__(App)
         self.app._collector_run_active = False

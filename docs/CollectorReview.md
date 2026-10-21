@@ -238,11 +238,12 @@ queries. It never persists Review-note drafts or changes the existing
 Save/Discard/Cancel lifecycle. See
 [Session Restoration](SessionRestoration.md).
 
-## Individual decision handoff from Artist inspection
+## Individual decision handoff from category inspection
 
 Current Collection Portfolio can explicitly open the existing individual
-Collection Decision editor from a retained Artist member. The editor record is
-loaded by exact positive release ID through an application service, independently
+Collection Decision editor from a retained Artist, Label, Format, Release year
+or Decade category member through the same inspection workflow. The editor record
+is loaded by exact positive release ID through an application service, independently
 of Collection Decisions filters and table row caps. Portfolio handoff does not
 change those filters or their selected table row. Existing table and Queue entry
 points share that editor and retain their navigation behavior; a hidden table

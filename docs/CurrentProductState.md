@@ -172,9 +172,10 @@ scheduling, cancellation and resumption, background monitoring, accounts,
 cloud sync, commercial distribution support, and automated buying or selling
 remain outside the current product.
 
-## Current Collection Artist workflow
+## Current Collection category workflow
 
-The current development tree adds Artist-category inspection from production
+The current development tree adds shared Artist, Label, Format, Release year
+and Decade category inspection from production
 Portfolio Distribution and an explicit handoff to individual Collection Decision
 editing. This is post-v0.7.0 development, not functionality in the immutable
 published v0.7.0 artifacts. No next release version is assigned.
@@ -184,8 +185,11 @@ provenance while clearly labelling newly read catalogue artist/title values.
 Missing current records remain visible. Exact-ID editor loading is independent
 of Collection Decisions filters and row caps. Only deliberate Save changes a
 Decision; opening and cancellation do not. Decision saves neither execute
-Portfolio nor change its freshness. The workflow covers Artist categories only:
-other dimensions, missing-metadata workflows, bulk actions, new calculations,
+Portfolio nor change its freshness. The five supported dimensions share the same
+retained-source and editor lifecycle.
+Missing metadata is excluded, Decades retain chronological order, and selector
+changes do not query or replace open inspection/editor drafts. Concentration
+entry, missing-metadata workflows, bulk actions, new calculations,
 providers, Overview/Alignment and research persistence remain excluded.
 
 Prior release acceptance and its human/agent-operated, injected-failure,
