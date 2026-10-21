@@ -433,17 +433,31 @@ database write, History result or Portfolio session field is introduced.
 
 ## Artist category inspection
 
-Distribution offers an Artist-category selector in authoritative Distribution
-order and an explicit **Inspect releases** action. Selection alone performs no
-lookup or Portfolio execution. This capability is limited to Artist categories;
-other dimensions, missing-metadata workflows, Overview and Opportunity Alignment
-remain outside this workflow.
+The Artist workflow below now shares its implementation with Label, Format,
+Release year and Decade inspection in the post-v0.7.0 development tree.
+The historical section anchor and implementation filenames remain stable.
+
+Distribution offers a Dimension selector (initially Artist), a represented
+Category selector and explicit **Inspect releases**. Supported dimensions are
+Artist, Label, Format, Release year and Decade, in Distribution order. Category
+choices preserve the source order: Decades are chronological; Release year and
+the other dimensions retain the established count-based ordering. Selection
+alone performs no lookup, Portfolio execution or write. Changing dimensions
+resets the category within the new dimension; identity is the typed dimension
+plus category ID in the exact displayed source, never a globally unique label.
+A dimension with no represented categories disables inspection with an explicit
+reason. Missing metadata remains excluded, not an `Unknown` category.
+Concentration entry, missing-metadata inspection, Overview, Opportunity Alignment
+and bulk actions remain outside this workflow.
 
 The member window consumes the exact immutable Portfolio source that produced
 the displayed result. Category membership, ascending release IDs, quantities,
 shares, denominators and provenance remain retained facts. Current artist/title
 labels are supplementary and explicitly labelled as current catalogue data,
 read only when inspection opens. They cannot regroup members or change totals.
+No additional current Label/Format/year lookup is introduced. The bounded
+read-only heading identifies the retained dimension/category in full; member
+rows keep current catalogue artist/title explicitly separate.
 Every retained member stays visible when its current catalogue record is absent.
 Malformed or failed label lookups produce one safe unavailable-label state for
 the complete membership, never a successful partial result.
@@ -460,6 +474,8 @@ membership or automatically reloading labels. Failed/cancelled imports do not.
 A successful Portfolio replacement closes inspection; failed refresh preserves
 it and the prior displayed source. Active Collector Run leaves inspection
 readable but blocks new inspection, editor opening and Portfolio refresh.
+Selector changes leave an existing inspection and editor draft untouched; only
+explicit inspection can replace that window, after the editor is finished.
 An open decision editor must be saved or cancelled before replacement or parent
 closure; Cancel, Escape and editor-window close discard only its unsaved buffer.
 Portfolio close also closes inspection. Neither secondary window is restored by
