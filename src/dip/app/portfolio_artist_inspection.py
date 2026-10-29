@@ -1,4 +1,4 @@
-"""Read-only Artist membership inspection of an exact retained Portfolio."""
+"""Read-only dimension-aware membership inspection of an exact retained Portfolio."""
 
 from dataclasses import dataclass
 
@@ -36,14 +36,18 @@ class ArtistInspection:
     category: PortfolioCategoryDistributionEntry
     members: tuple[ArtistInspectionMember, ...]
     label_error: str = ""
+    dimension: PortfolioDistributionDimension = PortfolioDistributionDimension.ARTIST
 
     def __post_init__(self):
         if type(self.source) is not CurrentCollectionPortfolio:
             raise TypeError("Inspection requires an exact retained Portfolio.")
-        artist = next(value for value in self.source.distribution.output.dimensions
-                      if value.dimension is PortfolioDistributionDimension.ARTIST)
-        if not any(value is self.category for value in artist.entries):
-            raise ValueError("Category must belong to this retained Artist result.")
+        if type(self.dimension) is not PortfolioDistributionDimension:
+            raise TypeError("Inspection dimension must be a supported typed dimension.")
+        validate_portfolio_distribution_output(self.source.distribution.output)
+        selected = next(value for value in self.source.distribution.output.dimensions
+                        if value.dimension is self.dimension)
+        if not any(value is self.category for value in selected.entries):
+            raise ValueError("Category must belong to this retained dimension result.")
         if type(self.members) is not tuple or any(type(value) is not ArtistInspectionMember for value in self.members):
             raise TypeError("Members must be an immutable typed tuple.")
         if tuple(value.release_id for value in self.members) != self.category.release_ids:
@@ -58,20 +62,27 @@ class ArtistInspection:
 
 
 class PortfolioArtistInspectionService:
+    """Shared category inspection; the historical module/API name is retained."""
+
     def __init__(self, metadata: CurrentReleaseMetadataRepository):
         self._metadata = metadata
 
-    def inspect(self, source: CurrentCollectionPortfolio, category_id: str) -> ArtistInspection:
+    def inspect(
+        self, source: CurrentCollectionPortfolio, category_id: str, *,
+        dimension: PortfolioDistributionDimension = PortfolioDistributionDimension.ARTIST,
+    ) -> ArtistInspection:
         if type(source) is not CurrentCollectionPortfolio:
             raise TypeError("source must be a retained Current Collection Portfolio.")
         if type(category_id) is not str or not category_id:
-            raise ValueError("category_id must identify a retained Artist category.")
+            raise ValueError("category_id must identify a retained category.")
+        if type(dimension) is not PortfolioDistributionDimension:
+            raise TypeError("dimension must be a supported typed dimension.")
         output = source.distribution.output
         validate_portfolio_distribution_output(output)
-        artist = next(value for value in output.dimensions if value.dimension is PortfolioDistributionDimension.ARTIST)
-        category = next((value for value in artist.entries if value.category_id == category_id), None)
+        selected = next(value for value in output.dimensions if value.dimension is dimension)
+        category = next((value for value in selected.entries if value.category_id == category_id), None)
         if category is None:
-            raise ValueError("Artist category is not present in the retained Portfolio.")
+            raise ValueError("Category is not present in this dimension of the retained Portfolio.")
         details = {value.release_id: value for value in output.releases}
         labels = {}
         error = ""
@@ -91,4 +102,4 @@ class PortfolioArtistInspectionService:
         return ArtistInspection(source, category, tuple(
             ArtistInspectionMember(value, details[value].quantity, labels.get(value))
             for value in category.release_ids
-        ), error)
+        ), error, dimension)

@@ -14,6 +14,7 @@ from dip.app.collector_run import (
     CollectorRunUnavailableError,
 )
 from dip.experience.desktop.portfolio_artist_inspection_window import PortfolioArtistInspectionWindow
+from dip.app.portfolio_artist_inspection import PortfolioDistributionDimension
 from dip.app.database_backup import DatabaseBackupValidationError
 from dip.collection.services import ImportService
 from dip.collector_review import (
@@ -3727,7 +3728,7 @@ class App(tk.Tk):
     def _before_portfolio_close(self):
         return self._close_artist_inspection()
 
-    def inspect_portfolio_artist(self, category_id):
+    def inspect_portfolio_artist(self, category_id, *, dimension=PortfolioDistributionDimension.ARTIST):
         if self._collector_run_active or not self._finish_decision_editor_first():
             return
         source = self.__dict__.get("_current_collection_portfolio_source")
@@ -3736,10 +3737,10 @@ class App(tk.Tk):
         if source is None or portfolio is None or not portfolio.alive() or service is None:
             return
         try:
-            inspection = service.inspect(source, category_id)
+            inspection = service.inspect(source, category_id, dimension=dimension)
         except Exception:
-            _show_message_safely(messagebox.showerror, "Artist inspection unavailable",
-                                 "The retained Artist category could not be inspected.")
+            _show_message_safely(messagebox.showerror, "Category inspection unavailable",
+                                 "The retained category could not be inspected.")
             return
         self._close_artist_inspection()
         try:
@@ -3748,8 +3749,8 @@ class App(tk.Tk):
                 self._open_artist_collection_decision, self._close_artist_inspection,
             )
         except Exception:
-            _show_message_safely(messagebox.showerror, "Artist inspection unavailable",
-                                 "The Artist inspection window could not be opened.")
+            _show_message_safely(messagebox.showerror, "Category inspection unavailable",
+                                 "The category inspection window could not be opened.")
 
     def _open_artist_collection_decision(self, release_id):
         inspection = self.__dict__.get("_portfolio_artist_window")

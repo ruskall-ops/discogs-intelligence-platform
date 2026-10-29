@@ -5,6 +5,8 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
+from dip.app.portfolio_artist_inspection import PortfolioDistributionDimension
+
 from dip.experience.current_collection_portfolio import (
     CurrentCollectionPortfolioPresentation,
     PortfolioDestination,
@@ -128,14 +130,18 @@ class CurrentCollectionPortfolioWindow:
         self.close_button = ttk.Button(controls, text="Close", command=self.close)
         self.close_button.pack(side="right")
         self.artist_controls = ttk.Frame(shell)
-        ttk.Label(self.artist_controls, text="Artist category:").grid(row=0, column=0, sticky="w")
+        ttk.Label(self.artist_controls, text="Dimension:").grid(row=0, column=0, sticky="w")
+        self.inspection_dimension = ttk.Combobox(self.artist_controls, state="readonly", width=22)
+        self.inspection_dimension.grid(row=0, column=1, sticky="ew", padx=5, pady=(0, 3))
+        self.inspection_dimension.bind("<<ComboboxSelected>>", self._select_inspection_dimension)
+        ttk.Label(self.artist_controls, text="Category:").grid(row=1, column=0, sticky="w")
         self.artist_category = ttk.Combobox(self.artist_controls, state="readonly", width=30)
-        self.artist_category.grid(row=0, column=1, sticky="ew", padx=5)
+        self.artist_category.grid(row=1, column=1, sticky="ew", padx=5)
         self.inspect_button = ttk.Button(self.artist_controls, text="Inspect releases", command=self._inspect)
-        self.inspect_button.grid(row=0, column=2)
+        self.inspect_button.grid(row=1, column=2)
         self.artist_controls.columnconfigure(1, weight=1)
         self.artist_reason = tk.StringVar(value="")
-        ttk.Label(self.artist_controls, textvariable=self.artist_reason, wraplength=760).grid(row=1, column=0, columnspan=3, sticky="w")
+        ttk.Label(self.artist_controls, textvariable=self.artist_reason, wraplength=760).grid(row=2, column=0, columnspan=3, sticky="w")
         body = ttk.Frame(shell)
         body.pack(fill="both", expand=True)
         self.text = tk.Text(body, wrap="word", state="disabled", padx=10, pady=10, takefocus=True)
@@ -144,7 +150,7 @@ class CurrentCollectionPortfolioWindow:
         self.text.pack(side="left", fill="both", expand=True)
         scroll.pack(side="right", fill="y")
         self._body = body
-        self._focus_order = (self.navigation, self.refresh_button, self.artist_category, self.inspect_button, self.text, self.close_button)
+        self._focus_order = (self.navigation, self.refresh_button, self.inspection_dimension, self.artist_category, self.inspect_button, self.text, self.close_button)
         for widget in self._focus_order:
             widget.configure(takefocus=1)
             widget.bind("<Tab>", lambda _event, current=widget: self._traverse(current, 1))
@@ -174,14 +180,22 @@ class CurrentCollectionPortfolioWindow:
         self.text.insert("1.0", "\n".join(portfolio_lines(workspace)))
         self.text.configure(state="disabled")
         self.text.yview_moveto(0)
-        self._artist_categories = tuple(
-            category for dimension in (workspace.distribution.dimensions if workspace.distribution else ())
-            if dimension.dimension_id == "artist" for category in dimension.categories
-        )
-        self.artist_category.configure(values=tuple(f"{value.label} [{value.category_id}]" for value in self._artist_categories))
-        self.artist_category.set("")
-        if self._artist_categories:
-            self.artist_category.current(0)
+        previous_dimensions = getattr(self, "_inspection_dimensions", ())
+        previous_index = self.inspection_dimension.current()
+        previous_dimension = (previous_dimensions[previous_index].dimension_id
+                              if 0 <= previous_index < len(previous_dimensions) else "artist")
+        previous_category_index = self.artist_category.current()
+        previous_categories = getattr(self, "_artist_categories", ())
+        previous_category = (previous_categories[previous_category_index].category_id
+                             if 0 <= previous_category_index < len(previous_categories) else None)
+        self._inspection_dimensions = tuple(workspace.distribution.dimensions if workspace.distribution else ())
+        self.inspection_dimension.configure(values=tuple(value.title for value in self._inspection_dimensions))
+        self.inspection_dimension.set("")
+        if self._inspection_dimensions:
+            index = next((i for i, value in enumerate(self._inspection_dimensions)
+                          if value.dimension_id == previous_dimension), 0)
+            self.inspection_dimension.current(index)
+        self._set_inspection_categories(previous_category)
         if workspace.selected_destination is PortfolioDestination.DISTRIBUTION:
             self.artist_controls.pack(before=self._body, fill="x", pady=(0, 5))
         else:
@@ -195,24 +209,48 @@ class CurrentCollectionPortfolioWindow:
         destination = (PortfolioDestination.DISTRIBUTION, PortfolioDestination.CONCENTRATION)[self.navigation.current()]
         self.show(replace(self._workspace, selected_destination=destination), freshness=self.freshness.get(), error=self.error.get())
 
+    def _set_inspection_categories(self, category_id=None):
+        position = self.inspection_dimension.current()
+        dimension = (self._inspection_dimensions[position]
+                     if 0 <= position < len(self._inspection_dimensions) else None)
+        # Preserve authoritative source order; IDs are scoped to this dimension.
+        self._category_dimension_id = dimension.dimension_id if dimension else None
+        self._artist_categories = tuple(dimension.categories if dimension else ())
+        self.artist_category.configure(values=tuple(f"{value.label} [{value.category_id}]" for value in self._artist_categories))
+        self.artist_category.set("")
+        if self._artist_categories:
+            self.artist_category.current(next((i for i, value in enumerate(self._artist_categories)
+                                               if value.category_id == category_id), 0))
+
+    def _select_inspection_dimension(self, _event=None):
+        # No lookup/execution and no replacement of an existing inspection/draft.
+        self._set_inspection_categories()
+        self.set_run_active(self._run_active)
+
     def set_run_active(self, active: bool) -> None:
         self._run_active = active
         self.refresh_button.state(["disabled"] if active else ["!disabled"])
-        enabled = not active and bool(getattr(self, "_artist_categories", ())) and self._on_inspect is not None
+        available = not active and self._on_inspect is not None and bool(getattr(self, "_inspection_dimensions", ()))
+        self.inspection_dimension.configure(state="readonly" if available else "disabled")
+        enabled = available and bool(getattr(self, "_artist_categories", ()))
         self.artist_category.configure(state="readonly" if enabled else "disabled")
         self.inspect_button.state(["!disabled"] if enabled else ["disabled"])
         self.artist_reason.set(
-            "Artist inspection is unavailable while Collector Run is active." if active
-            else "Artist inspection is unavailable." if self._on_inspect is None
-            else "No represented Artist categories in this result." if not self._artist_categories
+            "Category inspection is unavailable while Collector Run is active." if active
+            else "Category inspection is unavailable." if self._on_inspect is None
+            else "No represented categories in this dimension." if not getattr(self, "_artist_categories", ())
             else ""
         )
 
     def _inspect(self):
         if "disabled" not in self.inspect_button.state() and self._workspace.selected_destination is PortfolioDestination.DISTRIBUTION:
+            dimension_position = self.inspection_dimension.current()
             position = self.artist_category.current()
-            if 0 <= position < len(self._artist_categories):
-                self._on_inspect(self._artist_categories[position].category_id)
+            if (0 <= dimension_position < len(self._inspection_dimensions)
+                    and self._inspection_dimensions[dimension_position].dimension_id == self._category_dimension_id
+                    and 0 <= position < len(self._artist_categories)):
+                self._on_inspect(self._artist_categories[position].category_id,
+                                 dimension=PortfolioDistributionDimension(self._category_dimension_id))
 
     def _traverse(self, current, step: int) -> str:
         if not self.alive():
