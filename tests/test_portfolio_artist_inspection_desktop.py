@@ -33,6 +33,7 @@ class PortfolioArtistInspectionTkTest(unittest.TestCase):
         self.stack=ExitStack()
         self.addCleanup(self.stack.close)
         self.provider=self.stack.enter_context(patch("dip.composition.DiscogsClient",side_effect=AssertionError("provider forbidden")))
+        self.http=self.stack.enter_context(patch("requests.sessions.Session.request",side_effect=AssertionError("HTTP forbidden")))
         self.network=self.stack.enter_context(patch("socket.socket.connect",side_effect=AssertionError("network forbidden")))
         self.stack.enter_context(patch("dip.composition.SETTINGS",replace(SETTINGS,database_path=self.path)))
         self.dependencies=build_desktop_application_dependencies()
@@ -82,7 +83,7 @@ class PortfolioArtistInspectionTkTest(unittest.TestCase):
 
     def tearDown(self):
         try:
-            self.provider.assert_not_called();self.network.assert_not_called()
+            self.provider.assert_not_called();self.http.assert_not_called();self.network.assert_not_called()
             self.assertEqual(self.errors,[])
         finally:
             try:
@@ -105,6 +106,89 @@ class PortfolioArtistInspectionTkTest(unittest.TestCase):
         self.assertEqual(self.execution.call_count,1)
         self.assertEqual(manifest(self.database.conn),before)
         self.assertIn("disabled",inspection.open_button.state())
+
+    def test_keyboard_first_member_navigation_and_exact_editor_activation(self):
+        inspection = self.inspect()
+        self.pump(lambda: inspection.window.winfo_ismapped())
+        self.assertEqual(inspection.tree.selection(), ())
+        self.assertEqual(inspection.tree.focus(), "")
+        self.assertIn("disabled", inspection.open_button.state())
+        before = manifest(self.database.conn)
+
+        inspection.heading.focus_force()
+        self.pump()
+        inspection.heading.event_generate("<Tab>")
+        self.pump()
+        self.assertIs(self.app.focus_get(), inspection.tree)
+        with patch.object(self.dependencies.portfolio_artist_inspection._metadata,
+                          "metadata_for_release_ids", side_effect=AssertionError("keyboard navigation queried")) as lookup:
+            inspection.tree.event_generate("<Down>")
+            self.pump()
+            self.assertEqual(inspection.tree.selection(), ("10",))
+            self.assertEqual(inspection.tree.focus(), "10")
+            self.assertNotIn("disabled", inspection.open_button.state())
+            self.assertIsNone(self.app._decision_editor)
+            inspection.tree.event_generate("<Down>")
+            self.pump()
+            self.assertEqual(inspection.tree.selection(), ("20",))
+            inspection.tree.event_generate("<Up>")
+            self.pump()
+            self.assertEqual(inspection.tree.selection(), ("10",))
+            lookup.assert_not_called()
+        self.assertEqual(manifest(self.database.conn), before)
+        self.assertEqual(self.execution.call_count, 1)
+
+        inspection.tree.event_generate("<Tab>")
+        self.pump()
+        self.assertIs(self.app.focus_get(), inspection.open_button)
+        with patch.object(self.app, "_edit_collection_decision", wraps=self.app._edit_collection_decision) as opening:
+            inspection.open_button.event_generate("<Return>")
+            self.pump()
+            opening.assert_called_once_with(10, parent=inspection.window, from_portfolio=True)
+        editor = self.app._decision_editor
+        self.assertIsNotNone(editor)
+        self.assertEqual(editor.title(), "A — First")
+        editor.focus_force()
+        self.pump()
+        editor.event_generate("<Escape>")
+        self.pump()
+        self.assertIsNone(self.app._decision_editor)
+        self.assertEqual(manifest(self.database.conn), before)
+
+    def test_keyboard_navigation_unavailable_member_and_empty_table(self):
+        self.database.conn.execute("DELETE FROM releases WHERE release_id=20")
+        self.database.conn.commit()
+        before = manifest(self.database.conn)
+        inspection = self.inspect()
+        inspection.heading.focus_force()
+        self.pump()
+        inspection.heading.event_generate("<Tab>")
+        self.pump()
+        self.assertIs(self.app.focus_get(), inspection.tree)
+        self.assertEqual(inspection.tree.selection(), ())
+        with patch.object(inspection, "_on_open") as opening:
+            inspection.tree.event_generate("<Down>")
+            self.pump()
+            self.assertEqual(inspection.tree.selection(), ("10",))
+            self.assertNotIn("disabled", inspection.open_button.state())
+            inspection.tree.event_generate("<Down>")
+            self.pump()
+            self.assertEqual(inspection.tree.selection(), ("20",))
+            self.assertIn("disabled", inspection.open_button.state())
+            inspection.open_button.event_generate("<Return>")
+            self.pump()
+            opening.assert_not_called()
+            inspection.tree.delete(*inspection.tree.get_children())
+            self.pump()
+            inspection.tree.focus_force()
+            inspection.tree.event_generate("<Down>")
+            self.pump()
+            self.assertEqual(inspection.tree.selection(), ())
+            self.assertIn("disabled", inspection.open_button.state())
+            opening.assert_not_called()
+        self.assertEqual(self.execution.call_count, 1)
+        self.assertEqual(manifest(self.database.conn), before)
+        self.assertIsNone(self.app._decision_editor)
 
     def test_measured_compact_windows_keyboard_controls_and_overflow(self):
         self.pump(lambda:(self.portfolio.window.winfo_width(),self.portfolio.window.winfo_height())==(800,560))

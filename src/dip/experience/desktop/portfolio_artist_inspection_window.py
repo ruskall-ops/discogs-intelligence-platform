@@ -90,6 +90,7 @@ class PortfolioArtistInspectionWindow:
             for key in ("<Shift-Tab>", "<ISO_Left_Tab>"):
                 self.heading.bind(key, lambda _event: self._focus_control(self.close_button))
             self.tree.bind("<<TreeviewSelect>>", lambda _event: self._availability())
+            self.tree.bind("<Down>", self._select_first_on_down)
             for button in (self.open_button, self.close_button):
                 for key in ("<Return>", "<space>"):
                     button.bind(key, lambda _event, control=button: self._activate(control))
@@ -120,6 +121,16 @@ class PortfolioArtistInspectionWindow:
             self.status.set("This retained member has no current catalogue record. Its membership and totals are unchanged.")
         else:
             self.status.set("Select a release, then explicitly open its Collection Decision.")
+
+    def _select_first_on_down(self, _event):
+        if self.tree.focus():
+            return None
+        members = self.tree.get_children()
+        if members:
+            first = members[0]
+            self.tree.focus(first)
+            self.tree.selection_set(first)
+        return "break"
 
     def open_selected(self):
         if "disabled" not in self.open_button.state():
