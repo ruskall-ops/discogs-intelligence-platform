@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+import os
+import tkinter as tk
 import unittest
 from unittest.mock import Mock, patch
 
@@ -104,11 +106,37 @@ class CurrentCollectionPortfolioDesktopTestCase(unittest.TestCase):
         window.artist_category = SimpleNamespace(current=lambda: 0)
         window._inspection_dimensions = (SimpleNamespace(dimension_id="artist"), SimpleNamespace(dimension_id="label"))
         window._category_dimension_id = "label"
+        window._category_context = (PortfolioDestination.DISTRIBUTION, "label", None)
         window._artist_categories = (SimpleNamespace(category_id="Shared"),)
         window._on_inspect = Mock()
         window._inspect()
         window._on_inspect.assert_called_once_with("Shared", dimension=Dimension.LABEL)
         window._on_inspect.reset_mock()
+        window._category_dimension_id = "artist"
+        window._inspect()
+        window._on_inspect.assert_not_called()
+
+    def test_concentration_callback_requires_displayed_dimension_basis_and_category(self):
+        from dip.app.portfolio_artist_inspection import PortfolioDistributionDimension as Dimension
+        window = CurrentCollectionPortfolioWindow.__new__(CurrentCollectionPortfolioWindow)
+        window._workspace = SimpleNamespace(selected_destination=PortfolioDestination.CONCENTRATION)
+        window.inspect_button = SimpleNamespace(state=lambda: ())
+        dimension = SimpleNamespace(dimension_id="label")
+        window.inspection_dimension = SimpleNamespace(current=lambda: 1)
+        window.inspection_basis = SimpleNamespace(current=lambda: 0)
+        window.artist_category = SimpleNamespace(current=lambda: 0)
+        window._inspection_dimensions = (SimpleNamespace(dimension_id="artist"), dimension)
+        window._category_dimension_id = "label"
+        window._category_context = (PortfolioDestination.CONCENTRATION, "label", 0)
+        window._artist_categories = (SimpleNamespace(category_id="Shared"),)
+        window._on_inspect = Mock()
+        window._inspect()
+        window._on_inspect.assert_called_once_with("Shared", dimension=Dimension.LABEL)
+        window._on_inspect.reset_mock()
+        window.inspection_basis = SimpleNamespace(current=lambda: 1)
+        window._inspect()
+        window._on_inspect.assert_not_called()
+        window.inspection_basis = SimpleNamespace(current=lambda: 0)
         window._category_dimension_id = "artist"
         window._inspect()
         window._on_inspect.assert_not_called()
@@ -214,6 +242,86 @@ class CurrentCollectionPortfolioDesktopTestCase(unittest.TestCase):
         self.assertIn("represented memberships only", concentration)
         self.assertIn("First 3 categories in Distribution order", concentration)
         self.assertNotIn("Opportunity Alignment", concentration)
+
+
+class PortfolioDestinationSelectionTkTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        try:
+            root = tk.Tk()
+            root.withdraw()
+            root.destroy()
+        except tk.TclError as exc:
+            if os.environ.get("DIP_REQUIRE_TK_TESTS") == "1":
+                raise RuntimeError("Real Tk display is required") from exc
+            raise unittest.SkipTest(f"Real Tk display unavailable: {exc}")
+
+    def test_distribution_selection_survives_concentration_round_trip_and_revalidates(self):
+        outcome, repository = _outcome((
+            _row(10, artist="A", label="L1"),
+            _row(20, artist="B", label="L2"),
+        ))
+        builder = CurrentCollectionPortfolioPresentationBuilder()
+        root = tk.Tk()
+        root.geometry("1050x650+0+0")
+        errors = []
+        root.report_callback_exception = lambda *args: errors.append(args)
+        refresh = Mock()
+        inspect = Mock()
+        window = CurrentCollectionPortfolioWindow(root, refresh, Mock(), on_inspect=inspect)
+        window.window.geometry("800x560")
+        try:
+            window.show(builder.build(outcome), freshness="Current")
+            root.update()
+            label_index = next(i for i, item in enumerate(window._inspection_dimensions)
+                               if item.dimension_id == "label")
+            window.inspection_dimension.current(label_index)
+            window.inspection_dimension.event_generate("<<ComboboxSelected>>")
+            root.update()
+            window.artist_category.current(1)
+            selected = (window.inspection_dimension.get(), window.artist_category.get())
+            self.assertEqual(selected, ("Label", "L2 [L2]"))
+            with patch("dip.app.portfolio_artist_inspection.PortfolioArtistInspectionService.inspect",
+                       side_effect=AssertionError("navigation queried labels")) as lookup:
+                window.navigation.current(1)
+                window.navigation.event_generate("<<ComboboxSelected>>")
+                root.update()
+                window.inspection_dimension.current(label_index)
+                window.inspection_dimension.event_generate("<<ComboboxSelected>>")
+                root.update()
+                window.inspection_basis.current(1)
+                window.inspection_basis.event_generate("<<ComboboxSelected>>")
+                root.update()
+                window.artist_category.current(0)
+                concentration_selected = (window.inspection_dimension.get(),
+                                          window.inspection_basis.get(), window.artist_category.get())
+                window.navigation.current(0)
+                window.navigation.event_generate("<<ComboboxSelected>>")
+                root.update()
+                self.assertEqual((window.inspection_dimension.get(), window.artist_category.get()), selected)
+                window.navigation.current(1)
+                window.navigation.event_generate("<<ComboboxSelected>>")
+                root.update()
+                self.assertEqual((window.inspection_dimension.get(), window.inspection_basis.get(),
+                                  window.artist_category.get()), concentration_selected)
+                window.navigation.current(0)
+                window.navigation.event_generate("<<ComboboxSelected>>")
+                root.update()
+                self.assertEqual((window.inspection_dimension.get(), window.artist_category.get()), selected)
+                lookup.assert_not_called()
+            refresh.assert_not_called()
+            inspect.assert_not_called()
+            self.assertEqual(repository.reads, 1)
+            self.assertEqual(errors, [])
+
+            replacement, _ = _outcome((_row(30, label="New"),))
+            window.show(builder.build(replacement), freshness="Current")
+            root.update()
+            self.assertEqual(window.inspection_dimension.get(), "Label")
+            self.assertEqual(window.artist_category.get(), "New [New]")
+        finally:
+            window.window.destroy()
+            root.destroy()
 
 
 if __name__ == "__main__":

@@ -175,10 +175,14 @@ remain outside the current product.
 ## Current Collection category workflow
 
 The current development tree adds shared Artist, Label, Format, Release year
-and Decade category inspection from production
-Portfolio Distribution and an explicit handoff to individual Collection Decision
-editing. This is post-v0.7.0 development, not functionality in the immutable
-published v0.7.0 artifacts. No next release version is assigned.
+and Decade category inspection from production Portfolio Distribution and a
+Concentration entry for the complete tied largest-category set on either
+membership basis. Both use explicit inspection and handoff to individual
+Collection Decision editing. This is post-v0.7.0 development, not functionality
+in the immutable published v0.7.0 artifacts. Source implementation and test
+results do not by themselves grant independent acceptance. No next release
+version is assigned; installed-wheel acceptance remains pending for a future
+combined candidate.
 
 Inspection preserves retained category membership, copy quantities, totals and
 provenance while clearly labelling newly read catalogue artist/title values.

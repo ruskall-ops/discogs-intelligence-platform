@@ -447,8 +447,21 @@ resets the category within the new dimension; identity is the typed dimension
 plus category ID in the exact displayed source, never a globally unique label.
 A dimension with no represented categories disables inspection with an explicit
 reason. Missing metadata remains excluded, not an `Unknown` category.
-Concentration entry, missing-metadata inspection, Overview, Opportunity Alignment
-and bulk actions remain outside this workflow.
+Concentration offers the same explicit inspection entry point for a largest
+category. Its Dimension selector uses Distribution order; Basis selects release
+or copy membership; Largest category lists every tied maximum in retained
+Distribution order. The initial basis is release membership. The initial
+dimension is Artist when usable, otherwise the first usable dimension. An
+unusable dimension or basis has no fabricated category; the empty dimension
+disables Basis, Largest category and Inspect.
+Selection reads only the exact displayed Distribution/Concentration pair;
+dimension, basis and category must still match that pair when Inspect is
+activated. The typed dimension and category ID identify the retained
+Distribution membership. Basis determines which largest categories may be
+chosen, not a new release membership or denominator. Explicit inspection uses
+the shared member window and its supplementary current-label lookup.
+Missing-metadata inspection, Overview, Opportunity Alignment and bulk actions
+remain outside this workflow.
 
 The member window consumes the exact immutable Portfolio source that produced
 the displayed result. Category membership, ascending release IDs, quantities,
