@@ -324,7 +324,9 @@ and a shared toolbar/Dashboard window for those two destinations only.
 Dashboard startup, SQLite-row adapter and small-window session fallback fixes
 are delivered. Release preparation added version metadata and truthful
 documentation only. [v0.7.0 was published](https://github.com/ruskall-ops/discogs-intelligence-platform/releases/tag/v0.7.0)
-at `2026-10-16T10:45:33Z`. No additional development slice is approved.
+at `2026-10-16T10:45:33Z`. Subsequent category inspection and its Concentration
+largest-category entry are post-release development. They are not part of the
+published v0.7.0 artifacts or an assigned next release.
 
 Execution occurs only on new open or explicit refresh. Committed CSV import
 marks an open result stale; failed/cancelled import does not. Failed refresh

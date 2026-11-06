@@ -246,7 +246,9 @@ class PortfolioArtistInspectionTkTest(unittest.TestCase):
         self.portfolio.navigation.current(1)
         self.portfolio.navigation.event_generate("<<ComboboxSelected>>")
         self.pump()
-        self.assertFalse(self.portfolio.artist_controls.winfo_ismapped())
+        self.assertTrue(self.portfolio.artist_controls.winfo_ismapped())
+        self.assertTrue(self.portfolio.inspection_basis.winfo_ismapped())
+        self.assertEqual(self.portfolio.inspection_basis.get(), "Release membership")
 
     def _assert_long_artist_layout(self, repetitions, expected_length):
         artist = ("Long Artist " * repetitions).strip()
@@ -585,6 +587,164 @@ class PortfolioArtistInspectionTkTest(unittest.TestCase):
         self.portfolio.inspection_dimension.current(index)
         self.portfolio.inspection_dimension.event_generate("<<ComboboxSelected>>")
         self.pump()
+
+    def select_concentration(self):
+        self.portfolio.navigation.current(1)
+        self.portfolio.navigation.event_generate("<<ComboboxSelected>>")
+        self.pump()
+
+    def select_basis(self, index):
+        self.portfolio.inspection_basis.current(index)
+        self.portfolio.inspection_basis.event_generate("<<ComboboxSelected>>")
+        self.pump()
+
+    def test_concentration_ties_basis_order_and_selection_are_read_only(self):
+        self.database.conn.execute("UPDATE releases SET label=NULL")
+        self.database.conn.execute("UPDATE releases SET label='L1' WHERE release_id IN (10,20)")
+        self.database.conn.execute("UPDATE releases SET label='L2' WHERE release_id IN (30,40)")
+        self.database.conn.commit()
+        self.app.refresh_current_collection_portfolio();self.pump()
+        before=manifest(self.database.conn)
+        with patch.object(self.dependencies.portfolio_artist_inspection._metadata,
+                          "metadata_for_release_ids", side_effect=AssertionError("selector queried")) as labels:
+            self.select_concentration()
+            self.select_dimension(Dimension.LABEL)
+            self.assertEqual(self.portfolio.inspection_basis.get(), "Release membership")
+            self.assertEqual(tuple(value.category_id for value in self.portfolio._artist_categories), ("L1", "L2"))
+            self.assertEqual(self.portfolio.artist_category.current(), 0)
+            self.select_basis(1)
+            self.assertEqual(tuple(value.category_id for value in self.portfolio._artist_categories), ("L1",))
+            self.select_basis(0)
+            self.portfolio.artist_category.current(1)
+            self.select_basis(1)
+            self.assertEqual(self.portfolio.artist_category.current(), 0)
+            labels.assert_not_called()
+        self.assertEqual(self.execution.call_count, 2)
+        self.assertEqual(manifest(self.database.conn), before)
+        self.portfolio.inspect_button.invoke();self.pump()
+        inspection=self.app._portfolio_artist_window
+        self.assertIs(inspection.inspection.source,self.app._current_collection_portfolio_source)
+        self.assertIs(inspection.inspection.dimension,Dimension.LABEL)
+        self.assertEqual(inspection.tree.get_children(),("10","20"))
+        self.assertEqual(manifest(self.database.conn),before)
+        inspection.tree.selection_set("10");self.pump()
+        inspection.open_button.invoke();self.pump()
+        editor=self.app._decision_editor
+        editor._decision_controls[3].insert("1.0","Unsaved concentration draft")
+        self.select_basis(1)
+        self.portfolio.inspect_button.invoke();self.pump()
+        self.assertIs(self.app._decision_editor,editor)
+        self.assertIs(self.app._portfolio_artist_window,inspection)
+        self.assertIn("Unsaved concentration draft",editor._decision_controls[3].get("1.0","end"))
+        editor._decision_controls[5].invoke();self.pump()
+        self.assertEqual(manifest(self.database.conn),before)
+
+    def test_concentration_colliding_ids_empty_and_refresh_lifecycle(self):
+        self.database.conn.execute("UPDATE releases SET artist=NULL WHERE release_id BETWEEN 100 AND 140")
+        self.database.conn.execute("UPDATE releases SET label=NULL")
+        self.database.conn.execute("UPDATE releases SET label='A' WHERE release_id IN (20,30)")
+        self.database.conn.commit()
+        self.app.refresh_current_collection_portfolio();self.pump()
+        self.select_concentration()
+        source=self.app._current_collection_portfolio_source
+        self.assertEqual(self.portfolio.inspection_dimension.get(),"Artist")
+        self.assertEqual(self.portfolio._artist_categories[0].category_id,"A")
+        self.portfolio.inspect_button.invoke();self.pump()
+        artist=self.app._portfolio_artist_window
+        self.assertEqual(artist.tree.get_children(),("10","20"))
+        self.select_dimension(Dimension.LABEL)
+        self.assertIs(self.app._portfolio_artist_window,artist)
+        self.assertEqual(self.portfolio._artist_categories[0].category_id,"A")
+        self.portfolio.inspect_button.invoke();self.pump()
+        label=self.app._portfolio_artist_window
+        self.assertIs(label.inspection.source,source)
+        self.assertEqual(label.tree.get_children(),("20","30"))
+        self.select_dimension(Dimension.FORMAT)
+        self.select_basis(1)
+        selected_category=self.portfolio.artist_category.get()
+        self.app._mark_current_collection_portfolio_outdated()
+        with patch.object(self.dependencies.current_collection_portfolio_execution,"execute",side_effect=RuntimeError("private")):
+            self.app.refresh_current_collection_portfolio();self.pump()
+        self.assertIs(self.app._portfolio_artist_window,label)
+        self.assertIs(label.inspection.source,source)
+        self.assertEqual(self.portfolio.inspection_dimension.get(),"Format")
+        self.assertEqual(self.portfolio.inspection_basis.get(),"Copy membership")
+        self.assertEqual(self.portfolio.artist_category.get(),selected_category)
+        self.assertIn("Out of date",self.portfolio.freshness.get())
+        self.select_dimension(Dimension.DECADE)
+        self.app._collector_run_active=True
+        self.app._update_current_collection_portfolio_run_state();self.pump()
+        for control in (self.portfolio.refresh_button,self.portfolio.inspection_dimension,
+                        self.portfolio.inspection_basis,self.portfolio.artist_category,self.portfolio.inspect_button):
+            self.assertIn("disabled",control.state())
+        self.app._collector_run_active=False
+        self.app._update_current_collection_portfolio_run_state();self.pump()
+        self.database.conn.execute("UPDATE releases SET label=NULL")
+        self.database.conn.commit()
+        self.app.refresh_current_collection_portfolio();self.pump()
+        self.assertFalse(label.alive())
+        self.select_dimension(Dimension.LABEL)
+        self.assertEqual(self.portfolio.artist_category.get(),"")
+        self.assertIn("disabled",self.portfolio.inspect_button.state())
+        self.assertIn("No largest categories",self.portfolio.artist_reason.get())
+        self.portfolio.inspection_dimension.focus_force();self.pump()
+        self.portfolio.inspection_dimension.event_generate("<Tab>");self.pump()
+        self.assertIs(self.app.focus_get(),self.portfolio.text)
+        self.portfolio.text.event_generate("<Shift-Tab>");self.pump()
+        self.assertIs(self.app.focus_get(),self.portfolio.inspection_dimension)
+        self.database.conn.execute("UPDATE releases SET artist=NULL")
+        self.database.conn.commit()
+        self.app.refresh_current_collection_portfolio();self.pump()
+        self.portfolio.navigation.current(0)
+        self.portfolio.navigation.event_generate("<<ComboboxSelected>>");self.pump()
+        self.select_concentration()
+        self.assertEqual(self.portfolio.inspection_dimension.get(),"Format")
+
+    def test_concentration_keyboard_layout_and_exact_editor_handoff(self):
+        self.database.conn.execute("UPDATE releases SET label=NULL")
+        long_label=("Long label "*400)[:1918]+"X"
+        self.database.conn.execute("UPDATE releases SET label=? WHERE release_id IN (10,20)",(long_label,))
+        self.database.conn.commit()
+        self.app.refresh_current_collection_portfolio();self.pump()
+        self.select_concentration()
+        self.select_dimension(Dimension.LABEL)
+        self.pump(lambda:(self.portfolio.window.winfo_width(),self.portfolio.window.winfo_height())==(800,560))
+        controls=(self.portfolio.navigation,self.portfolio.refresh_button,self.portfolio.inspection_dimension,
+                  self.portfolio.inspection_basis,self.portfolio.artist_category,self.portfolio.inspect_button,
+                  self.portfolio.text,self.portfolio.close_button)
+        for index,control in enumerate(controls):
+            self.assertTrue(control.winfo_ismapped())
+            x=control.winfo_rootx()-self.portfolio.window.winfo_rootx()
+            y=control.winfo_rooty()-self.portfolio.window.winfo_rooty()
+            self.assertGreaterEqual(x,0);self.assertGreaterEqual(y,0)
+            self.assertLessEqual(x+control.winfo_width(),800)
+            self.assertLessEqual(y+control.winfo_height(),560)
+            control.focus_force();self.pump(lambda:self.app.focus_get() is control)
+            control.event_generate("<Tab>");self.pump()
+            self.assertIs(self.app.focus_get(),controls[(index+1)%len(controls)])
+            control.focus_force();self.pump(lambda:self.app.focus_get() is control)
+            control.event_generate("<Shift-Tab>");self.pump()
+            self.assertIs(self.app.focus_get(),controls[(index-1)%len(controls)],
+                          f"reverse traversal from {control}: focus={self.app.focus_get()}")
+        self.assertEqual(self.portfolio._artist_categories[0].label,long_label)
+        self.portfolio.inspect_button.focus_force();self.pump()
+        self.portfolio.inspect_button.event_generate("<Return>");self.pump()
+        inspection=self.app._portfolio_artist_window
+        self.assertEqual(inspection.heading.get("1.0","end-1c"),"Label category: "+long_label)
+        self.assertEqual(inspection.tree.selection(),())
+        inspection.heading.focus_force();self.pump()
+        inspection.heading.event_generate("<Tab>");self.pump()
+        self.assertIs(self.app.focus_get(),inspection.tree)
+        inspection.tree.event_generate("<Down>");self.pump()
+        self.assertEqual(inspection.tree.selection(),("10",))
+        inspection.tree.event_generate("<Tab>");self.pump()
+        self.assertIs(self.app.focus_get(),inspection.open_button)
+        with patch.object(self.app,"_edit_collection_decision",wraps=self.app._edit_collection_decision) as opening:
+            inspection.open_button.event_generate("<Return>");self.pump()
+            opening.assert_called_once_with(10,parent=inspection.window,from_portfolio=True)
+        self.app._decision_editor.event_generate("<Escape>");self.pump()
+        self.assertIsNone(self.app._decision_editor)
+        self.assertEqual(self.execution.call_count,2)
 
     def test_all_dimension_selectors_use_source_order_and_never_execute_or_query(self):
         source = self.app._current_collection_portfolio_source
