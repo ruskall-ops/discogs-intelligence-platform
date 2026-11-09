@@ -742,7 +742,13 @@ class PortfolioArtistInspectionTkTest(unittest.TestCase):
         with patch.object(self.app,"_edit_collection_decision",wraps=self.app._edit_collection_decision) as opening:
             inspection.open_button.event_generate("<Return>");self.pump()
             opening.assert_called_once_with(10,parent=inspection.window,from_portfolio=True)
-        self.app._decision_editor.event_generate("<Escape>");self.pump()
+        editor = self.app._decision_editor
+        self.assertIsNotNone(editor)
+        self.pump(lambda: editor.winfo_ismapped())
+        editor.focus_force()
+        self.pump(lambda: self.app.focus_get() is editor)
+        self.assertIs(self.app.focus_get(), editor)
+        editor.event_generate("<Escape>");self.pump()
         self.assertIsNone(self.app._decision_editor)
         self.assertEqual(self.execution.call_count,2)
 
